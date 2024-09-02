@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 env:
-  MIRROR_URL: 'git@github.com:EpitechPromo2027/B-OOP-400-REN-4-1-raytracer-guillaume.blaizot.git'
+  MIRROR_URL: 'git@github.com:EpitechPromo2027/B-SVR-500-REN-5-1-survivor-guillaume.blaizot.git'
 jobs:
   mirror:
     name: Push to mirror
