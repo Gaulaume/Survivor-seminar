@@ -5,7 +5,7 @@ from typing import List, Dict
 
 app = FastAPI()
 
-MONGO_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017/mydatabase")
+MONGO_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017/soul-connection")
 
 client = MongoClient(MONGO_URL)
 database = client.mydatabase
@@ -28,3 +28,4 @@ def read_items():
         return documents
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
