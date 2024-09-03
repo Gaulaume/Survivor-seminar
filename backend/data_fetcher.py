@@ -1,4 +1,6 @@
 import requests
+import os
+
 from pymongo import MongoClient
 
 def get_headers(group_token=None, access_token=None):
@@ -54,6 +56,9 @@ def get_endpoint(base_url, endpoint, access_token, group_token):
     else:
         return response
 
+
+username_auth= os.getenv('MONGO_INITDB_ROOT_USERNAME')
+password_auth = os.getenv('MONGO_INITDB_ROOT_PASSWORD')
 email = 'jeanne.martin@soul-connection.fr'
 password = 'naouLeA82oeirn'
 group_token = '16cc9a4d48f8bcd638a0af1543796698'
@@ -62,7 +67,7 @@ access_token = get_access_token(email, password, group_token)
 print(access_token)
 baseurl = "https://soul-connection.fr/api"
 
-connection_string = "mongodb://localhost:27017/"
+connection_string = f"mongodb://{username_auth}:{password_auth}@localhost:27017/"
 
 client = MongoClient(connection_string)
 client.drop_database('soul-connection')
