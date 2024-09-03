@@ -121,7 +121,7 @@ export default function RootLayout({
       <body className='flex bg-background'>
         <Sidebar className='hidden md:flex' />
         <div className='flex flex-1 flex-col'>
-          <header className='flex h-14 items-center border-b px-4 lg:px-6 sticky top-0'>
+          <header className='flex h-14 items-center border-b px-4 lg:px-6 sticky top-0 bg-white'>
             <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
               <SheetTrigger asChild>
                 <Button variant='ghost' size='icon' className='md:hidden'>
