@@ -14,40 +14,53 @@ import {
 } from '@heroicons/react/20/solid';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import clsx from 'clsx';
 import { usePathname, useRouter } from 'next/navigation';
+import Cookies from 'js-cookie';
 
 const SiderBarContent = [
   {
     title: 'Home',
     icon: HomeIcon,
-    href: '/'
+    href: '/',
+    disabled: false
   },
   {
     title: 'Coaches',
     icon: UsersIcon,
-    href: '/clients'
+    href: '/clients',
+    disabled: true
   },
   {
     title: 'Customers',
     icon: UserGroupIcon,
-    href: '/customers'
+    href: '/customers',
+    disabled: true
   },
   {
     title: 'Statistics',
     icon: PresentationChartLineIcon,
-    href: '/statistics'
+    href: '/statistics',
+    disabled: false
   },
   {
     title: 'Tips',
     icon: ChatBubbleBottomCenterIcon,
-    href: '/messages'
+    href: '/messages',
+    disabled: false
   },
   {
     title: 'Events',
     icon: CalendarIcon,
-    href: '/events'
+    href: '/events',
+    disabled: false
+  },
+  {
+    title: 'Compatibility',
+    icon: HeartIcon,
+    href: '/compatibility',
+    disabled: false
   }
 ];
 
@@ -68,10 +81,12 @@ const Sidebar = ({ className }: { className?: string }) => {
       <nav className='space-y-2 px-2'>
         {SiderBarContent.map((item, index) => (
           <button
+            disabled={item.disabled}
             key={index}
             className={clsx(
               'flex items-center w-full px-3 py-1.5 rounded-md hover:bg-muted transition-colors duration-200 text-base',
-              actualPath === item.href && 'bg-accent-foreground text-white hover:bg-accent-foreground/90'
+              actualPath === item.href && 'bg-accent-foreground text-white hover:!bg-accent-foreground/90',
+              'disabled:opacity-60 disabled:cursor-not-allowed'
             )}
             onClick={() => router.push(item.href)}
           >
@@ -90,11 +105,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+  const [isLogin, setIsLogin] = useState<boolean>(false);
   const router = useRouter();
+
+  useEffect(() => {
+    const token = Cookies.get('token');
+
+    if (token) {
+      setIsLogin(true);
+    }
+  }, []);
 
   return (
     <html lang='en'>
-      <body className='flex h-screen bg-background'>
+      <body className='flex bg-background'>
         <Sidebar className='hidden md:flex' />
         <div className='flex flex-1 flex-col overflow-hidden'>
           <header className='flex h-14 items-center border-b px-4 lg:px-6'>
@@ -117,17 +141,21 @@ export default function RootLayout({
                 </span>
               </div>
               <div className='flex flex-row'>
-                <Button
-                  variant='default'
-                  size='sm'
-                  onClick={() => router.push('/login')}
-                >
-                  Sign In
-                </Button>
+                {isLogin ? (
+                  <div className='rounded-full bg-accent-foreground size-6'/>
+                ) : (
+                  <Button
+                    variant='default'
+                    size='sm'
+                    onClick={() => router.push('/login')}
+                  >
+                    Sign In
+                  </Button>
+                )}
               </div>
             </div>
           </header>
-          <main className='flex-1 overflow-y-auto p-4 lg:p-6'>
+          <main className='flex-1 h-fit p-4 lg:p-6'>
             {children}
           </main>
         </div>

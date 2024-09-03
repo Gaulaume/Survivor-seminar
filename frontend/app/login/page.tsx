@@ -1,6 +1,5 @@
 'use client';
 
-import { employeeLogin } from '@/api/Employees';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,34 +8,28 @@ import { ArrowPathIcon, ExclamationCircleIcon, HeartIcon } from '@heroicons/reac
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { handleLogin } from '../actions';
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  async function onSubmit(event: React.SyntheticEvent) {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsLoading(true);
     setError(null);
 
-    const target = event.target as typeof event.target & {
-      email: { value: string }
-      password: { value: string }
-    }
-    const email = target.email.value
-    const password = target.password.value
+    const formData = new FormData(event.currentTarget);
 
-    let data = await employeeLogin(email, password);
-    setIsLoading(false);
-    if (!data?.access_token) {
-      // SAVE CO
-      router.push('/dashboard');
-      router.refresh();
-    } else {
-      setError('Invalid login credentials');
+    try {
+      await handleLogin(formData);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12 sm:px-6 lg:px-8">
@@ -50,7 +43,7 @@ export default function LoginPage() {
             Enter your email below to sign in to your account
           </CardDescription>
         </CardHeader>
-        <form onSubmit={onSubmit}>
+        <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
