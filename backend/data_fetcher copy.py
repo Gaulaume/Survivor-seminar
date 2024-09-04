@@ -1,6 +1,6 @@
 import requests
 from pymongo import MongoClient
-import 
+import os
 
 def get_headers(group_token=None, access_token=None):
     headers = {
@@ -34,6 +34,16 @@ def get_response_endpoint(base_url, endpoint, headers):
     url = f"{base_url}/{endpoint}"
     return requests.get(url, headers=headers)
 
+def get_list_of_ids(base_url, endpoint, headers):
+    response = get_response_endpoint(base_url, endpoint, headers)
+    response = response.json()
+    ids = []
+    for item in response:
+        ids.append(item['id'])
+    
+    ids.sort()
+    print(ids)
+
 email = 'jeanne.martin@soul-connection.fr'
 password = 'naouLeA82oeirn'
 group_token = '16cc9a4d48f8bcd638a0af1543796698'
@@ -45,4 +55,10 @@ username_auth= os.getenv('MONGO_INITDB_ROOT_USERNAME')
 password_auth = os.getenv('MONGO_INITDB_ROOT_PASSWORD')
 email = 'jeanne.martin@soul-connection.fr'
 password = 'naouLeA82oeirn'
+
 group_token = '16cc9a4d48f8bcd638a0af1543796698'
+
+base_url = 'https://soul-connection.fr/api'
+endpoint = 'employees'
+get_list_of_ids(base_url, endpoint, headers)
+
