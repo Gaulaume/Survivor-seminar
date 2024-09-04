@@ -11,11 +11,18 @@ services:
 
   mongodb:
     image: mongo:latest
-    ports:
-      - "27017:27017"
+    restart: always
+    command:
+      - --storageEngine
+      - wiredTiger
+      - --auth
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
       - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+      - MONGO_INITDB_DATABASE=${MONGO_INITDB_DATABASE}
+    ports:
+      - "27017:27017"
     volumes:
-      - "$PWD/mongo-entrypoint/:/docker-entrypoint-initdb.d/"
-    command: mongod
+      - ./mongodb-data:/data/db
+      - ./db/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js
+    env_file: .env
