@@ -56,36 +56,35 @@ def get_endpoint(base_url, endpoint, access_token, group_token):
     else:
         return response
 
+if __name__ == "__main__":
+    username_auth= os.getenv('MONGO_INITDB_ROOT_USERNAME')
+    password_auth = os.getenv('MONGO_INITDB_ROOT_PASSWORD')
+    email = 'jeanne.martin@soul-connection.fr'
+    password = 'naouLeA82oeirn'
+    group_token = '16cc9a4d48f8bcd638a0af1543796698'
+    access_token = get_access_token(email, password, group_token)
 
-username_auth= os.getenv('MONGO_INITDB_ROOT_USERNAME')
-password_auth = os.getenv('MONGO_INITDB_ROOT_PASSWORD')
-email = 'jeanne.martin@soul-connection.fr'
-password = 'naouLeA82oeirn'
-group_token = '16cc9a4d48f8bcd638a0af1543796698'
-access_token = get_access_token(email, password, group_token)
+    baseurl = "https://soul-connection.fr/api"
 
-print(access_token)
-baseurl = "https://soul-connection.fr/api"
+    connection_string = f"mongodb://{username_auth}:{password_auth}@localhost:27017/"
 
-connection_string = f"mongodb://{username_auth}:{password_auth}@localhost:27017/"
-
-client = MongoClient(connection_string)
-client.drop_database('soul-connection')
-db = client['soul-connection']
+    client = MongoClient(connection_string)
+    client.drop_database('soul-connection')
+    db = client['soul-connection']
 
 
-endpoints = [
-    "employees",
-    "customers",
-    "encounters",
-    "tips",
-    "events"
-]
+    endpoints = [
+        "employees",
+        "customers",
+        "encounters",
+        "tips",
+        "events"
+    ]
 
-for endpoint in endpoints:
-    response = get_endpoint(baseurl, endpoint, access_token, group_token)
-    collection = db[endpoint]
-    insert_result = collection.insert_many(response)
+    for endpoint in endpoints:
+        response = get_endpoint(baseurl, endpoint, access_token, group_token)
+        collection = db[endpoint]
+        insert_result = collection.insert_many(response)
 
 # now we specificaly send clothes
 # baseurl_clothes = "https://soul-connection.fr/api/clothes"
