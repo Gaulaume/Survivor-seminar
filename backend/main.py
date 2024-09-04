@@ -134,7 +134,6 @@ class api_event_id(BaseModel):
     employee_id: int
     location_name: str
 
-
 @app.get("/api/employees",
          response_model=List[api_Employee],
          tags=["employees"]

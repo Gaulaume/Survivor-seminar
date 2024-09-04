@@ -55,8 +55,10 @@ username_auth= os.getenv('MONGO_INITDB_ROOT_USERNAME')
 password_auth = os.getenv('MONGO_INITDB_ROOT_PASSWORD')
 email = 'jeanne.martin@soul-connection.fr'
 password = 'naouLeA82oeirn'
+
 group_token = '16cc9a4d48f8bcd638a0af1543796698'
 
 base_url = 'https://soul-connection.fr/api'
 endpoint = 'employees'
 get_list_of_ids(base_url, endpoint, headers)
+
