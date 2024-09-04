@@ -6,6 +6,7 @@ from typing import Union
 
 import os
 from typing import List, Dict
+# import data_fetcher
 
 app = FastAPI()
 
