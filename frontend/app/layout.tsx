@@ -18,6 +18,7 @@ import { useEffect, useState } from 'react';
 import clsx from 'clsx';
 import { usePathname, useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
+import { Toaster } from '@/components/ui/sonner';
 
 const SiderBarContent = [
   {
@@ -158,6 +159,7 @@ export default function RootLayout({
           <main className='flex-1 p-4 lg:p-6'>
             {children}
           </main>
+          <Toaster />
         </div>
       </body>
     </html>

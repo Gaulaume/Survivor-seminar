@@ -9,23 +9,23 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { handleLogin } from '../actions';
+import { toast } from 'sonner';
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsLoading(true);
-    setError(null);
 
     const formData = new FormData(event.currentTarget);
 
     try {
       await handleLogin(formData);
     } catch (err: any) {
-      setError(err.message);
+      toast.error(err.message, {
+        duration: 5000,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -53,12 +53,6 @@ export default function LoginPage() {
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" required />
             </div>
-            {error && (
-              <div className="flex items-center space-x-2 text-sm text-destructive">
-                <ExclamationCircleIcon className="h-4 w-4" />
-                <span>{error}</span>
-              </div>
-            )}
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <Button className="w-full" type="submit" disabled={isLoading}>
