@@ -120,8 +120,8 @@ export default function RootLayout({
     <html lang='en'>
       <body className='flex bg-background'>
         <Sidebar className='hidden md:flex' />
-        <div className='flex flex-1 flex-col overflow-hidden'>
-          <header className='flex h-14 items-center border-b px-4 lg:px-6'>
+        <div className='flex flex-1 flex-col'>
+          <header className='flex h-14 items-center border-b px-4 lg:px-6 sticky top-0'>
             <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
               <SheetTrigger asChild>
                 <Button variant='ghost' size='icon' className='md:hidden'>
@@ -155,7 +155,7 @@ export default function RootLayout({
               </div>
             </div>
           </header>
-          <main className='flex-1 h-fit p-4 lg:p-6'>
+          <main className='flex-1 p-4 lg:p-6'>
             {children}
           </main>
         </div>
