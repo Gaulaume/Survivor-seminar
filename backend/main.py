@@ -13,7 +13,7 @@ app = FastAPI()
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017/mydatabase")
 
 client = MongoClient(MONGO_URL)
-database = client.mydatabase
+database = client[os.getenv("MONGO_INITDB_DATABASE", "soul_connection")]
 
 class api_Employee(BaseModel):
     id: int
@@ -121,14 +121,23 @@ class api_event_id(BaseModel):
          tags=["employees"]
 )
 def get_employees():
-    try:
-        collection = database.employees
-        employees = list(collection.find({}, {"_id": 0}))
-        return employees
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
+    # try:
+    #     collection = database.employees
+    #     employees = list(collection.find({}, {"_id": 0}))
+    #     return employees
+    # except Exception as e:
+    #     raise HTTPException(status_code=500, detail=str(e))
+    mock_employees = [
+    {"id": 2, "email": "jean.dupont@soul-connection.fr", "name": "Jean", "surname": "Dupont"},
+    {"id": 4, "email": "david.johnson@soul-connection.fr", "name": "David", "surname": "Johnson"},
+    {"id": 5, "email": "sarah.durand@soul-connection.fr", "name": "Sarah", "surname": "Durand"},
+    {"id": 6, "email": "michel.petit@soul-connection.fr", "name": "Michel", "surname": "Petit"},
+    {"id": 7, "email": "emilie.bernard@soul-connection.fr", "name": "Emilie", "surname": "Bernard"},
+    {"id": 8, "email": "daniel.bernard@soul-connection.fr", "name": "Daniel", "surname": "Bernard"},
+    {"id": 9, "email": "samantha.robert@soul-connection.fr", "name": "Samantha", "surname": "Robert"},
+    {"id": 10, "email": "jacques.roux@soul-connection.fr", "name": "Jacques", "surname": "Roux"},
+    ]
+    return mock_employees
 
 @app.post("/api/employees/login",
          response_model=api_Employee_login,
@@ -219,12 +228,24 @@ def get_employee_image(employee_id: int):
         response_model=List[api_customer],
         tags=["customers"])
 def get_customers():
-    try:
-        collection = database.customers
-        customers = list(collection.find({}, {"_id": 0}))
-        return customers
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    mock_customers = [
+    {"id": 1, "email": "mercier348.nathalie@gmail.com", "name": "Nathalie", "surname": "Mercier"},
+    {"id": 2, "email": "margaud.valette188@gmail.com", "name": "Margaud", "surname": "Valette"},
+    {"id": 3, "email": "therese494.lacroix@free.fr", "name": "Thérèse", "surname": "Lacroix"},
+    {"id": 4, "email": "teixeira262.alix@free.fr", "name": "Alix", "surname": "Teixeira"},
+    {"id": 5, "email": "martel.noemi932@yahoo.fr", "name": "Noémi", "surname": "Martel"},
+    {"id": 6, "email": "leroux531.claire@yahoo.fr", "name": "Claire", "surname": "Leroux"},
+    {"id": 7, "email": "lecoq.roland796@sfr.fr", "name": "Roland", "surname": "Lecoq"},
+    {"id": 8, "email": "martinez198.francois@free.fr", "name": "François", "surname": "Martinez"},
+    {"id": 9, "email": "raymond940.lemoine@gmail.com", "name": "Raymond", "surname": "Lemoine"},
+    {"id": 10, "email": "perret241.christine@outlook.com", "name": "Christine", "surname": "Perret"}]
+    return mock_customers
+    # try:
+    #     collection = database.customers
+    #     customers = list(collection.find({}, {"id": 0}))
+    #     return customers
+    # except Exception as e:
+    #     raise HTTPException(status_code=500, detail=str(e))
 
 
 
