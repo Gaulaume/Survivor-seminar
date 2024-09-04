@@ -2,3 +2,5 @@ fastapi
 pymongo
 uvicorn
 requests
+aiohttp
+asyncio
