@@ -23,6 +23,8 @@ import { CheckIcon, ChevronDownIcon, HeartIcon, SparklesIcon } from '@heroicons/
 import { Progress } from '@/components/ui/progress';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 interface ComboboxProps {
   value: number | null;
@@ -97,25 +99,36 @@ export default function CompatibilityPage() {
   const [comparing, setComparing] = useState<boolean>(false);
   const [compatibilityValue, setCompatibilityValue] = useState<number | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const token = Cookies.get('token');
 
-    if (token) {
+    if (token)
       setToken(token);
-    }
+    else
+      router.push('/login');
   }, []);
 
   useEffect(() => {
-    if (token) {
+    const fetchData = async () => {
+      if (!token)
+        return;
       setIsLoading(true);
-
-      getCustomers(token).then((data) => {
-        if (data)
-          setCustomers(data);
-        setIsLoading(false);
-      });
+      try {
+        const data = await getCustomers(token);
+        if (!data)
+          throw new Error('Failed to fetch customers');
+        setCustomers(customers);
+      } catch (error) {
+        toast.error('Failed to fetch customers', {
+          duration: 5000,
+        });
+      }
+      setIsLoading(false);
     }
+
+    fetchData();
   }, [token]);
 
   const startCompare = async () => {

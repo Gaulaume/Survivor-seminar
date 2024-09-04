@@ -7,7 +7,7 @@ export default function Home() {
 
   return (
     <main className='flex min-h-screen flex-col items-center justify-between'>
-      <div className='grid grid-cols-1 md:grid-cols-3 gap-8 w-full'>
+      <div className='flex flex-row flex-wrap gap-4 justify-center'>
         <Card className='w-full md:w-80'>
           <CardHeader>
             <CardTitle>Total Customers</CardTitle>
