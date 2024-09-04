@@ -15,6 +15,15 @@ MONGO_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017/mydatabase")
 client = MongoClient(MONGO_URL)
 database = client.mydatabase
 
+class api_create_employee(BaseModel):
+    id: int
+    email: str
+    name: str
+    surname: str
+    birth_date: str
+    gender: str
+    work: str
+
 class api_Employee(BaseModel):
     id: int
     email: str
@@ -116,6 +125,7 @@ class api_event_id(BaseModel):
     employee_id: int
     location_name: str
 
+
 @app.get("/api/employees",
          response_model=List[api_Employee],
          tags=["employees"]
@@ -125,6 +135,23 @@ def get_employees():
         collection = database.employees
         employees = list(collection.find({}, {"_id": 0}))
         return employees
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/employees/create",
+            response_model=api_create_employee,
+            tags=["employees"],
+            responses={
+                200: {"description": "Employee created",
+                    "content": {"application/json": {"example": {"id": 1, "email": "string", "name": "string", "surname": "string", "birth_date": "string", "gender": "string", "work": "string"}}}},
+            }
+)
+def create_employee(employee: api_create_employee):
+    try:
+        collection = database.employees
+        collection.insert_one(employee.dict())
+        return employee
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
