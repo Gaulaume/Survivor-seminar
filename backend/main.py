@@ -159,18 +159,12 @@ def get_employees():
             },
 )
 def login_employee(employee: api_Employee_login):
-    try:
-        collection = database.employees
-        user = collection.find_one({"email": employee.email})
-        if user is None:
-            raise HTTPException(status_code=401, detail="Employee not found")
-
-        login_cred = insertDataLogin(employee.email, employee.password, user['id'])
-        return api_Employee_login_cred(**login_cred)
-
-    except Exception as e:
-        print(traceback.format_exc())
-        raise HTTPException(status_code=500, detail="Internal server error")
+    collection = database.employees
+    user = collection.find_one({"email": employee.email})
+    if user is None:
+        raise HTTPException(status_code=401, detail="Employee not found")
+    login_cred = insertDataLogin(employee.email, employee.password, user['id'])
+    return api_Employee_login_cred(**login_cred)
 
 
 @app.post("/api/employees/register",
