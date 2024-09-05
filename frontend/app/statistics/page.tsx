@@ -391,11 +391,6 @@ export default function StatisticsPage() {
               }}
             >
               Lauch Comparison
-              {comparing ? (
-                <ArrowPathIcon className='h-4 w-4 ml-2 animate-spin' />
-              ) : (
-                <SparklesIcon className='h-4 w-4 ml-2' />
-              )}
             </Button>
             <div>
               <Combobox
