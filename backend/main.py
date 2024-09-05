@@ -29,23 +29,13 @@ MONGO_URL = os.getenv("MONGO_URL", "mongodb://mongod:27017/")
 client = MongoClient(MONGO_URL)
 database = client[os.getenv("MONGO_INITDB_DATABASE", "soul-connection")]
 
-class api_create_employee(BaseModel):
+class clothes(BaseModel):
     id: int
-    email: str
-    name: str
-    surname: str
-    birth_date: str
-    gender: str
-    work: str
+    type: str
+    image: str
 
-class api_create_employee(BaseModel):
-    id: int
+class api_delete_employee(BaseModel):
     email: str
-    name: str
-    surname: str
-    birth_date: str
-    gender: str
-    work: str
 
 class api_Employee(BaseModel):
     id: int
@@ -61,15 +51,6 @@ class api_Employee_login_cred(BaseModel):
     access_token: str
 
 class api_Employee_me(BaseModel):
-    id: int
-    email: str
-    name: str
-    surname: str
-    birth_date: str
-    gender: str
-    work: str
-
-class api_Employee_id(BaseModel):
     id: int
     email: str
     name: str
@@ -120,14 +101,12 @@ class api_encounter_id(BaseModel):
     comment: str
     source: str
 
-class api_encounter_customer_id(BaseModel):
-    id: int
-    customer_id: int
-    date: str
-    rating: int
-
 class api_tips(BaseModel):
     id: int
+    title: str
+    tip: str
+
+class api_tips_update(BaseModel):
     title: str
     tip: str
 
@@ -149,11 +128,13 @@ class api_event_id(BaseModel):
     location_name: str
 
 
+# ////////////////  EMPLOYEES  ////////////////
+
 @app.get("/api/employees",
          response_model=List[api_Employee],
          tags=["employees"]
 )
-def get_employees():    
+def get_employees():
     try:
         collection = database.employees
         employees = list(collection.find({}, {"_id": 0}))
@@ -210,7 +191,7 @@ def get_employee_me():
 
 
 @app.get("/api/employees/{employee_id}",
-         response_model=api_Employee_id,
+         response_model=api_Employee_me,
          tags=["employees"],
          responses={
             404: {"description": "Employee requested doesn't exist",
@@ -231,29 +212,21 @@ def get_employee(employee_id: int):
 
 
 
-@app.post("api/employees/{employee_id}/create",
-            response_model=api_create_employee,
-            tags=["employees"],
-            responses={
-                200: {"description": "Employee created successfully",
-                    "content": {"application/json": {"example": {"id": 1, "email": "string", "name": "string", "surname": "string", "birth_date": "string", "gender": "string", "work": "string"}}}},
-                400: {"description": "Invalid request",
-                    "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
-            },
-)
-def create_employee(employee: api_create_employee):
+@app.post("/api/employee/create", response_model=api_Employee_me, tags=["employees"])
+def create_employee(employee: api_Employee_me):
     try:
+        employee.id = len(list(database.employees.find())) + 1
         collection = database.employees
-        collection.insert_one(employee.dict())
-        return employee
+        id = collection.find_one({"id": employee.id})
+        if id is not None:
+            raise HTTPException(status_code=400, detail="Employee with this id already exists")
+        return employee, {"message": "Employee created successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-
-
-@app.put("/api/employees/{employee_id}/update",
-         response_model=api_create_employee,
+@app.put("/api/employee/update",
+         response_model=api_Employee_me,
          tags=["employees"],
          responses={
              200: {"description": "Employee updated successfully",
@@ -262,34 +235,25 @@ def create_employee(employee: api_create_employee):
                         "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
             },
 )
-def update_employee(employee: api_create_employee):
+def update_employee(employee_id: int, employee: api_Employee_me):
     try:
         collection = database.employees
-        collection.update_one({"email":
-                                      employee.email}, {"$set": employee.dict()})
-        return employee
+        result = collection.update_one({"id": employee_id}, {"$set": employee.dict()})
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Employee not found")
+        return employee, {"message": "Employee updated successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.delete("/api/employees/{employee_id}/delete",
-            response_model=api_create_employee,
-            tags=["employees"],
-            responses={
-                200: {"description": "Employee deleted successfully",
-                    "content": {"application/json": {"example": {"id": 1, "email": "string", "name": "string", "surname": "string", "birth_date": "string", "gender": "string", "work": "string"}}}},
-                400: {"description": "Invalid request",
-                    "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
-                500: {"description": "Internal server error",
-                    "content": {"application/json": {"example": {"detail": "An error occurred while deleting the employee."}}}},
-            },
-)
-def delete_employee(employee: api_create_employee):
+@app.delete("/api/employee/delete", tags=["employees"])
+def delete_employee(employee_id: int):
     try:
         collection = database.employees
-        collection.delete_one({"email":
-                                      employee.email})
-        return employee
+        result = collection.delete_one({"id": employee_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Employee not found")
+        return {"message": "Employee deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -323,6 +287,11 @@ def get_employee_image(employee_id: int):
         raise HTTPException(status_code=500, detail="An error occurred while fetching the employee image.")
 
 
+
+# ////////////////  CUSTOMERS  ////////////////
+
+
+
 @app.get("/api/customers",
         response_model=List[api_customer],
         tags=["customers"])
@@ -350,7 +319,7 @@ def get_customer(customer_id: int):
 
 
 
-@app.post("/api/customers/{customer_id}/create",
+@app.post("/api/customer/create",
         response_model=api_customer_id,
         tags=["customers"],
         responses={
@@ -362,13 +331,16 @@ def get_customer(customer_id: int):
 )
 def create_customer(customer: api_customer_id):
     try:
+        customer.id = len(list(database.customers.find())) + 1
         collection = database.customers
-        collection.insert_one(customer.dict())
-        return customer
+        id = collection.find_one({"id": customer.id})
+        if id is not None:
+            raise HTTPException(status_code=400, detail="customer with this id already exists")
+        return customer, {"message": "customer created successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.put("/api/customers/{customer_id}/update",
+@app.put("/api/customer/update",
         response_model=api_customer_id,
         tags=["customers"],
         responses={
@@ -378,17 +350,18 @@ def create_customer(customer: api_customer_id):
                     "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
         },
 )
-def update_customer(customer: api_customer_id):
+def update_customer(customer_id: int, customer: api_customer_id):
     try:
         collection = database.customers
-        collection.update_one({"email":
-                                      customer.email}, {"$set": customer.dict()})
-        return customer
+        result = collection.update_one({"id": customer_id}, {"$set": customer.dict()})
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="customer not found")
+        return customer, {"message": "customer updated successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.delete("/api/customers/{customer_id}/delete",
+@app.delete("/api/customer/delete",
         response_model=api_customer_id,
         tags=["customers"],
         responses={
@@ -398,12 +371,13 @@ def update_customer(customer: api_customer_id):
                     "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
         },
 )
-def delete_customer(customer: api_customer_id):
+def delete_customer(customer_id: int):
     try:
         collection = database.customers
-        collection.delete_one({"email":
-                                      customer.email})
-        return customer
+        result = collection.delete_one({"id": customer_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="customer not found")
+        return {"message": "customer deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -461,6 +435,10 @@ def get_clothes(customer_id: int):
 
 
 
+# ////////////////  ENCOUNTERS  ////////////////
+
+
+
 @app.get("/api/encounters",
             response_model=List[api_encounters],
             tags=["encounters"])
@@ -489,8 +467,8 @@ def get_encounter(encounter_id: int):
 
 
 
-@app.post("/api/encounters/customer/{customer_id}/create",
-            response_model=api_encounter_customer_id,
+@app.post("/api/encounter/create",
+            response_model=api_encounters,
             tags=["encounters"],
             responses={
                 200: {"description": "Encounter created successfully",
@@ -499,16 +477,19 @@ def get_encounter(encounter_id: int):
                     "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
             },
 )
-def create_encounter(encounter: api_encounter_customer_id):
+def create_encounter(encounter: api_encounters):
     try:
+        encounter.id = len(list(database.encounters.find())) + 1
         collection = database.encounters
-        collection.insert_one(encounter.dict())
-        return encounter
+        id = collection.find_one({"id": encounter.id})
+        if id is not None:
+            raise HTTPException(status_code=400, detail="encounter with this id already exists")
+        return encounter, {"message": "encounter created successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.put("/api/encounters/{encounter_id}/update",
+@app.put("/api/encounter/update",
             response_model=api_encounter_id,
             tags=["encounters"],
             responses={
@@ -518,18 +499,18 @@ def create_encounter(encounter: api_encounter_customer_id):
                     "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
             },
 )
-def update_encounter(encounter: api_encounter_id):
+def update_encounter(encounter_id: int, encounter: api_encounter_id):
     try:
         collection = database.encounters
-        collection.update_one({"id":
-                                      encounter.id}, {"$set": encounter.dict()})
-        return encounter
+        result = collection.update_one({"id": encounter_id}, {"$set": encounter.dict()})
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="encounter not found")
+        return encounter, {"message": "encounter updated successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-
-@app.delete("/api/encounters/{encounter_id}/delete",
+@app.delete("/api/encounter/delete",
             response_model=api_encounter_id,
             tags=["encounters"],
             responses={
@@ -539,19 +520,20 @@ def update_encounter(encounter: api_encounter_id):
                     "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
             },
 )
-def delete_encounter(encounter: api_encounter_id):
+def delete_encounter(encounter_id: int):
     try:
         collection = database.encounters
-        collection.delete_one({"id":
-                                      encounter.id})
-        return encounter
+        result = collection.delete_one({"id": encounter_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="encounter not found")
+        return {"message": "encounter deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 
-@app.get("/api/encounters/customer/{customer_id}",
-            response_model=List[api_encounter_customer_id],
+@app.get("/api/encounter/customer/{customer_id}",
+            response_model=List[api_encounters],
             tags=["encounters"])
 def get_encounter_customer(customer_id: int):
     try:
@@ -560,6 +542,10 @@ def get_encounter_customer(customer_id: int):
         return encounters
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+
+# ////////////////  TIPS  ////////////////
 
 
 
@@ -590,27 +576,22 @@ def get_tip(tip_id: int):
 
 
 
-@app.post("/api/tips/{tip_id}/create",
-            response_model=api_tips,
-            tags=["tips"],
-            responses={
-                200: {"description": "Tip created successfully",
-                      "content": {"application/json": {"example": {"id": 1, "title": "string", "tip": "string"}}}},
-                      400: {"description": "Invalid request",
-                            "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
-                            },
-)
+
+@app.post("/api/tip/create", response_model=api_tips, tags=["tips"])
 def create_tip(tip: api_tips):
     try:
+        tip.id = len(list(database.tips.find())) + 1
         collection = database.tips
-        collection.insert_one(tip.dict())
-        return tip
+        id = collection.find_one({"id": tip.id})
+        if id is not None:
+            raise HTTPException(status_code=400, detail="tip with this id already exists")
+        return tip, {"message": "tip created successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.put("/api/tips/{tip_id}/update",
-            response_model=api_tips,
+@app.put("/api/tip/update",
+            response_model=api_tips_update,
             tags=["tips"],
             responses={
                 200: {"description": "Tip updated successfully",
@@ -619,34 +600,32 @@ def create_tip(tip: api_tips):
                             "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
                             },
 )
-def update_tip(tip: api_tips):
+def update_tips(tips_id: int, tips: api_tips_update):
     try:
         collection = database.tips
-        collection.update_one({"id":
-                                      tip.id}, {"$set": tip.dict()})
-        return tip
+        result = collection.update_one({"id": tips_id}, {"$set": tips.dict()})
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="tips not found")
+        return tips, {"message": "tips updated successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.delete("/api/tips/{tip_id}/delete",
-            response_model=api_tips,
-            tags=["tips"],
-            responses={
-                200: {"description": "Tip deleted successfully",
-                      "content": {"application/json": {"example": {"id": 1, "title": "string", "tip": "string"}}}},
-                      400: {"description": "Invalid request",
-                            "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
-                            },
-)
-def delete_tip(tip: api_tips):
+@app.delete("/api/tip/delete", tags=["tips"])
+def delete_tips(tips_id: int):
     try:
         collection = database.tips
-        collection.delete_one({"id":
-                                      tip.id})
-        return tip
+        result = collection.delete_one({"id": tips_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="tips not found")
+        return {"message": "tips deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+
+# ////////////////  EVENTS  ////////////////
+
 
 
 @app.get("/api/events",
@@ -677,27 +656,21 @@ def get_event(event_id: int):
 
 
 
-@app.post("/api/events/{event_id}/create",
-            response_model=api_event_id,
-            tags=["events"],
-            responses={
-                200: {"description": "Event created successfully",
-                      "content": {"application/json": {"example": {"id": 1, "name": "string", "date": "string", "max_partcipants": 1, "location_x": "string", "location_y": "string", "type": "string", "employee_id": 1, "location_name": "string"}}}},
-                400: {"description": "Invalid request",
-                      "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
-            },
-)
+@app.post("/api/events/create", response_model=api_event_id, tags=["events"])
 def create_event(event: api_event_id):
     try:
+        event.id = len(list(database.events.find())) + 1
         collection = database.events
-        collection.insert_one(event.dict())
-        return event
+        id = collection.find_one({"id": event.id})
+        if id is not None:
+            raise HTTPException(status_code=400, detail="event with this id already exists")
+        return event, {"message": "event created successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 
-@app.put("/api/events/{event_id}/update",
+@app.put("/api/events/update",
             response_model=api_event_id,
             tags=["events"],
             responses={
@@ -707,18 +680,19 @@ def create_event(event: api_event_id):
                       "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
             },
 )
-def update_event(event: api_event_id):
+def update_event(event_id: int, event: api_event_id):
     try:
         collection = database.events
-        collection.update_one({"id":
-                                      event.id}, {"$set": event.dict()})
-        return event
+        result = collection.update_one({"id": event_id}, {"$set": event.dict()})
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="event not found")
+        return event, {"message": "event updated successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 
-@app.delete("/api/events/{event_id}/delete",
+@app.delete("/api/events/delete",
             response_model=api_event_id,
             tags=["events"],
             responses={
@@ -728,14 +702,20 @@ def update_event(event: api_event_id):
                       "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
             },
 )
-def delete_event(event: api_event_id):
+def delete_event(event_id: int):
     try:
         collection = database.events
-        collection.delete_one({"id":
-                                      event.id})
-        return event
+        result = collection.delete_one({"id": event_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="event not found")
+        return {"message": "event deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ////////////////  CLOTHES  ////////////////
+
+
 
 @app.get("/api/clothes/{clothes_id}/image",
             tags=["clothes"],
