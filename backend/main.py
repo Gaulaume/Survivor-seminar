@@ -4,6 +4,8 @@ from pymongo import MongoClient
 from pydantic import BaseModel
 from typing import Union
 from fastapi.middleware.cors import CORSMiddleware
+import traceback
+from authentificationAPI import insertDataRegister, insertDataLogin
 
 
 origins = [
@@ -59,6 +61,8 @@ class api_Employee_me(BaseModel):
     gender: str
     work: str
 
+class Token(BaseModel):
+    access_token: str
 
 class api_customer(BaseModel):
     id: int
@@ -142,13 +146,11 @@ def get_employees():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
-
 @app.post("/api/employees/login",
-         response_model=api_Employee_login,
+         response_model=api_Employee_login_cred,
          tags=["employees"],
             responses={
-                200: {"description": "Login successful",
+                200: {"description": "Register successful",
                       "content": {"application/json": {"example": {"access token": "string"}}}},
                 401: {"description": "Invalid credentials",
                     "content": {"application/json": {"example": {"detail": "Invalid Email and Password combination."}}}},
@@ -159,14 +161,43 @@ def get_employees():
 def login_employee(employee: api_Employee_login):
     try:
         collection = database.employees
-        employee = collection.find_one({"email": employee.email, "id": employee.id})
-        if employee is None:
-            raise HTTPException(status_code=404, detail="Employee not found")
-        return employee
+        user = collection.find_one({"email": employee.email})
+        if user is None:
+            raise HTTPException(status_code=401, detail="Employee not found")
+
+        login_cred = insertDataLogin(employee.email, employee.password, user['id'])
+        return api_Employee_login_cred(**login_cred)
+
     except Exception as e:
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+@app.post("/api/employees/register",
+         response_model=api_Employee_login,
+         tags=["employees"],
+            responses={
+                200: {"description": "Register successful",
+                      "content": {"application/json": {"example": {"access token": "string"}}}},
+                401: {"description": "Invalid credentials",
+                    "content": {"application/json": {"example": {"detail": "Email already used"}}}},
+                500: {"description": "Internal server error",
+                    "content": {"application/json": {"example": {"detail": "An error occurred while logging in."}}}},
+            },
+)
+def register_employee(employee: api_Employee_login):
+    try:
+        collection = database.employees
+        user = collection.find_one({"email": employee.email})
+        if user is None:
+            print("KOALA")
+            return insertDataRegister(employee.email, employee.password, user['id'])
+        raise HTTPException(status_code=401, detail="Employee not found")
+    except Exception as e:
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+#check si email est déjà stocké sinon l'inscrire avec mdp et token si oui  dire que le mail est déjà utilisé
 
 @app.get("/api/employees/me",
          response_model=api_Employee_me,
