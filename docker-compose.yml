@@ -8,6 +8,11 @@ services:
       - mongodb
     environment:
       - MONGO_URL=${MONGO_URL}
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+      - MONGO_INITDB_DATABASE=${MONGO_INITDB_DATABASE}
+    env_file:
+      - .env
 
   mongodb:
     container_name: mongodb
@@ -22,8 +27,6 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
       - MONGO_INITDB_DATABASE=${MONGO_INITDB_DATABASE}
     ports:
-      - "27017:27017"
-    volumes:
-      - ./mongodb-data:/data/db
-      - ./db/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js
-    env_file: .env
+      - "27017:27017"    
+    env_file:
+      - .env
