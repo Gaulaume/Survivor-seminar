@@ -10,6 +10,7 @@ services:
       - MONGO_URL=${MONGO_URL}
 
   mongodb:
+    container_name: mongodb
     image: mongo:latest
     restart: always
     command:
