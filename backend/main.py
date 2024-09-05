@@ -1,12 +1,14 @@
+from io import BytesIO
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import StreamingResponse, FileResponse
 from pymongo import MongoClient
 from pydantic import BaseModel
-from typing import Union
+from typing import Union, List
 from fastapi.middleware.cors import CORSMiddleware
 import traceback
 from fastapi.responses import StreamingResponse, FileResponse
 from io import BytesIO
+import base64
 
 
 origins = [
@@ -24,7 +26,8 @@ app.add_middleware(
 
 import os
 from typing import List, Dict
-# import data_fetcher
+from typing import Optional
+
 
 
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://mongod:27017/")
@@ -32,10 +35,17 @@ MONGO_URL = os.getenv("MONGO_URL", "mongodb://mongod:27017/")
 client = MongoClient(MONGO_URL)
 database = client[os.getenv("MONGO_INITDB_DATABASE", "soul-connection")]
 
-class clothes(BaseModel):
+class clothes_without_img(BaseModel):
     id: int
     type: str
-    image: str
+
+class clothes(clothes_without_img):
+    image: Optional[str]
+
+class Clothes(BaseModel):
+    id: int
+    type: str
+    image: bytes
 
 class api_delete_employee(BaseModel):
     email: str
@@ -68,6 +78,10 @@ class api_customer(BaseModel):
     email: str
     name: str
     surname: str
+    birth_date: str
+    gender: str
+    description: str
+    astrological_sign: str
 
 class api_customer_id(BaseModel):
     id: int
@@ -79,16 +93,21 @@ class api_customer_id(BaseModel):
     description: str
     astrological_sign: str
 
-class api_customer_id_payments_history(BaseModel):
+class Payment(BaseModel):
     id: int
     date: str
     payment_method: str
     amount: float
     comment: str
 
-class api_customer_id_clothes(BaseModel):
+class api_customer_id_payments_history(BaseModel):
+    payment_history: List[Payment]
+
+class customer_clothes(BaseModel):
     id: int
-    type: str
+
+class api_customer_id_clothes(BaseModel):
+    clothes_ids: List[customer_clothes]
 
 class api_encounters(BaseModel):
     id: int
@@ -130,15 +149,10 @@ class api_event_id(BaseModel):
     employee_id: int
     location_name: str
 
-class Clothes(BaseModel):
+class   ClothesDetail(BaseModel):
     id: int
     type: str
-    image: bytes
-
-class ClothesWithoutImg(BaseModel):
-    id: int
-    type: str
-
+    image: str
 
 # ////////////////  EMPLOYEES  ////////////////
 
@@ -305,7 +319,7 @@ def get_employee_image(employee_id: int):
 
 
 @app.get("/api/customers",
-        response_model=List[api_customer],
+        response_model=List[api_customer_id],
         tags=["customers"])
 
 def get_customers():
@@ -393,57 +407,51 @@ def delete_customer(customer_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
-@app.get("/api/customers/{customer_id}/image",
-        tags=["customers"],
-        responses={
-            200: {"description": "Returns customer's profile picture.",
-                    "content": {"image/png": {}}},
-            404: {"description": "Customer requested doesn't exist",
-                    "content": {"application/json": {"example": {"detail": "Customer requested doesn't exist"}}}},
-            500: {"description": "Internal server error",
-                    "content": {"application/json": {"example": {"detail": "An error occurred while fetching the customer image."}}}},
-        },
-)
-def get_customer_image(customer_id: int):
-    try:
-        collection = database.customers
-        customer = collection.find_one({"id": customer_id})
-        if customer is None:
-            raise HTTPException(status_code=404, detail="Customer requested doesn't exist")
-        return FileResponse(customer["image"])
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="An error occurred while fetching the customer image.")
-
-
-
 @app.get("/api/customers/{customer_id}/payments_history",
-        response_model=List[api_customer_id_payments_history],
-        tags=["customers"])
+         response_model=List[Payment],
+         tags=["customers"])
 def get_payments_history(customer_id: int):
     try:
         collection = database.customers
         customer = collection.find_one({"id": customer_id})
         if customer is None:
             raise HTTPException(status_code=404, detail="Customer requested doesn't exist")
-        return customer["payments"]
+        if "payment_history" not in customer:
+            raise HTTPException(status_code=404, detail="No payment history found for this customer")
+        return customer["payment_history"]
     except Exception as e:
-        raise HTTPException(status_code=500, detail="An error occurred while fetching the customer payments.")
-
+            raise HTTPException(status_code=500, detail="An error occurred while fetching the customer payments.")
 
 
 @app.get("/api/customers/{customer_id}/clothes",
-        response_model=List[api_customer_id_clothes],
-        tags=["customers"])
+         response_model=List[ClothesDetail],
+         tags=["customers"])
 def get_clothes(customer_id: int):
     try:
-        collection = database.customers
-        customer = collection.find_one({"id": customer_id})
+        customer_collection = database.customers
+        customer = customer_collection.find_one({"id": customer_id})
+
         if customer is None:
             raise HTTPException(status_code=404, detail="Customer requested doesn't exist")
-        return customer["clothes"]
+
+        if "clothes_ids" not in customer:
+            raise HTTPException(status_code=404, detail="No clothes found for this customer")
+
+        clothes_details = []
+
+        clothes_collection = database.clothes
+        for clothes_id in customer["clothes_ids"]:
+            clothes = clothes_collection.find_one({"id": clothes_id})
+            if clothes:
+                clothes_details.append({
+                    "id": clothes["id"],
+                    "type": clothes["type"],
+                    "image": "data:image/png;base64," + base64.b64encode(clothes["image"]).decode('utf-8')
+                })
+
+        return clothes_details
     except Exception as e:
-        raise HTTPException(status_code=500, detail="An error occurred while fetching the customer clothes.")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 
@@ -452,7 +460,7 @@ def get_clothes(customer_id: int):
 
 
 @app.get("/api/encounters",
-            response_model=List[api_encounters],
+            response_model=List[api_encounter_id],
             tags=["encounters"])
 def get_encounters():
     try:
@@ -649,8 +657,20 @@ def get_events():
         events = list(collection.find({}, {"_id": 0}))
         return events
     except Exception as e:
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@app.get("/api/tips",
+            response_model=List[api_tips],
+            tags=["tips"])
+def get_tips():
+    try:
+        collection = database.tips
+        tips = list(collection.find({}, {"_id": 0}))
+        return tips
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/events/{event_id}",
@@ -782,8 +802,16 @@ def get_clothes_image(clothes_id: int):
 
         image_stream = BytesIO(clothes["image"])
         return StreamingResponse(image_stream, media_type="image/png")
+
+        image_stream = BytesIO(clothes["image"])
+        return StreamingResponse(image_stream, media_type="image/png")
     except Exception as e:
+        print(f"Error fetching image: {e}")
         raise HTTPException(status_code=500, detail="An error occurred while fetching the clothes image.")
+
+
+@app.get("/api/clothes", response_model=clothes_without_img, tags=["clothes"])
+def get_clothes():
     
 @app.post("/api/clothes/create",
           response_model=Clothes,
@@ -968,7 +996,7 @@ def get_compatibility(customer1_id: int, customer2_id: int):
         if not customer2_sign:
             raise ValueError(f"Customer with ID {customer2_id} does not have an astrological sign")
         compatibility_score = calculate_compatibility(customer1_sign, customer2_sign)
-        return {"compatibility_percentage": compatibility_score * 50}
+        return {"result": compatibility_score * 50}
 
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
