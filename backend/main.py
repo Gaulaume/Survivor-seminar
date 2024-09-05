@@ -191,7 +191,6 @@ def register_employee(employee: api_Employee_login):
             return insertDataRegister(employee.email, employee.password, user['id'])
         raise HTTPException(status_code=401, detail="Employee not found")
     except Exception as e:
-        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail="Internal server error")
 
 #check si email est déjà stocké sinon l'inscrire avec mdp et token si oui  dire que le mail est déjà utilisé
@@ -210,11 +209,11 @@ def get_employee_me(current_user: TokenData = Depends(get_current_user_token)):
     try:
         collection = database.employees
         employee = collection.find_one({"email": current_user.email})
-        print(TokenData.email)
         if employee is None:
             raise HTTPException(status_code=404, detail="Employee not found")
         return employee
     except Exception as e:
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail="An error occurred while fetching the employee details.")
 
 
