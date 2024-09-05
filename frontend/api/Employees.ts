@@ -43,6 +43,32 @@ const getEmployee = async (token: string, id: string): Promise<Employee | null> 
   }
 }
 
+const getEmployeeStats = async (token: string, id: number): Promise<{
+  average_rating: number;
+  clients_length: number;
+  clients_length_female: number;
+  clients_length_male: number;
+} | null> => {
+  const config = {
+    url: `http://localhost:8000/api/employees/${id}/stats`,
+    method: 'get',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  };
+
+  try {
+    const response = await axios(config);
+
+    return response.data;
+  } catch (error) {
+    console.error('getEmployeeStats', error);
+
+    return null;
+  }
+}
+
 const employeeLogin = async (email: string, password: string): Promise<any | null> => {
   return {
     token: "mock-token"
@@ -115,6 +141,7 @@ const getEmployeeImage = async (token: string, id: string): Promise<Blob | null>
 export {
   getEmployees,
   getEmployee,
+  getEmployeeStats,
   employeeLogin,
   getMe,
   getEmployeeImage,

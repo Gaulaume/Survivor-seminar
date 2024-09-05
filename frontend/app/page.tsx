@@ -1,7 +1,7 @@
 'use client';
 
 import { getCustomers } from '@/api/Customers';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import Customer from '@/types/Customer';
 import { CalendarIcon, UsersIcon } from '@heroicons/react/20/solid';
 import React, { useEffect, useState } from 'react';
@@ -179,6 +179,7 @@ export default function HomePage() {
                 </div>
               </div>
             </CardContent>
+            <CardFooter/>
           </Card>
           <Card className='flex flex-col'>
             <CardHeader>
@@ -217,6 +218,7 @@ export default function HomePage() {
                 </ChartContainer>
               )}
             </CardContent>
+            <CardFooter/>
           </Card>
           <Card className='flex flex-col'>
             <CardHeader>
@@ -249,6 +251,7 @@ export default function HomePage() {
                 </ChartContainer>
               )}
             </CardContent>
+            <CardFooter/>
           </Card>
           <Card className='flex flex-col'>
             <CardHeader>
@@ -287,6 +290,7 @@ export default function HomePage() {
                 </ChartContainer>
               )}
             </CardContent>
+            <CardFooter/>
           </Card>
         </div>
         <div className='flex flex-col space-y-3'>
@@ -331,6 +335,7 @@ export default function HomePage() {
                 </div>
               </div>
             </CardContent>
+            <CardFooter/>
           </Card>
           <Card className='flex flex-col'>
             <CardHeader>
@@ -365,6 +370,7 @@ export default function HomePage() {
                 </ChartContainer>
               )}
             </CardContent>
+            <CardFooter/>
           </Card>
           <Card className='flex flex-col'>
             <CardHeader>
@@ -398,6 +404,7 @@ export default function HomePage() {
                 </ChartContainer>
               )}
             </CardContent>
+            <CardFooter/>
           </Card>
           <Card className='flex flex-col'>
             <CardHeader>
@@ -445,6 +452,7 @@ export default function HomePage() {
                 </ChartContainer>
               )}
             </CardContent>
+            <CardFooter/>
           </Card>
         </div>
       </div>
