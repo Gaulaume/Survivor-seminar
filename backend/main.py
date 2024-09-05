@@ -808,10 +808,6 @@ def get_clothes_image(clothes_id: int):
     except Exception as e:
         print(f"Error fetching image: {e}")
         raise HTTPException(status_code=500, detail="An error occurred while fetching the clothes image.")
-
-
-@app.get("/api/clothes", response_model=clothes_without_img, tags=["clothes"])
-def get_clothes():
     
 @app.post("/api/clothes/create",
           response_model=Clothes,
