@@ -174,9 +174,35 @@ async def fetch_employees_images(session, base_url, headers, db):
                 {'id': emp_id},
                 {'$set': {'image': response}}
             )
+async def assign_customers_to_coach(session, base_url, headers, db):
+    ids = await get_list_of_ids(session, base_url, 'customers', headers)
 
+    # find 
+    collection = db.employees
+    employees = list(collection.find({}, {"_id": 0, "email": 0, "name": 0, "surname": 0, "birth_date": 0, "gender": 0}))
 
+    # we are going to only keep coaches
+    coaches = []
+    for employee in employees:
+        if employee['work'] == 'Coach':
+            coaches.append(employee)
 
+    # get the list of customers ids
+    customers = list(db.customers.find({}, {"_id": 0, "id": 1}))
+    # turn {id: 1}, {id: 2} into [1, 2]
+    customers = [customer['id'] for customer in customers]
+    # shuffle the list of customers
+    import random
+    random.shuffle(customers)
+
+    # assign some customers to each coach
+    for i, customer in enumerate(customers):
+        coach = coaches[i % len(coaches)]
+        db.employees.update_one(
+            {'id': coach['id']},
+            {'$push': {'customers_ids': customer}}
+        )
+    
 
 async def main():
     email = 'jeanne.martin@soul-connection.fr'
@@ -209,7 +235,8 @@ async def main():
         await fetch_customers_images(session, base_url, headers, db)
         await fetch_employees_images(session, base_url, headers, db)
         await fetch_customers_payment_history(session, base_url, headers, db)
-        
+        await assign_customers_to_coach(session, base_url, headers, db)
+
         end = time.time()
         print(f"Time elapsed: {end - start}")
         client.close()
