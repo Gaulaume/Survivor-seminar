@@ -163,7 +163,6 @@ const getResultMessage = (value: number) => {
 export default function CompatibilityPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [token, setToken] = useState<string | null>(null);
   const [firstCustomer, setFirstCustomer] = useState<number | null>(null);
   const [secondCustomer, setSecondCustomer] = useState<number | null>(null);
   const [compareProgress, setCompareProgress] = useState<number>(0);
@@ -189,8 +188,9 @@ export default function CompatibilityPage() {
       setIsLoading(false);
     }
 
-    fetchData();
-  }, [token]);
+    if (customers.length === 0)
+      fetchData();
+  }, []);
 
   const startCompare = async () => {
     if (intervalRef.current)

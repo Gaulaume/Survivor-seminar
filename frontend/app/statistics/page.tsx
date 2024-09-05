@@ -1,35 +1,96 @@
 'use client';
 
 import { getCustomers } from '@/api/Customers';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import Customer from '@/types/Customer';
-import { CalendarIcon, UsersIcon } from '@heroicons/react/20/solid';
-import React, { useEffect, useState } from 'react';
-import { BarChart, Bar, XAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { ArrowPathIcon, CalendarIcon, CheckIcon, ChevronDownIcon, SparklesIcon, UsersIcon } from '@heroicons/react/20/solid';
+import React, { memo, useEffect, useState } from 'react';
+import { BarChart, Bar, XAxis, CartesianGrid, Tooltip, Legend, LineChart, Line, YAxis } from 'recharts';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import Encounter from '@/types/Encounter';
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { AuthCheck, useAuth } from '../actions';
 import { getEncounters } from '@/api/Encounters';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import Employee from '@/types/Employee';
+import { Button } from '@/components/ui/button';
+import clsx from 'clsx';
+import { getEmployees, getEmployeeStats } from '@/api/Employees';
 
-const getAge = (birthDate: string) => {
-  const today = new Date();
-  const birthDateObj = new Date(birthDate);
-  let age = today.getFullYear() - birthDateObj.getFullYear();
-  const monthDiff = today.getMonth() - birthDateObj.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDateObj.getDate()))
-    age--;
-  return age;
-};
+interface ComboboxProps {
+  value: number | null;
+  setValue: (value: number) => void;
+  employees: Employee[];
+}
 
-const getAgeGroup = (age: number) => {
-  if (age < 25) return '18-24';
-  if (age < 35) return '25-34';
-  if (age < 45) return '35-44';
-  if (age < 55) return '45-54';
-  return '55+';
-};
+const Combobox = memo(({ value, setValue, employees }: ComboboxProps) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant='outline'
+          role='combobox'
+          aria-expanded={open}
+          className='w-full md:w-[200px] justify-between'
+        >
+          {
+            value
+            ? (
+              employees.find((c: Employee) => c.id === value)?.name + ' ' +
+              employees.find((c: Employee) => c.id === value)?.surname
+            ) : 'Select a employees...'
+          }
+          <ChevronDownIcon className='h-4 w-4' />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className='w-full md:w-[200px] p-0'>
+        <Command>
+          <CommandInput placeholder='Select a employees...' className='h-9' />
+          <CommandList>
+            <CommandEmpty>
+              No employees found.
+            </CommandEmpty>
+            <CommandGroup>
+              {employees.map((c: Employee) => (
+                <CommandItem
+                  key={c.id}
+                  value={c.name}
+                  onSelect={(currentValue) => {
+                    setValue(c.id);
+                    setOpen(false);
+                  }}
+                >
+                  {c.name} {c.surname}
+                  <CheckIcon
+                    className={clsx(
+                      'ml-auto h-4 w-4',
+                      value === c.id ? 'opacity-100' : 'opacity-0'
+                    )}
+                  />
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+});
 
 const chartConfig = {
   desktop: {
@@ -39,26 +100,21 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export default function StatisticsPage() {
-  const [customers, setCustomers] = useState<Customer[]>([]);
   const [encounters, setEncounters] = useState<Encounter[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [firstEmployee, setFirstEmployee] = useState<number | null>(null);
+  const [secondEmployee, setSecondEmployee] = useState<number | null>(null);
+  const [comparing, setComparing] = useState(false);
+  const [employeesStats, setEmployeesStats] = useState<{
+    average_rating: number;
+    clients_length: number;
+    clients_length_female: number;
+    clients_length_male: number;
+  }[] | null>(null);
   const { getToken } = useAuth();
 
   useEffect(() => {
-    const fetchCustomers = async () => {
-      try {
-        const token = getToken();
-        const data = await getCustomers(token);
-        if (!data) throw new Error('Failed to fetch customers');
-        setCustomers(data);
-      } catch (error) {
-        console.error('Error fetching customers:', error);
-        toast.error('Failed to fetch customers', {
-          duration: 5000,
-        });
-      }
-    };
-
     const fetchEncounters = async () => {
       try {
         const token = getToken();
@@ -74,30 +130,50 @@ export default function StatisticsPage() {
       setIsLoading(false);
     }
 
+    const fetchEmployees = async () => {
+      try {
+        const token = getToken();
+        const data = await getEmployees(token);
+        if (!data) throw new Error('Failed to fetch employees');
+        setEmployees(data);
+      } catch (error) {
+        console.error('Error fetching employees:', error);
+        toast.error('Failed to fetch employees', {
+          duration: 5000,
+        });
+      }
+    }
+
     if (isLoading) {
-      fetchCustomers();
       fetchEncounters();
+      fetchEmployees();
     }
   }, []);
 
-  const genderData = customers.reduce((acc, customer) => {
-    acc[customer.gender as string] = (acc[customer.gender as string] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const launchComparison = async (firstEmployee: number, secondEmployee: number) => {
+    setComparing(true);
+
+    try {
+      const token = getToken();
+      const data1 = await getEmployeeStats(token, firstEmployee);
+      const data2 = await getEmployeeStats(token, secondEmployee);
+
+      if (!data1 || !data2)
+        throw new Error('Failed to fetch employee stats');
+
+      setEmployeesStats([data1, data2]);
+    } catch (error) {
+      console.error('Error fetching employee stats:', error);
+      toast.error('Failed to fetch employee stats', {
+        duration: 5000,
+      });
+    } finally {
+      setComparing(false);
+    }
+  };
 
   const sourceData = encounters.reduce((acc, encounter) => {
     acc[encounter.source as string] = (acc[encounter.source as string] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-  const ageGroupData = customers.reduce((acc, customer) => {
-    const ageGroup = getAgeGroup(getAge(customer.birth_date as string));
-    acc[ageGroup] = (acc[ageGroup] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-  const astroSignData = customers.reduce((acc, customer) => {
-    acc[customer.astrological_sign as string] = (acc[customer.astrological_sign as string] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
@@ -127,8 +203,6 @@ export default function StatisticsPage() {
 
     return processedData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   };
-
-  const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))', 'hsl(var(--chart-6))'];
 
   return (
     <AuthCheck>
@@ -175,6 +249,7 @@ export default function StatisticsPage() {
                 </div>
               </div>
             </CardContent>
+            <CardFooter/>
           </Card>
           <Card className='flex flex-col'>
             <CardHeader>
@@ -209,6 +284,7 @@ export default function StatisticsPage() {
                 </ChartContainer>
               )}
             </CardContent>
+            <CardFooter/>
           </Card>
           <Card className='flex flex-col'>
             <CardHeader>
@@ -242,6 +318,7 @@ export default function StatisticsPage() {
                 </ChartContainer>
               )}
             </CardContent>
+            <CardFooter/>
           </Card>
           <Card className='flex flex-col'>
             <CardHeader>
@@ -289,6 +366,76 @@ export default function StatisticsPage() {
                 </ChartContainer>
               )}
             </CardContent>
+            <CardFooter/>
+          </Card>
+        </div>
+        <div className='flex flex-col space-y-3'>
+          <h1 className='text-lg md:text-2xl font-bold'>Employee Statistics</h1>
+          <hr className='w-full' />
+
+          <p className='text-sm md:text-base'>
+            Compare the performance of two employees based on their average rating and client demographics. Select two employees to compare.
+          </p>
+
+          <div className='flex flex-col md:flex-row gap-4 w-full max-w-3xl'>
+            <div>
+              <Combobox
+                value={firstEmployee}
+                setValue={setFirstEmployee}
+                employees={employees.filter((employee) => employee.id !== secondEmployee)}
+              />
+            </div>
+            <Button
+              disabled={!firstEmployee || !secondEmployee || comparing}
+              onClick={() => {
+                if (firstEmployee && secondEmployee)
+                  launchComparison(firstEmployee, secondEmployee);
+              }}
+            >
+              Lauch Comparison
+              {comparing ? (
+                <ArrowPathIcon className='h-4 w-4 ml-2 animate-spin' />
+              ) : (
+                <SparklesIcon className='h-4 w-4 ml-2' />
+              )}
+            </Button>
+            <div>
+              <Combobox
+                value={secondEmployee}
+                setValue={setSecondEmployee}
+                employees={employees.filter((employee) => employee.id !== firstEmployee)}
+              />
+            </div>
+          </div>
+
+          <Card className='flex flex-col'>
+            <CardHeader>
+              <CardTitle>Comparison</CardTitle>
+              <CardDescription>Comparison of two employees based on their average rating and client demographics</CardDescription>
+            </CardHeader>
+            <CardContent className='flex-1 pb-0'>
+            {!employeesStats ? (
+              <Skeleton className='h-60' />
+            ) : (
+              <ChartContainer config={chartConfig} className='max-h-[400px] w-full'>
+                <BarChart data={employeesStats} layout='vertical'>
+                  <CartesianGrid horizontal={false} />
+                  <XAxis type='number' />
+                  <YAxis type='category' dataKey='name' />
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent indicator='dashed' />}
+                  />
+                  <Tooltip />
+                  <Bar dataKey='average_rating' fill='hsl(var(--chart-1))' radius={[0, 5, 5, 0]} />
+                  <Bar dataKey='clients_length' fill='hsl(var(--chart-2))' radius={[0, 5, 5, 0]} />
+                  <Bar dataKey='clients_length_male' fill='hsl(var(--chart-3))' radius={[0, 5, 5, 0]} />
+                  <Bar dataKey='clients_length_female' fill='hsl(var(--chart-4))' radius={[0, 5, 5, 0]} />
+                </BarChart>
+              </ChartContainer>
+            )}
+            </CardContent>
+            <CardFooter/>
           </Card>
         </div>
       </div>
