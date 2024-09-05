@@ -314,38 +314,97 @@ def get_employee_image(employee_id: int):
 
 
 
+
 @app.get("/api/employees/{employee_id}/stats",
          tags=["employees"],
          responses={
-             200: {"description": "Returns employee's statistics.",
-                   "content": {"application/json": {"example": {"id": 1, "email": "string", "name": "string", "surname": "string", "birth_date": "string", "work": "string", "stats": {"encounters": 1, "tips": 1, "events": 1}}}},
-                   },
-             404: {"description": "Employee requested doesn't exist",
-                "content": {"application/json": {"example": {"detail": "Employee requested doesn't exist"}}}},
-             500: {"description": "Internal server error",
-                "content": {"application/json": {"example": {"detail": "An error occurred while fetching the employee statistics."}}}},
+             200: {
+                 "description": "Returns employee's statistics.",
+                 "content": {
+                     "application/json": {
+                         "example": {
+                             "average_rating": 4.5,
+                             "clients_length": 10,
+                             "clients_length_female": 4,
+                             "clients_length_male": 6
+                         }
+                     }
+                 },
+             },
+             404: {
+                 "description": "Employee requested doesn't exist",
+                 "content": {
+                     "application/json": {
+                         "example": {"detail": "Employee requested doesn't exist"}
+                     }
+                 }
+             },
+             500: {
+                 "description": "Internal server error",
+                 "content": {
+                     "application/json": {
+                         "example": {"detail": "An error occurred while fetching the employee statistics."}
+                     }
+                 }
+             },
          },
 )
 def get_employee_stats(employee_id: int):
     try:
         collection = database.employees
         employee = collection.find_one({"id": employee_id})
+
         if employee is None:
             raise HTTPException(status_code=404, detail="Employee requested doesn't exist")
+        
+        print("employee", employee)
+        
+        if employee['work'] != 'Coach':
+            raise HTTPException(status_code=400, detail="Employee is not a coach")
+        
+        customers_ids = employee['customers_ids']
+        if not customers_ids:
+            raise HTTPException(status_code=400, detail="Employee has no customers")
+        
+        clients_length = len(customers_ids)
+        clients_length_female = 0
+        clients_length_male = 0
 
-        encounters = database.encounters.find({"employee_id": employee_id}).count()
-        tips = database.tips.find({"employee_id": employee_id}).count()
-        events = database.events.find({"employee_id": employee_id}).count()
+        for customer_id in customers_ids:
+            customer = database.customers.find_one({"id": customer_id})
+            if customer['gender'] == 'Female':
+                clients_length_female += 1
+            else:
+                clients_length_male += 1
 
-        employee["stats"] = {
-            "encounters": encounters,
-            "tips": tips,
-            "events": events
+        if clients_length == 0:
+            average_rating = 0
+        else:
+            count_encounters = 0
+            sum = 0
+            for customer_id in customers_ids:
+                encounters = database.encounters.find({"customer_id": customer_id})
+                for encounter in encounters:
+                    count_encounters += 1
+                    sum += encounter['rating']
+
+            average_rating = sum / count_encounters
+            average_rating = round(average_rating, 2)
+
+        return {
+            "average_rating": average_rating,
+            "total_clients": clients_length,
+            "female_clients": clients_length_female,
+            "male_clients": clients_length_male,
         }
 
-        return employee
+    except HTTPException as http_err:
+        # Let FastAPI handle the HTTPException
+        raise http_err
     except Exception as e:
-        raise HTTPException(status_code=500, detail="An error occurred while fetching the employee statistics.")
+        # For other exceptions, return a generic error
+        raise HTTPException(status_code=500, detail=f"An internal error occurred: {str(e)}")
+
 # ////////////////  CUSTOMERS  ////////////////
 
 
