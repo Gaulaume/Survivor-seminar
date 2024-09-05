@@ -312,6 +312,38 @@ def get_employee_image(employee_id: int):
 
 
 
+@app.get("/api/employees/{employee_id}/stats",
+         tags=["employees"],
+         responses={
+             200: {"description": "Returns employee's statistics.",
+                   "content": {"application/json": {"example": {"id": 1, "email": "string", "name": "string", "surname": "string", "birth_date": "string", "work": "string", "stats": {"encounters": 1, "tips": 1, "events": 1}}}},
+                   },
+             404: {"description": "Employee requested doesn't exist",
+                "content": {"application/json": {"example": {"detail": "Employee requested doesn't exist"}}}},
+             500: {"description": "Internal server error",
+                "content": {"application/json": {"example": {"detail": "An error occurred while fetching the employee statistics."}}}},
+         },
+)
+def get_employee_stats(employee_id: int):
+    try:
+        collection = database.employees
+        employee = collection.find_one({"id": employee_id})
+        if employee is None:
+            raise HTTPException(status_code=404, detail="Employee requested doesn't exist")
+
+        encounters = database.encounters.find({"employee_id": employee_id}).count()
+        tips = database.tips.find({"employee_id": employee_id}).count()
+        events = database.events.find({"employee_id": employee_id}).count()
+
+        employee["stats"] = {
+            "encounters": encounters,
+            "tips": tips,
+            "events": events
+        }
+
+        return employee
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="An error occurred while fetching the employee statistics.")
 # ////////////////  CUSTOMERS  ////////////////
 
 
