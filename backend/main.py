@@ -2,7 +2,7 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pymongo import MongoClient
 from pydantic import BaseModel
-from typing import Union
+from typing import Union, List
 from fastapi.middleware.cors import CORSMiddleware
 import traceback
 from authentificationAPI import get_current_user_token, insertDataRegister, insertDataLogin
@@ -23,7 +23,8 @@ app.add_middleware(
 
 import os
 from typing import List, Dict
-# import data_fetcher
+from typing import Optional
+
 
 
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://mongod:27017/")
@@ -31,10 +32,12 @@ MONGO_URL = os.getenv("MONGO_URL", "mongodb://mongod:27017/")
 client = MongoClient(MONGO_URL)
 database = client[os.getenv("MONGO_INITDB_DATABASE", "soul-connection")]
 
-class clothes(BaseModel):
+class clothes_without_img(BaseModel):
     id: int
     type: str
-    image: str
+
+class clothes(clothes_without_img):
+    image: Optional[str]
 
 class api_delete_employee(BaseModel):
     email: str
@@ -72,6 +75,10 @@ class api_customer(BaseModel):
     email: str
     name: str
     surname: str
+    birth_date: str
+    gender: str
+    description: str
+    astrological_sign: str
 
 class api_customer_id(BaseModel):
     id: int
@@ -83,16 +90,21 @@ class api_customer_id(BaseModel):
     description: str
     astrological_sign: str
 
-class api_customer_id_payments_history(BaseModel):
+class Payment(BaseModel):
     id: int
     date: str
     payment_method: str
     amount: float
     comment: str
 
-class api_customer_id_clothes(BaseModel):
+class api_customer_id_payments_history(BaseModel):
+    payment_history: List[Payment]
+
+class customer_clothes(BaseModel):
     id: int
-    type: str
+
+class api_customer_id_clothes(BaseModel):
+    clothes_ids: List[customer_clothes]
 
 class api_encounters(BaseModel):
     id: int
@@ -320,7 +332,7 @@ def get_employee_image(employee_id: int):
 
 
 @app.get("/api/customers",
-        response_model=List[api_customer],
+        response_model=List[api_customer_id],
         tags=["customers"])
 
 def get_customers():
@@ -433,17 +445,19 @@ def get_customer_image(customer_id: int):
 
 
 @app.get("/api/customers/{customer_id}/payments_history",
-        response_model=List[api_customer_id_payments_history],
-        tags=["customers"])
+         response_model=List[Payment],
+         tags=["customers"])
 def get_payments_history(customer_id: int):
     try:
         collection = database.customers
         customer = collection.find_one({"id": customer_id})
         if customer is None:
             raise HTTPException(status_code=404, detail="Customer requested doesn't exist")
-        return customer["payments"]
+        if "payment_history" not in customer:
+            raise HTTPException(status_code=404, detail="No payment history found for this customer")
+        return customer["payment_history"]
     except Exception as e:
-        raise HTTPException(status_code=500, detail="An error occurred while fetching the customer payments.")
+            raise HTTPException(status_code=500, detail="An error occurred while fetching the customer payments.")
 
 
 
@@ -456,8 +470,11 @@ def get_clothes(customer_id: int):
         customer = collection.find_one({"id": customer_id})
         if customer is None:
             raise HTTPException(status_code=404, detail="Customer requested doesn't exist")
-        return customer["clothes"]
+        if "clothes_ids" not in customer:
+            raise HTTPException(status_code=404, detail="No clothes found for this customer")
+        return customer["clothes_ids"]
     except Exception as e:
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail="An error occurred while fetching the customer clothes.")
 
 
@@ -467,7 +484,7 @@ def get_clothes(customer_id: int):
 
 
 @app.get("/api/encounters",
-            response_model=List[api_encounters],
+            response_model=List[api_encounter_id],
             tags=["encounters"])
 def get_encounters():
     try:
@@ -664,8 +681,20 @@ def get_events():
         events = list(collection.find({}, {"_id": 0}))
         return events
     except Exception as e:
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@app.get("/api/tips",
+            response_model=List[api_tips],
+            tags=["tips"])
+def get_tips():
+    try:
+        collection = database.tips
+        tips = list(collection.find({}, {"_id": 0}))
+        return tips
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/events/{event_id}",
@@ -764,3 +793,201 @@ def get_clothes_image(clothes_id: int):
         return FileResponse(clothes["image"])
     except Exception as e:
         raise HTTPException(status_code=500, detail="An error occurred while fetching the clothes image.")
+
+@app.get("/api/clothes", response_model=clothes_without_img, tags=["clothes"])
+def get_clothes():
+    try:
+        collection = database.clothes
+        clothes = list(collection.find({}, {"_id": 0, "image": 0}))
+
+        return clothes
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/clothes/{clothes_id}", response_model=clothes, tags=["clothes"])
+def get_clothes(clothes_id: int):
+    try:
+        collection = database.clothes
+        clothes = collection.find_one({"id": clothes_id})
+        if clothes is None:
+            raise HTTPException(status_code=404, detail="Clothes requested doesn't exist")
+        return clothes
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="An error occurred while fetching the clothes details.")
+
+
+@app.post("/api/clothes/create", response_model=clothes, tags=["clothes"])
+def create_clothes(clothes: clothes):
+    try:
+        clothes.id = len(list(database.clothes.find())) + 1
+        collection = database.clothes
+        id = collection.find_one({"id": clothes.id})
+        if id is not None:
+            raise HTTPException(status_code=400, detail="Clothes with this id already exists")
+        return clothes, {"message": "Clothes created successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.put("/api/clothes/update", response_model=clothes, tags=["clothes"])
+def update_clothes(clothes_id: int, clothes: clothes):
+    try:
+        collection = database.clothes
+        result = collection.update_one({"id": clothes_id}, {"$set": clothes.dict()})
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Clothes not found")
+        return clothes, {"message": "Clothes updated successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@app.delete("/api/clothes/delete", response_model=clothes, tags=["clothes"])
+def delete_clothes(clothes_id: int):
+    try:
+        collection = database.clothes
+        result = collection.delete_one({"id": clothes_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Clothes not found")
+        return {"message": "Clothes deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ////////////////  COMPATIBILITY  ////////////////
+
+def get_customer_by_id(customer_id: int):
+    try:
+        collection = database.customers
+        customer = collection.find_one({"id": customer_id})
+        if customer is None:
+            raise ValueError(f"Customer with ID {customer_id} not found")
+        return customer
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving customer: {str(e)}")
+
+def calculate_compatibility(customer1: api_customer_id, customer2: api_customer_id):
+
+    compatibility_scores = {
+        ("Aries", "Aries"): 2,
+        ("Aries", "Taurus"): 1,
+        ("Aries", "Gemini"): 1,
+        ("Aries", "Cancer"): 0,
+        ("Aries", "Leo"): 2,
+        ("Aries", "Virgo"): 1,
+        ("Aries", "Libra"): 1,
+        ("Aries", "Scorpio"): 0,
+        ("Aries", "Sagittarius"): 2,
+        ("Aries", "Capricorn"): 1,
+        ("Aries", "Aquarius"): 1,
+        ("Aries", "Pisces"): 0,
+
+        ("Taurus", "Taurus"): 2,
+        ("Taurus", "Gemini"): 0,
+        ("Taurus", "Cancer"): 2,
+        ("Taurus", "Leo"): 1,
+        ("Taurus", "Virgo"): 2,
+        ("Taurus", "Libra"): 1,
+        ("Taurus", "Scorpio"): 2,
+        ("Taurus", "Sagittarius"): 0,
+        ("Taurus", "Capricorn"): 2,
+        ("Taurus", "Aquarius"): 0,
+        ("Taurus", "Pisces"): 2,
+
+        ("Gemini", "Gemini"): 2,
+        ("Gemini", "Cancer"): 1,
+        ("Gemini", "Leo"): 2,
+        ("Gemini", "Virgo"): 1,
+        ("Gemini", "Libra"): 2,
+        ("Gemini", "Scorpio"): 0,
+        ("Gemini", "Sagittarius"): 2,
+        ("Gemini", "Capricorn"): 0,
+        ("Gemini", "Aquarius"): 2,
+        ("Gemini", "Pisces"): 1,
+
+        ("Cancer", "Cancer"): 2,
+        ("Cancer", "Leo"): 1,
+        ("Cancer", "Virgo"): 2,
+        ("Cancer", "Libra"): 0,
+        ("Cancer", "Scorpio"): 2,
+        ("Cancer", "Sagittarius"): 0,
+        ("Cancer", "Capricorn"): 2,
+        ("Cancer", "Aquarius"): 0,
+        ("Cancer", "Pisces"): 2,
+
+        ("Leo", "Leo"): 2,
+        ("Leo", "Virgo"): 1,
+        ("Leo", "Libra"): 2,
+        ("Leo", "Scorpio"): 1,
+        ("Leo", "Sagittarius"): 2,
+        ("Leo", "Capricorn"): 1,
+        ("Leo", "Aquarius"): 1,
+        ("Leo", "Pisces"): 1,
+
+        ("Virgo", "Virgo"): 2,
+        ("Virgo", "Libra"): 1,
+        ("Virgo", "Scorpio"): 2,
+        ("Virgo", "Sagittarius"): 1,
+        ("Virgo", "Capricorn"): 2,
+        ("Virgo", "Aquarius"): 0,
+        ("Virgo", "Pisces"): 1,
+
+        ("Libra", "Libra"): 2,
+        ("Libra", "Scorpio"): 1,
+        ("Libra", "Sagittarius"): 2,
+        ("Libra", "Capricorn"): 1,
+        ("Libra", "Aquarius"): 2,
+        ("Libra", "Pisces"): 1,
+
+        ("Scorpio", "Scorpio"): 2,
+        ("Scorpio", "Sagittarius"): 1,
+        ("Scorpio", "Capricorn"): 2,
+        ("Scorpio", "Aquarius"): 0,
+        ("Scorpio", "Pisces"): 2,
+
+        ("Sagittarius", "Sagittarius"): 2,
+        ("Sagittarius", "Capricorn"): 1,
+        ("Sagittarius", "Aquarius"): 2,
+        ("Sagittarius", "Pisces"): 1,
+
+        ("Capricorn", "Capricorn"): 2,
+        ("Capricorn", "Aquarius"): 1,
+        ("Capricorn", "Pisces"): 2,
+
+        ("Aquarius", "Aquarius"): 2,
+        ("Aquarius", "Pisces"): 1,
+
+        ("Pisces", "Pisces"): 2
+}
+    try:
+        score = compatibility_scores.get((customer1, customer2), 0)
+        score += compatibility_scores.get((customer2, customer1), 0)
+        return score / 2
+    except KeyError:
+        raise HTTPException(status_code=400, detail="Invalid astrological signs provided")
+
+@app.post("/api/compatibility", tags=["compatibility"])
+def get_compatibility(customer1_id: int, customer2_id: int):
+    """Calculates compatibility between two customers."""
+    try:
+        customer1 = get_customer_by_id(customer1_id)
+        customer2 = get_customer_by_id(customer2_id)
+        print(customer1)
+        print(customer1["astrological_sign"])
+        print(customer2)
+        customer1_sign = customer1.get("astrological_sign")
+        customer2_sign = customer2.get("astrological_sign")
+
+        if not customer1_sign:
+            raise ValueError(f"Customer with ID {customer1_id} does not have an astrological sign")
+        if not customer2_sign:
+            raise ValueError(f"Customer with ID {customer2_id} does not have an astrological sign")
+        compatibility_score = calculate_compatibility(customer1_sign, customer2_sign)
+        return {"result": compatibility_score * 50}
+
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+
+    except Exception as e:
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
