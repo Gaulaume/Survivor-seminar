@@ -9,7 +9,11 @@ import traceback
 from fastapi.responses import StreamingResponse, FileResponse
 from io import BytesIO
 import base64
-
+import data_fetcher
+import os
+from typing import List, Dict
+from typing import Optional
+import asyncio
 
 origins = [
     "*"
@@ -23,11 +27,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-import os
-from typing import List, Dict
-from typing import Optional
-
 
 
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://mongod:27017/")
@@ -393,9 +392,9 @@ def get_employee_stats(employee_id: int):
 
         return {
             "average_rating": average_rating,
-            "total_clients": clients_length,
-            "female_clients": clients_length_female,
-            "male_clients": clients_length_male,
+            "clients_length": clients_length,
+            "clients_length_female": clients_length_female,
+            "clients_length_male": clients_length_male,
         }
 
     except HTTPException as http_err:

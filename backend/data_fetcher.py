@@ -228,13 +228,13 @@ async def main():
 
         start = time.time()
         tasks = [fetch_using_id_and_send_data_category(session, base_url, endpoint, headers, db) for endpoint in endpoints]
-        # tasks.append(fetch_images_without_id(session, "https://soul-connection.fr/api/clothes", headers, db, batch_size=100))
-        # tasks.append(fetch_and_send_data(session, base_url, 'tips', headers, db))
+        tasks.append(fetch_images_without_id(session, "https://soul-connection.fr/api/clothes", headers, db, batch_size=100))
+        tasks.append(fetch_and_send_data(session, base_url, 'tips', headers, db))
         await asyncio.gather(*tasks)
-        # await fetch_customers_clothes(session, base_url, headers, db)
-        # await fetch_customers_images(session, base_url, headers, db)
-        # await fetch_employees_images(session, base_url, headers, db)
-        # await fetch_customers_payment_history(session, base_url, headers, db)
+        await fetch_customers_clothes(session, base_url, headers, db)
+        await fetch_customers_images(session, base_url, headers, db)
+        await fetch_employees_images(session, base_url, headers, db)
+        await fetch_customers_payment_history(session, base_url, headers, db)
         await assign_customers_to_coach(session, base_url, headers, db)
 
         end = time.time()
