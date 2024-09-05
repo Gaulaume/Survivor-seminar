@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const getEvents = async (): Promise<Event[] | null> => {
   const config = {
-    url: 'https://soul-connection.fr/api/events',
+    url: 'http://localhost:8000/api/events',
     method: 'get',
     headers: {
       'Content-Type': 'application/json',
@@ -23,7 +23,7 @@ const getEvents = async (): Promise<Event[] | null> => {
 
 const getEvent = async (id: string): Promise<Event | null> => {
   const config = {
-    url: `https://soul-connection.fr/api/events/${id}`,
+    url: `http://localhost:8000/api/events/${id}`,
     method: 'get',
     headers: {
       'Content-Type': 'application/json',

@@ -25,6 +25,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { AuthCheck, useAuth } from '../actions';
+import { getCompatibility } from '@/api/Compatibility';
 
 interface ComboboxProps {
   value: number | null;
@@ -109,7 +110,7 @@ export default function CompatibilityPage() {
         const data = await getCustomers(token);
         if (!data)
           throw new Error('Failed to fetch customers');
-        setCustomers(customers);
+        setCustomers(data);
       } catch (error) {
         toast.error('Failed to fetch customers', {
           duration: 5000,
@@ -129,6 +130,21 @@ export default function CompatibilityPage() {
     setComparing(true);
     setCompareProgress(0);
     setCompatibilityValue(null);
+
+    try {
+      const token = getToken();
+      if (token && firstCustomer && secondCustomer) {
+        const data = await getCompatibility(token, firstCustomer, secondCustomer);
+
+        if (!data)
+          throw new Error('Failed to fetch compatibility');
+        setCompatibilityValue(data.result);
+      }
+    } catch (error) {
+      toast.error('Failed to fetch compatibility', {
+        duration: 5000,
+      });
+    }
 
     intervalRef.current = setInterval(() => {
       setCompareProgress((prev) => {
