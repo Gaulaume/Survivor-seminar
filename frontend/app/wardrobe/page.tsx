@@ -1,21 +1,85 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ShirtIcon } from 'lucide-react';
 import Clothe from '@/types/Clothe';
-import { getClothes } from '@/api/Clothes';
+import Customer from '@/types/Customer';
+import { getCustomerClothes, getCustomers } from '@/api/Customers';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AuthCheck, useAuth } from '../actions';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CheckIcon, ChevronDownIcon } from '@heroicons/react/20/solid';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import clsx from 'clsx';
+
+const Combobox = memo(({ value, setValue, customers }: { value: number | null; setValue: (id: number) => void; customers: Customer[] }) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant='outline'
+          role='combobox'
+          aria-expanded={open}
+          className='max-w-xs w-full justify-between'
+        >
+          {
+            value
+            ? (
+              customers.find((c: Customer) => c.id === value)?.name + ' ' +
+              customers.find((c: Customer) => c.id === value)?.surname + ' (' +
+              customers.find((c: Customer) => c.id === value)?.astrological_sign + ')'
+            ) : 'Select a customer...'
+          }
+          <ChevronDownIcon className='h-4 w-4' />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className='max-w-xs w-full p-0'>
+        <Command>
+          <CommandInput placeholder='Select a customer...' className='h-9' />
+          <CommandList>
+            <CommandEmpty>
+              No customers found.
+            </CommandEmpty>
+            <CommandGroup>
+              {customers.map((c: Customer) => (
+                <CommandItem
+                  key={c.id}
+                  value={c.name}
+                  onSelect={() => {
+                    setValue(c.id);
+                    setOpen(false);
+                  }}
+                >
+                  {c.name} {c.surname} ({c.astrological_sign})
+                  <CheckIcon
+                    className={clsx(
+                      'ml-auto h-4 w-4',
+                      value === c.id ? 'opacity-100' : 'opacity-0'
+                    )}
+                  />
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+});
 
 type ClothingType = 'top' | 'bottom' | 'shoes' | 'hat/cap';
 
 export default function WardrobePage() {
   const { getToken } = useAuth();
   const [clothes, setClothes] = useState<Clothe[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedOutfit, setSelectedOutfit] = useState<Record<ClothingType, Clothe | null>>({
     top: null,
@@ -25,14 +89,33 @@ export default function WardrobePage() {
   });
 
   useEffect(() => {
+    const fetchCustomers = async () => {
+      const token = getToken();
+      try {
+        const data = await getCustomers(token);
+        if (!data) throw new Error('Failed to fetch customers');
+        setCustomers(data);
+      } catch (error) {
+        toast.error('Failed to fetch customers', {
+          duration: 5000,
+        });
+      }
+    };
+
+    fetchCustomers();
+  }, [getToken]);
+
+  useEffect(() => {
     const fetchClothes = async () => {
       const token = getToken();
       try {
-        const data = await getClothes(token);
-
-        if (!data) throw new Error('Failed to fetch clothes');
-        setClothes(data);
+        if (selectedCustomer) {
+          const data = await getCustomerClothes(token, selectedCustomer);
+          if (!data) throw new Error('Failed to fetch clothes');
+          setClothes(data);
+        }
       } catch (error) {
+        setSelectedCustomer(null);
         toast.error('Failed to fetch clothes', {
           duration: 5000,
         });
@@ -42,7 +125,7 @@ export default function WardrobePage() {
     };
 
     fetchClothes();
-  }, []);
+  }, [selectedCustomer, getToken]);
 
   const handleSelectClothing = (type: ClothingType, item: Clothe) => {
     setSelectedOutfit((prev) => ({ ...prev, [type]: item }));
@@ -105,6 +188,8 @@ export default function WardrobePage() {
       <div className='container mx-auto p-4 space-y-6'>
         <h1 className='text-3xl font-bold tracking-tight'>Wardrobe</h1>
 
+        <Combobox value={selectedCustomer} setValue={setSelectedCustomer} customers={customers} />
+
         <Card>
           <CardHeader>
             <CardTitle>Outfit Preview</CardTitle>
@@ -144,10 +229,10 @@ export default function WardrobePage() {
 
         <Tabs defaultValue='top' className='space-y-4'>
           <TabsList className='!mb-4'>
-            <TabsTrigger value='top'>Haut</TabsTrigger>
-            <TabsTrigger value='bottom'>Bas</TabsTrigger>
-            <TabsTrigger value='shoes'>Chaussures</TabsTrigger>
-            <TabsTrigger value='hat/cap'>Chapeau/Casquette</TabsTrigger>
+            <TabsTrigger value='top'>Top</TabsTrigger>
+            <TabsTrigger value='bottom'>Bottom</TabsTrigger>
+            <TabsTrigger value='shoes'>Shoes</TabsTrigger>
+            <TabsTrigger value='hat/cap'>Hat/Cap</TabsTrigger>
           </TabsList>
 
           <TabsContent value='top' className='flex flex-row flex-wrap gap-2 !mt-0'>

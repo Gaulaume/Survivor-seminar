@@ -3,16 +3,14 @@ import axios from 'axios';
 
 const getCompatibility = async (token: string, id1: number, id2: number): Promise<Compatibility | null> => {
   const config = {
-    url: 'http://localhost:8000/api/compatibility',
+    url: `http://localhost:8000/api/compatibility?customer1_id=${id1}&customer2_id=${id2}`,
     method: 'post',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
+      Accept: 'application/json',
     },
-    data: {
-      id1,
-      id2,
-    },
+    data: {},
   };
 
   try {

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import Customer from '@/types/Customer';
 import { CalendarIcon, UsersIcon } from '@heroicons/react/20/solid';
 import React, { useEffect, useState } from 'react';
-import { BarChart, Bar, XAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, LineChart, Line, ResponsiveContainer, YAxis } from 'recharts';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import Encounter from '@/types/Encounter';
@@ -637,29 +637,24 @@ export default function HomePage() {
               ) : (
                 <ChartContainer
                   config={chartConfig}
-                  className='mx-auto aspect-square max-h-[250px]'
                 >
-                  <PieChart>
-                    <Pie
-                      data={Object.entries(sourceData).map(([name, value]) => ({ name, value }))}
-                      cx='50%'
-                      cy='50%'
-                      labelLine={false}
-                      outerRadius={80}
-                      fill='#8884d8'
-                      dataKey='value'
-                    >
-                      {Object.entries(sourceData).map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
+                  <BarChart
+                    data={Object.entries(sourceData).map(([name, value]) => ({ name, value }))}
+                  >
+                    <CartesianGrid vertical={false} />
+                    <XAxis
+                      dataKey='name'
+                      tickLine={false}
+                      tickMargin={10}
+                      axisLine={false}
+                    />
                     <ChartTooltip
                       cursor={false}
-                      content={<ChartTooltipContent hideLabel />}
+                      content={<ChartTooltipContent indicator='dashed' />}
                     />
                     <Tooltip />
-                    <Legend />
-                  </PieChart>
+                    <Bar dataKey='value' fill='hsl(var(--chart-1))' radius={[5, 5, 0, 0]} />
+                  </BarChart>
                 </ChartContainer>
               )}
             </CardContent>

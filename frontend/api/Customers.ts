@@ -87,7 +87,7 @@ const getCustomerPayments = async (token: string, id: string): Promise<Payment[]
   }
 }
 
-const getCustomerClothes = async (token: string, id: string): Promise<Clothe[] | null> => {
+const getCustomerClothes = async (token: string, id: number): Promise<Clothe[] | null> => {
   const config = {
     url: `http://localhost:8000/api/customers/${id}/clothes`,
     method: 'get',
