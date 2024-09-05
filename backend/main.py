@@ -740,6 +740,64 @@ def get_clothes_image(clothes_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail="An error occurred while fetching the clothes image.")
 
+@app.get("/api/clothes", response_model=clothes, tags=["clothes"])
+def get_clothes():
+    try:
+        collection = database.clothes
+        clothes = list(collection.find({}, {"_id": 0}))
+        return clothes
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/clothes/{clothes_id}", response_model=clothes, tags=["clothes"])
+def get_clothes(clothes_id: int):
+    try:
+        collection = database.clothes
+        clothes = collection.find_one({"id": clothes_id})
+        if clothes is None:
+            raise HTTPException(status_code=404, detail="Clothes requested doesn't exist")
+        return clothes
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="An error occurred while fetching the clothes details.")
+
+
+@app.post("/api/clothes/create", response_model=clothes, tags=["clothes"])
+def create_clothes(clothes: clothes):
+    try:
+        clothes.id = len(list(database.clothes.find())) + 1
+        collection = database.clothes
+        id = collection.find_one({"id": clothes.id})
+        if id is not None:
+            raise HTTPException(status_code=400, detail="Clothes with this id already exists")
+        return clothes, {"message": "Clothes created successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.put("/api/clothes/update", response_model=clothes, tags=["clothes"])
+def update_clothes(clothes_id: int, clothes: clothes):
+    try:
+        collection = database.clothes
+        result = collection.update_one({"id": clothes_id}, {"$set": clothes.dict()})
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Clothes not found")
+        return clothes, {"message": "Clothes updated successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@app.delete("/api/clothes/delete", response_model=clothes, tags=["clothes"])
+def delete_clothes(clothes_id: int):
+    try:
+        collection = database.clothes
+        result = collection.delete_one({"id": clothes_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Clothes not found")
+        return {"message": "Clothes deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ////////////////  COMPATIBILITY  ////////////////
 

@@ -2,7 +2,6 @@
 
 import Customer from '@/types/Customer';
 import { useEffect, useState, memo, useRef } from 'react';
-import Cookies from 'js-cookie';
 import { getCustomers } from '@/api/Customers';
 import {
   Command,
@@ -23,6 +22,9 @@ import { CheckIcon, ChevronDownIcon, HeartIcon, SparklesIcon } from '@heroicons/
 import { Progress } from '@/components/ui/progress';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
+import { AuthCheck, useAuth } from '../actions';
 
 interface ComboboxProps {
   value: number | null;
@@ -88,7 +90,6 @@ const Combobox = memo(({ value, setValue, customers }: ComboboxProps) => {
 
 export default function CompatibilityPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
-
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [token, setToken] = useState<string | null>(null);
   const [firstCustomer, setFirstCustomer] = useState<number | null>(null);
@@ -97,25 +98,27 @@ export default function CompatibilityPage() {
   const [comparing, setComparing] = useState<boolean>(false);
   const [compatibilityValue, setCompatibilityValue] = useState<number | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const router = useRouter();
+  const { getToken } = useAuth();
 
   useEffect(() => {
-    const token = Cookies.get('token');
-
-    if (token) {
-      setToken(token);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (token) {
+    const fetchData = async () => {
+      const token = getToken();
       setIsLoading(true);
-
-      getCustomers(token).then((data) => {
-        if (data)
-          setCustomers(data);
-        setIsLoading(false);
-      });
+      try {
+        const data = await getCustomers(token);
+        if (!data)
+          throw new Error('Failed to fetch customers');
+        setCustomers(customers);
+      } catch (error) {
+        toast.error('Failed to fetch customers', {
+          duration: 5000,
+        });
+      }
+      setIsLoading(false);
     }
+
+    fetchData();
   }, [token]);
 
   const startCompare = async () => {
@@ -151,56 +154,58 @@ export default function CompatibilityPage() {
     );
 
   return (
-    <div className='flex flex-col space-y-4 h-full'>
-      <h1 className='text-lg md:text-2xl font-bold'>Compatibility Checker</h1>
-      <hr className='w-full' />
-      <Card className='max-w-2xl mx-auto'>
-        <CardHeader>
-          <CardTitle className='text-2xl font-bold text-center flex items-center justify-center'>
-            Compatibility Checker
-          </CardTitle>
-          <CardDescription className='text-center'>
-            Compare the compatibility between two customers
-          </CardDescription>
-        </CardHeader>
-        <CardContent className='flex flex-col space-y-4'>
-          <div className='flex gap-x-4 justify-between items-center flex-col md:flex-row gap-y-5'>
-            <Combobox value={firstCustomer} setValue={setFirstCustomer} customers={customers.filter((c) => c.id !== secondCustomer)} />
-            {(compatibilityValue !== null && !comparing) ? (
-              <motion.div
-                key='compatibility-result'
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.5 }}
-                transition={{ duration: 0.5 }}
-                className=''
-              >
-                <h2 className='text-xl font-bold'>{compatibilityValue}%</h2>
-              </motion.div>
-            ) : (
-              <div className='relative items-center justify-center flex'>
-                <HeartIcon className='absolute size-7 animate-ping fill-red-600' />
-                <HeartIcon className='absolute size-7 fill-red-600' />
-              </div>
-            )}
-            <Combobox value={secondCustomer} setValue={setSecondCustomer} customers={customers.filter((c) => c.id !== firstCustomer)} />
-          </div>
-          <Button
-            disabled={!firstCustomer || !secondCustomer || comparing}
-            onClick={startCompare}
-            className='w-full'
-          >
-            Reveal Compatibility
-            <SparklesIcon className='size-5 ml-2' />
-          </Button>
-          <Progress value={compareProgress} />
-        </CardContent>
-        <CardFooter className='justify-center'>
-          <p className='text-sm text-muted-foreground'>
-            Compatibility is based on various factors and should be used as a guide only.
-          </p>
-        </CardFooter>
-      </Card>
-    </div>
+    <AuthCheck>
+      <div className='flex flex-col space-y-4 h-full'>
+        <h1 className='text-lg md:text-2xl font-bold'>Compatibility Checker</h1>
+        <hr className='w-full' />
+        <Card className='max-w-2xl mx-auto'>
+          <CardHeader>
+            <CardTitle className='text-2xl font-bold text-center flex items-center justify-center'>
+              Compatibility Checker
+            </CardTitle>
+            <CardDescription className='text-center'>
+              Compare the compatibility between two customers
+            </CardDescription>
+          </CardHeader>
+          <CardContent className='flex flex-col space-y-4'>
+            <div className='flex gap-x-4 justify-between items-center flex-col md:flex-row gap-y-5'>
+              <Combobox value={firstCustomer} setValue={setFirstCustomer} customers={customers.filter((c) => c.id !== secondCustomer)} />
+              {(compatibilityValue !== null && !comparing) ? (
+                <motion.div
+                  key='compatibility-result'
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.5 }}
+                  transition={{ duration: 0.5 }}
+                  className=''
+                >
+                  <h2 className='text-xl font-bold'>{compatibilityValue}%</h2>
+                </motion.div>
+              ) : (
+                <div className='relative items-center justify-center flex'>
+                  <HeartIcon className='absolute size-7 animate-ping fill-red-600' />
+                  <HeartIcon className='absolute size-7 fill-red-600' />
+                </div>
+              )}
+              <Combobox value={secondCustomer} setValue={setSecondCustomer} customers={customers.filter((c) => c.id !== firstCustomer)} />
+            </div>
+            <Button
+              disabled={!firstCustomer || !secondCustomer || comparing}
+              onClick={startCompare}
+              className='w-full'
+            >
+              Reveal Compatibility
+              <SparklesIcon className='size-5 ml-2' />
+            </Button>
+            <Progress value={compareProgress} />
+          </CardContent>
+          <CardFooter className='justify-center'>
+            <p className='text-sm text-muted-foreground'>
+              Compatibility is based on various factors and should be used as a guide only.
+            </p>
+          </CardFooter>
+        </Card>
+      </div>
+    </AuthCheck>
   );
 }

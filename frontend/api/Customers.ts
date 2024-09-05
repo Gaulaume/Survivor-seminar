@@ -5,7 +5,7 @@ import axios from 'axios';
 
 const getCustomers = async (token: string): Promise<Customer[] | null> => {
   const config = {
-    url: 'https://soul-connection.fr/api/customers',
+    url: 'http://localhost:8000/api/customers',
     method: 'get',
     headers: {
       'Content-Type': 'application/json',

@@ -3,21 +3,19 @@
 import './globals.css';
 import Link from 'next/link';
 import {
-  Bars3Icon,
   CalendarIcon,
   ChatBubbleBottomCenterIcon,
   HeartIcon,
   HomeIcon,
   PresentationChartLineIcon,
+  ShoppingBagIcon,
   UserGroupIcon,
   UsersIcon
 } from '@heroicons/react/20/solid';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import clsx from 'clsx';
 import { usePathname, useRouter } from 'next/navigation';
-import Cookies from 'js-cookie';
+import { Toaster } from '@/components/ui/sonner';
 
 const SiderBarContent = [
   {
@@ -48,18 +46,24 @@ const SiderBarContent = [
     title: 'Tips',
     icon: ChatBubbleBottomCenterIcon,
     href: '/messages',
-    disabled: false
+    disabled: true
   },
   {
     title: 'Events',
     icon: CalendarIcon,
     href: '/events',
-    disabled: false
+    disabled: true
   },
   {
     title: 'Compatibility',
     icon: HeartIcon,
     href: '/compatibility',
+    disabled: false
+  },
+  {
+    title: 'Wardrobe',
+    icon: ShoppingBagIcon,
+    href: '/wardrobe',
     disabled: false
   }
 ];
@@ -68,34 +72,38 @@ const Sidebar = ({ className }: { className?: string }) => {
   const router = useRouter();
   const actualPath = usePathname();
   return (
-    <div className={clsx(
-      'flex-col space-y-4 py-4 flex w-64 border-r border-muted',
-      className
-    )}>
-      <Link href='/' className='flex items-center space-x-2 px-4'>
-        <HeartIcon className='size-5' />
-        <span className='text-lg font-bold'>
-          Soul Connection
-        </span>
-      </Link>
-      <nav className='space-y-2 px-2'>
-        {SiderBarContent.map((item, index) => (
-          <button
-            disabled={item.disabled}
-            key={index}
-            className={clsx(
-              'flex items-center w-full px-3 py-1.5 rounded-md hover:bg-muted transition-colors duration-200 text-base',
-              actualPath === item.href && 'bg-accent-foreground text-white hover:!bg-accent-foreground/90',
-              'disabled:opacity-60 disabled:cursor-not-allowed'
-            )}
-            onClick={() => router.push(item.href)}
-          >
-            <item.icon className='size-4 mr-1' />
-            <span>{item.title}</span>
-          </button>
-        ))}
-      </nav>
-    </div>
+    <aside className={className}>
+      <div className={clsx(
+        'flex flex-col space-y-4 py-4 w-64 border-r border-muted h-screen',
+      )}>
+        <Link href='/' className='flex items-center space-x-2 px-4'>
+          <HeartIcon className='size-5' />
+          <span className='text-lg font-bold'>
+            Soul Connection
+          </span>
+        </Link>
+        <nav className='space-y-2 px-2'>
+          {SiderBarContent.map((item, index) => (
+            <button
+              disabled={item.disabled}
+              key={index}
+              className={clsx(
+                'flex items-center w-full px-3 py-1.5 rounded-md hover:bg-muted transition-colors duration-200 text-base',
+                actualPath === item.href && 'bg-accent-foreground text-white hover:!bg-accent-foreground/90',
+                'disabled:opacity-60 disabled:cursor-not-allowed'
+              )}
+              onClick={() => {
+                if (actualPath !== item.href)
+                  router.push(item.href);
+              }}
+            >
+              <item.icon className='size-4 mr-1' />
+              <span>{item.title}</span>
+            </button>
+          ))}
+        </nav>
+      </div>
+    </aside>
   );
 };
 
@@ -108,20 +116,13 @@ export default function RootLayout({
   const [isLogin, setIsLogin] = useState<boolean>(false);
   const router = useRouter();
 
-  useEffect(() => {
-    const token = Cookies.get('token');
-
-    if (token) {
-      setIsLogin(true);
-    }
-  }, []);
-
   return (
     <html lang='en'>
       <body className='flex bg-background'>
-        <Sidebar className='hidden md:flex' />
+        <Sidebar className='h-screen hidden md:flex sticky top-0' />
         <div className='flex flex-1 flex-col'>
-          <header className='flex h-14 items-center border-b px-4 lg:px-6 sticky top-0 bg-white'>
+          {/*
+          <header className='flex h-14 items-center border-b px-4 lg:px-6 sticky top-0 bg-white z-30'>
             <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
               <SheetTrigger asChild>
                 <Button variant='ghost' size='icon' className='md:hidden'>
@@ -155,9 +156,11 @@ export default function RootLayout({
               </div>
             </div>
           </header>
+          */}
           <main className='flex-1 p-4 lg:p-6'>
             {children}
           </main>
+          <Toaster />
         </div>
       </body>
     </html>
