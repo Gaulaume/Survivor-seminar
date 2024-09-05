@@ -1,11 +1,12 @@
+'use client';
+
 import { employeeLogin } from '@/api/Employees';
 import { useRouter } from 'next/navigation';
-import { ComponentType, JSX, useEffect } from 'react';
+import { ComponentType, JSX, useEffect, useState } from 'react';
 
 export const handleLogin = async (formData: FormData): Promise<void> => {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
-  const router = useRouter();
 
   const response = await employeeLogin(email, password);
 
@@ -14,7 +15,7 @@ export const handleLogin = async (formData: FormData): Promise<void> => {
   if (response && response.token) {
     console.log('response.token ', response.token);
     localStorage.setItem('token', response.token);
-    router.back();
+    window.location.href = '/';
   } else {
     throw new Error('Invalid login credentials');
   }
@@ -22,23 +23,21 @@ export const handleLogin = async (formData: FormData): Promise<void> => {
 
 export const useAuth = (): { getToken: () => string } => {
   const router = useRouter();
+  const [token, setToken] = useState<string>('');
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-
-    if (!token)
-      router.push('/login');
-  }, [router]);
-
-  const getToken = (): string => {
-    const token = localStorage.getItem('token');
-
+    console.log('gettt token ', token);
     if (!token) {
       router.push('/login');
-      return '';
+      return;
     }
+    setToken(token);
+  }, []);
+
+  const getToken = () => {
     return token;
-  }
+  };
 
   return { getToken };
 };
@@ -59,16 +58,5 @@ export const Loading = () => {
 }
 
 export const AuthCheck = (props: any) => {
-  const { getToken } = useAuth();
-  const router = useRouter();
-
-  if (typeof window !== 'undefined' && !getToken()) {
-    router.push('/login');
-  }
-
-  if (!getToken()) {
-    return <Loading />;
-  }
-
   return props.children;
 }
