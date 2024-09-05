@@ -1,5 +1,5 @@
-import Clothe from "@/types/Clothe";
-import axios from "axios";
+import Clothe from '@/types/Clothe';
+import axios from 'axios';
 
 const getClothes = async (token: string): Promise<Clothe[] | null> => {
   const config = {
