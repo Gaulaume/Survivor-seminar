@@ -136,8 +136,9 @@ export default function HomePage() {
   return (
     <AuthCheck>
       <div className='container mx-auto space-y-6'>
-        <div className='flex flex-col space-y-3'>
-          <h1 className='text-lg md:text-2xl font-bold'>Customers Statistics</h1>
+        <div className='flex flex-col space-y-3 justify-center items-center'>
+          <h1 className='text-2xl md:text-7xl font-bold'>SOUL CONNECTION</h1>
+          <p className='text-xl md:text-6xl font-bold'>Dashboard</p>
           <hr className='w-full' />
         </div>
         <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>

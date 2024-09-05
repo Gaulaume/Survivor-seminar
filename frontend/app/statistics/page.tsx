@@ -3,7 +3,6 @@
 import { getCustomers } from '@/api/Customers';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Customer from '@/types/Customer';
-import { CalendarIcon, UsersIcon } from '@heroicons/react/20/solid';
 import React, { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -145,7 +144,6 @@ export default function StatisticsPage() {
             </CardHeader>
             <CardContent className='grid gap-4 grid-cols-1 lg:grid-cols-2'>
               <div className='flex items-center space-x-4'>
-                <UsersIcon className='h-6 w-6 text-muted-foreground' />
                 <div>
                   <p className='text-sm font-medium'>Total Encounters</p>
                   {isLoading ?
@@ -158,7 +156,6 @@ export default function StatisticsPage() {
                 </div>
               </div>
               <div className='flex items-center space-x-4'>
-                <CalendarIcon className='h-6 w-6 text-muted-foreground' />
                 <div>
                   <p className='text-sm font-medium'>Average Rating</p>
                   {isLoading ? (
