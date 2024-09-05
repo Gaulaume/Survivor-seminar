@@ -957,7 +957,7 @@ def get_compatibility(customer1_id: int, customer2_id: int):
         if not customer2_sign:
             raise ValueError(f"Customer with ID {customer2_id} does not have an astrological sign")
         compatibility_score = calculate_compatibility(customer1_sign, customer2_sign)
-        return {"compatibility_percentage": compatibility_score * 50}
+        return {"result": compatibility_score * 50}
 
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
