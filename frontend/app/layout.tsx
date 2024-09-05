@@ -3,7 +3,6 @@
 import './globals.css';
 import Link from 'next/link';
 import {
-  Bars3Icon,
   CalendarIcon,
   ChatBubbleBottomCenterIcon,
   HeartIcon,
@@ -13,12 +12,9 @@ import {
   UserGroupIcon,
   UsersIcon
 } from '@heroicons/react/20/solid';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import clsx from 'clsx';
 import { usePathname, useRouter } from 'next/navigation';
-import Cookies from 'js-cookie';
 import { Toaster } from '@/components/ui/sonner';
 
 const SiderBarContent = [
@@ -50,13 +46,13 @@ const SiderBarContent = [
     title: 'Tips',
     icon: ChatBubbleBottomCenterIcon,
     href: '/messages',
-    disabled: false
+    disabled: true
   },
   {
     title: 'Events',
     icon: CalendarIcon,
     href: '/events',
-    disabled: false
+    disabled: true
   },
   {
     title: 'Compatibility',
@@ -96,7 +92,10 @@ const Sidebar = ({ className }: { className?: string }) => {
                 actualPath === item.href && 'bg-accent-foreground text-white hover:!bg-accent-foreground/90',
                 'disabled:opacity-60 disabled:cursor-not-allowed'
               )}
-              onClick={() => router.push(item.href)}
+              onClick={() => {
+                if (actualPath !== item.href)
+                  router.push(item.href);
+              }}
             >
               <item.icon className='size-4 mr-1' />
               <span>{item.title}</span>
@@ -117,19 +116,12 @@ export default function RootLayout({
   const [isLogin, setIsLogin] = useState<boolean>(false);
   const router = useRouter();
 
-  useEffect(() => {
-    const token = Cookies.get('token');
-
-    if (token) {
-      setIsLogin(true);
-    }
-  }, []);
-
   return (
     <html lang='en'>
       <body className='flex bg-background'>
         <Sidebar className='h-screen hidden md:flex sticky top-0' />
         <div className='flex flex-1 flex-col'>
+          {/*
           <header className='flex h-14 items-center border-b px-4 lg:px-6 sticky top-0 bg-white z-30'>
             <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
               <SheetTrigger asChild>
@@ -164,6 +156,7 @@ export default function RootLayout({
               </div>
             </div>
           </header>
+          */}
           <main className='flex-1 p-4 lg:p-6'>
             {children}
           </main>
