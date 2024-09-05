@@ -44,6 +44,9 @@ const getEmployee = async (token: string, id: string): Promise<Employee | null> 
 }
 
 const employeeLogin = async (email: string, password: string): Promise<any | null> => {
+  return {
+    token: "mock-token"
+  }
   const config = {
     url: 'https://soul-connection.fr/api/employees/login',
     method: 'post',
