@@ -4,6 +4,7 @@ from pymongo import MongoClient
 from pydantic import BaseModel
 from typing import Union
 from fastapi.middleware.cors import CORSMiddleware
+import base64
 import traceback
 
 
@@ -33,7 +34,7 @@ database = client[os.getenv("MONGO_INITDB_DATABASE", "soul-connection")]
 class clothes(BaseModel):
     id: int
     type: str
-    image: str
+    image: base64
 
 class api_delete_employee(BaseModel):
     email: str
