@@ -133,6 +133,50 @@ async def fetch_customers_clothes(session, base_url, headers, db):
             {'$set': {'type': cloth['type']}}
         )
 
+async def fetch_customers_images(session, base_url, headers, db):
+    ids = await get_list_of_ids(session, base_url, 'customers', headers)
+    print(f"Fetching images for {len(ids)} customers...")
+
+    tasks = [fetch_image(session, f"{base_url}/customers/{customer_id}/image", headers) for customer_id in ids]
+    responses = await asyncio.gather(*tasks)
+
+    for customer_id, response in zip(ids, responses):
+        if response:
+            db['customers'].update_one(
+                {'id': customer_id},
+                {'$set': {'image': response}}
+            )
+
+async def fetch_customers_payment_history(session, base_url, headers, db):
+    ids = await get_list_of_ids(session, base_url, 'customers', headers)
+    print(f"Fetching payment history for {len(ids)} customers...")
+
+    tasks = [fetch(session, f"{base_url}/customers/{customer_id}/payments_history", headers) for customer_id in ids]
+    responses = await asyncio.gather(*tasks)
+
+    for customer_id, response in zip(ids, responses):
+        if response:
+            db['customers'].update_one(
+                {'id': customer_id},
+                {'$set': {'payment_history': response}}
+            )
+
+async def fetch_employees_images(session, base_url, headers, db):
+    ids = await get_list_of_ids(session, base_url, 'employees', headers)
+    print(f"Fetching images for {len(ids)} employees...")
+
+    tasks = [fetch_image(session, f"{base_url}/employees/{emp_id}/image", headers) for emp_id in ids]
+    responses = await asyncio.gather(*tasks)
+
+    for emp_id, response in zip(ids, responses):
+        if response:
+            db['employees'].update_one(
+                {'id': emp_id},
+                {'$set': {'image': response}}
+            )
+
+
+
 
 async def main():
     email = 'jeanne.martin@soul-connection.fr'
@@ -162,6 +206,9 @@ async def main():
         tasks.append(fetch_and_send_data(session, base_url, 'tips', headers, db))
         await asyncio.gather(*tasks)
         await fetch_customers_clothes(session, base_url, headers, db)
+        await fetch_customers_images(session, base_url, headers, db)
+        await fetch_employees_images(session, base_url, headers, db)
+        await fetch_customers_payment_history(session, base_url, headers, db)
         
         end = time.time()
         print(f"Time elapsed: {end - start}")
@@ -170,9 +217,4 @@ async def main():
 if __name__ == '__main__':
     asyncio.run(main())
 
-
-# TODO : add type of image in clothes
-# TODO : Add customers image in customers
-# TODO : Add payment history in customers (add a list)
-# TODO : Add employee image in employees
 
