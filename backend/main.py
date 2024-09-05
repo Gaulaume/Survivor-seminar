@@ -1,11 +1,11 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pymongo import MongoClient
 from pydantic import BaseModel
 from typing import Union
 from fastapi.middleware.cors import CORSMiddleware
 import traceback
-from authentificationAPI import insertDataRegister, insertDataLogin
+from authentificationAPI import get_current_user_token, insertDataRegister, insertDataLogin
 
 
 origins = [
@@ -51,6 +51,9 @@ class api_Employee_login(BaseModel):
 
 class api_Employee_login_cred(BaseModel):
     access_token: str
+
+class TokenData(BaseModel):
+    email: str
 
 class api_Employee_me(BaseModel):
     id: int
@@ -132,6 +135,7 @@ class api_event_id(BaseModel):
     location_name: str
 
 
+
 # ////////////////  EMPLOYEES  ////////////////
 
 @app.get("/api/employees",
@@ -184,7 +188,6 @@ def register_employee(employee: api_Employee_login):
         collection = database.employees
         user = collection.find_one({"email": employee.email})
         if user is None:
-            print("KOALA")
             return insertDataRegister(employee.email, employee.password, user['id'])
         raise HTTPException(status_code=401, detail="Employee not found")
     except Exception as e:
@@ -203,16 +206,16 @@ def register_employee(employee: api_Employee_login):
                     "content": {"application/json": {"example": {"detail": "An error occurred while fetching the employee details."}}}},
             },
 )
-def get_employee_me():
+def get_employee_me(current_user: TokenData = Depends(get_current_user_token)):
     try:
         collection = database.employees
-        employee = collection.find_one({"id": 1})
+        employee = collection.find_one({"email": current_user.email})
+        print(TokenData.email)
         if employee is None:
             raise HTTPException(status_code=404, detail="Employee not found")
         return employee
     except Exception as e:
         raise HTTPException(status_code=500, detail="An error occurred while fetching the employee details.")
-
 
 
 @app.get("/api/employees/{employee_id}",
