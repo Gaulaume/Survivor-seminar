@@ -12,11 +12,22 @@ import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AuthCheck, useAuth } from '../actions';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CheckIcon, ChevronDownIcon } from '@heroicons/react/20/solid';
+import { ArrowPathIcon, CheckIcon, ChevronDownIcon, SparklesIcon, TrashIcon } from '@heroicons/react/20/solid';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import clsx from 'clsx';
+import { motion } from 'framer-motion';
 
-const Combobox = memo(({ value, setValue, customers }: { value: number | null; setValue: (id: number) => void; customers: Customer[] }) => {
+const Combobox = memo(({
+  value,
+  setValue,
+  customers,
+  setClothes
+}: {
+  value: number | null;
+  setValue: (id: number) => void;
+  customers: Customer[];
+  setClothes: (clothes: Clothe[] | null) => void;
+}) => {
   const [open, setOpen] = useState(false);
 
   return (
@@ -54,6 +65,7 @@ const Combobox = memo(({ value, setValue, customers }: { value: number | null; s
                   onSelect={() => {
                     setValue(c.id);
                     setOpen(false);
+                    setClothes(null);
                   }}
                 >
                   {c.name} {c.surname} ({c.astrological_sign})
@@ -73,14 +85,15 @@ const Combobox = memo(({ value, setValue, customers }: { value: number | null; s
   );
 });
 
-type ClothingType = 'top' | 'bottom' | 'shoes' | 'hat/cap';
+type ClothingType = 'hat/cap' | 'top' | 'bottom' | 'shoes';
 
 export default function WardrobePage() {
   const { getToken } = useAuth();
-  const [clothes, setClothes] = useState<Clothe[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [clothes, setClothes] = useState<Clothe[] | null>(null);
+  const [customers, setCustomers] = useState<Customer[] | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [randomLoading, setRandomLoading] = useState<boolean>(false);
   const [selectedOutfit, setSelectedOutfit] = useState<Record<ClothingType, Clothe | null>>({
     top: null,
     bottom: null,
@@ -99,15 +112,19 @@ export default function WardrobePage() {
         toast.error('Failed to fetch customers', {
           duration: 5000,
         });
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchCustomers();
-  }, [getToken]);
+    if (!customers)
+      fetchCustomers();
+  }, []);
 
   useEffect(() => {
     const fetchClothes = async () => {
       const token = getToken();
+      setLoading(true);
       try {
         if (selectedCustomer) {
           const data = await getCustomerClothes(token, selectedCustomer);
@@ -124,7 +141,8 @@ export default function WardrobePage() {
       }
     };
 
-    fetchClothes();
+    if (!clothes)
+      fetchClothes();
   }, [selectedCustomer, getToken]);
 
   const handleSelectClothing = (type: ClothingType, item: Clothe) => {
@@ -142,17 +160,22 @@ export default function WardrobePage() {
       );
     }
 
-    if (!clothes.length)
+    if (!clothes || clothes.length <= 0)
       return <p className='text-muted-foreground'>No clothes available</p>;
 
     return clothes
       .filter((item) => item.type === type)
       .map((item) => (
-        <Card key={item.id} className='cursor-pointer w-40' onClick={() => handleSelectClothing(type, item)}>
-          <CardContent className='p-4 flex flex-col items-center'>
-            <img src={item.image} alt='image preview' className='w-24 h-24 object-contain' />
-          </CardContent>
-        </Card>
+        <img
+          key={item.id}
+          src={item.image}
+          alt='clothing item preview'
+          className={clsx(
+            'w-40 h-56 object-cover rounded-sm cursor-pointer hover:scale-105 transition-transform duration-200',
+            selectedOutfit[type] === item && 'opacity-50 hover:scale-100'
+          )}
+          onClick={() => handleSelectClothing(type, item)}
+        />
       ));
   };
 
@@ -170,25 +193,31 @@ export default function WardrobePage() {
   };
 
   const randomOutfit = () => {
+    setRandomLoading(true);
+    setTimeout(() => {
+      setRandomLoading(false);
+      setSelectedOutfit({
+        top: randomItem('top'),
+        bottom: randomItem('bottom'),
+        shoes: randomItem('shoes'),
+        'hat/cap': randomItem('hat/cap'),
+      });
+    }, Math.floor(Math.random() * 2000) + 100);
     const randomItem = (type: ClothingType) => {
+      if (!clothes || clothes?.length <= 0) return null;
       const items = clothes.filter((item) => item.type === type);
       return items[Math.floor(Math.random() * items.length)];
     };
-
-    setSelectedOutfit({
-      top: randomItem('top'),
-      bottom: randomItem('bottom'),
-      shoes: randomItem('shoes'),
-      'hat/cap': randomItem('hat/cap'),
-    });
   };
+
+  const clothingOrder: ClothingType[] = ['hat/cap', 'top', 'bottom', 'shoes'];
 
   return (
     <AuthCheck>
       <div className='container mx-auto p-4 space-y-6'>
         <h1 className='text-3xl font-bold tracking-tight'>Wardrobe</h1>
 
-        <Combobox value={selectedCustomer} setValue={setSelectedCustomer} customers={customers} />
+        <Combobox value={selectedCustomer} setValue={setSelectedCustomer} customers={customers || []} setClothes={setClothes} />
 
         <Card>
           <CardHeader>
@@ -196,7 +225,7 @@ export default function WardrobePage() {
             <CardDescription>Click on an item to select it for your outfit</CardDescription>
           </CardHeader>
           <CardContent className='flex flex-wrap gap-4 justify-center'>
-            {(Object.keys(selectedOutfit) as ClothingType[]).map((type) => (
+            {(Object.keys(selectedOutfit) as ClothingType[]).sort((a, b) => clothingOrder.indexOf(a) - clothingOrder.indexOf(b)).map((type) => (
               <Card key={type} className='w-40'>
                 <CardHeader className='p-4'>
                   <CardTitle className='text-sm flex items-center gap-2'>
@@ -206,7 +235,14 @@ export default function WardrobePage() {
                 </CardHeader>
                 <CardContent className='p-4 flex justify-center items-center h-40'>
                   {selectedOutfit[type] ? (
-                    <img src={selectedOutfit[type]!.image} alt='image preview' className='max-w-full max-h-full object-contain' />
+                    <motion.img
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ duration: 0.2 }}
+                      src={selectedOutfit[type]!.image}
+                      alt='image preview'
+                      className='max-w-full max-h-full object-contain rounded-sm'
+                    />
                   ) : (
                     <p className='text-sm text-muted-foreground'>No {type} selected</p>
                   )}
@@ -215,26 +251,40 @@ export default function WardrobePage() {
             ))}
             <div className='flex flex-col md:flex-row gap-2 w-full mt-5'>
               <Button
-                variant='default'
+                variant='destructive'
+                disabled={Object.values(selectedOutfit).every((item) => item === null)}
                 onClick={() => setSelectedOutfit({ top: null, bottom: null, shoes: null, 'hat/cap': null })}
               >
                 Clear outfit
+                <TrashIcon className='h-4 w-4 ml-2' />
               </Button>
-              <Button variant='outline' onClick={() => randomOutfit()}>
+              <Button
+                variant='outline'
+                onClick={() => randomOutfit()}
+                disabled={!clothes || clothes.length <= 0 || randomLoading}
+              >
                 Random outfit
+                {randomLoading ? (
+                  <ArrowPathIcon className='h-4 w-4 ml-2 animate-spin' />
+                ) : (
+                  <SparklesIcon className='h-4 w-4 ml-2' />
+                )}
               </Button>
             </div>
           </CardContent>
         </Card>
 
-        <Tabs defaultValue='top' className='space-y-4'>
+        <Tabs defaultValue='hat/cap' className='space-y-4'>
           <TabsList className='!mb-4'>
+            <TabsTrigger value='hat/cap'>Hat/Cap</TabsTrigger>
             <TabsTrigger value='top'>Top</TabsTrigger>
             <TabsTrigger value='bottom'>Bottom</TabsTrigger>
             <TabsTrigger value='shoes'>Shoes</TabsTrigger>
-            <TabsTrigger value='hat/cap'>Hat/Cap</TabsTrigger>
           </TabsList>
 
+          <TabsContent value='hat/cap' className='flex flex-row flex-wrap gap-2 !mt-0'>
+            {renderClothingItems('hat/cap')}
+          </TabsContent>
           <TabsContent value='top' className='flex flex-row flex-wrap gap-2 !mt-0'>
             {renderClothingItems('top')}
           </TabsContent>
@@ -243,9 +293,6 @@ export default function WardrobePage() {
           </TabsContent>
           <TabsContent value='shoes' className='flex flex-row flex-wrap gap-2 !mt-0'>
             {renderClothingItems('shoes')}
-          </TabsContent>
-          <TabsContent value='hat/cap' className='flex flex-row flex-wrap gap-2 !mt-0'>
-            {renderClothingItems('hat/cap')}
           </TabsContent>
         </Tabs>
       </div>
