@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pymongo import MongoClient
 from pydantic import BaseModel
-from typing import Union
+from typing import Union, List
 from fastapi.middleware.cors import CORSMiddleware
 import traceback
 
@@ -22,7 +22,8 @@ app.add_middleware(
 
 import os
 from typing import List, Dict
-# import data_fetcher
+from typing import Optional
+
 
 
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://mongod:27017/")
@@ -30,10 +31,12 @@ MONGO_URL = os.getenv("MONGO_URL", "mongodb://mongod:27017/")
 client = MongoClient(MONGO_URL)
 database = client[os.getenv("MONGO_INITDB_DATABASE", "soul-connection")]
 
-class clothes(BaseModel):
+class clothes_without_img(BaseModel):
     id: int
     type: str
-    image: str
+
+class clothes(clothes_without_img):
+    image: Optional[str]
 
 class api_delete_employee(BaseModel):
     email: str
@@ -66,6 +69,10 @@ class api_customer(BaseModel):
     email: str
     name: str
     surname: str
+    birth_date: str
+    gender: str
+    description: str
+    astrological_sign: str
 
 class api_customer_id(BaseModel):
     id: int
@@ -77,16 +84,21 @@ class api_customer_id(BaseModel):
     description: str
     astrological_sign: str
 
-class api_customer_id_payments_history(BaseModel):
+class Payment(BaseModel):
     id: int
     date: str
     payment_method: str
     amount: float
     comment: str
 
-class api_customer_id_clothes(BaseModel):
+class api_customer_id_payments_history(BaseModel):
+    payment_history: List[Payment]
+
+class customer_clothes(BaseModel):
     id: int
-    type: str
+
+class api_customer_id_clothes(BaseModel):
+    clothes_ids: List[customer_clothes]
 
 class api_encounters(BaseModel):
     id: int
@@ -294,7 +306,7 @@ def get_employee_image(employee_id: int):
 
 
 @app.get("/api/customers",
-        response_model=List[api_customer],
+        response_model=List[api_customer_id],
         tags=["customers"])
 
 def get_customers():
@@ -407,17 +419,19 @@ def get_customer_image(customer_id: int):
 
 
 @app.get("/api/customers/{customer_id}/payments_history",
-        response_model=List[api_customer_id_payments_history],
-        tags=["customers"])
+         response_model=List[Payment],
+         tags=["customers"])
 def get_payments_history(customer_id: int):
     try:
         collection = database.customers
         customer = collection.find_one({"id": customer_id})
         if customer is None:
             raise HTTPException(status_code=404, detail="Customer requested doesn't exist")
-        return customer["payments"]
+        if "payment_history" not in customer:
+            raise HTTPException(status_code=404, detail="No payment history found for this customer")
+        return customer["payment_history"]
     except Exception as e:
-        raise HTTPException(status_code=500, detail="An error occurred while fetching the customer payments.")
+            raise HTTPException(status_code=500, detail="An error occurred while fetching the customer payments.")
 
 
 
@@ -430,8 +444,11 @@ def get_clothes(customer_id: int):
         customer = collection.find_one({"id": customer_id})
         if customer is None:
             raise HTTPException(status_code=404, detail="Customer requested doesn't exist")
-        return customer["clothes"]
+        if "clothes_ids" not in customer:
+            raise HTTPException(status_code=404, detail="No clothes found for this customer")
+        return customer["clothes_ids"]
     except Exception as e:
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail="An error occurred while fetching the customer clothes.")
 
 
@@ -638,8 +655,20 @@ def get_events():
         events = list(collection.find({}, {"_id": 0}))
         return events
     except Exception as e:
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@app.get("/api/tips",
+            response_model=List[api_tips],
+            tags=["tips"])
+def get_tips():
+    try:
+        collection = database.tips
+        tips = list(collection.find({}, {"_id": 0}))
+        return tips
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/events/{event_id}",
@@ -739,11 +768,12 @@ def get_clothes_image(clothes_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail="An error occurred while fetching the clothes image.")
 
-@app.get("/api/clothes", response_model=clothes, tags=["clothes"])
+@app.get("/api/clothes", response_model=clothes_without_img, tags=["clothes"])
 def get_clothes():
     try:
         collection = database.clothes
-        clothes = list(collection.find({}, {"_id": 0}))
+        clothes = list(collection.find({}, {"_id": 0, "image": 0}))
+
         return clothes
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
