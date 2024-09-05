@@ -458,7 +458,7 @@ def get_clothes(customer_id: int):
 
 
 @app.get("/api/encounters",
-            response_model=List[api_encounters],
+            response_model=List[api_encounter_id],
             tags=["encounters"])
 def get_encounters():
     try:
