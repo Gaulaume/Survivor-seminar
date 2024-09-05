@@ -1,3 +1,6 @@
+from io import BytesIO
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse, FileResponse
 from fastapi import Depends, FastAPI, HTTPException, Security
 from fastapi.responses import FileResponse
 from pymongo import MongoClient
@@ -5,6 +8,7 @@ from pydantic import BaseModel
 from typing import Union, List
 from fastapi.middleware.cors import CORSMiddleware
 import traceback
+import base64
 from authentificationAPI import get_current_user_token, insertDataRegister, insertDataLogin
 
 
@@ -38,6 +42,11 @@ class clothes_without_img(BaseModel):
 
 class clothes(clothes_without_img):
     image: Optional[str]
+
+class Clothes(BaseModel):
+    id: int
+    type: str
+    image: bytes
 
 class api_delete_employee(BaseModel):
     email: str
@@ -146,7 +155,10 @@ class api_event_id(BaseModel):
     employee_id: int
     location_name: str
 
-
+class   ClothesDetail(BaseModel):
+    id: int
+    type: str
+    image: str
 
 # ////////////////  EMPLOYEES  ////////////////
 
@@ -460,22 +472,35 @@ def get_payments_history(customer_id: int, token: str = Security(get_current_use
             raise HTTPException(status_code=500, detail="An error occurred while fetching the customer payments.")
 
 
-
 @app.get("/api/customers/{customer_id}/clothes",
-        response_model=List[api_customer_id_clothes],
-        tags=["customers"])
+         response_model=List[ClothesDetail],
+         tags=["customers"])
 def get_clothes(customer_id: int, token: str = Security(get_current_user_token)):
     try:
-        collection = database.customers
-        customer = collection.find_one({"id": customer_id})
+        customer_collection = database.customers
+        customer = customer_collection.find_one({"id": customer_id})
+
         if customer is None:
             raise HTTPException(status_code=404, detail="Customer requested doesn't exist")
+
         if "clothes_ids" not in customer:
             raise HTTPException(status_code=404, detail="No clothes found for this customer")
-        return customer["clothes_ids"]
+
+        clothes_details = []
+
+        clothes_collection = database.clothes
+        for clothes_id in customer["clothes_ids"]:
+            clothes = clothes_collection.find_one({"id": clothes_id})
+            if clothes:
+                clothes_details.append({
+                    "id": clothes["id"],
+                    "type": clothes["type"],
+                    "image": "data:image/png;base64," + base64.b64encode(clothes["image"]).decode('utf-8')
+                })
+
+        return clothes_details
     except Exception as e:
-        print(traceback.format_exc())
-        raise HTTPException(status_code=500, detail="An error occurred while fetching the customer clothes.")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 
@@ -773,26 +798,20 @@ def delete_event(event_id: int, token: str = Security(get_current_user_token)):
 
 
 
-@app.get("/api/clothes/{clothes_id}/image",
-            tags=["clothes"],
-            responses={
-                200: {"description": "Returns clothes image.",
-                      "content": {"image/png": {}}},
-                404: {"description": "Clothes requested doesn't exist",
-                      "content": {"application/json": {"example": {"detail": "Clothes requested doesn't exist"}}}},
-                500: {"description": "Internal server error",
-                      "content": {"application/json": {"example": {"detail": "An error occurred while fetching the clothes image."}}}},
-            },
-)
+@app.get("/api/clothes/{clothes_id}/image", tags=["clothes"])
 def get_clothes_image(clothes_id: int, token: str = Security(get_current_user_token)):
     try:
         collection = database.clothes
         clothes = collection.find_one({"id": clothes_id})
         if clothes is None:
             raise HTTPException(status_code=404, detail="Clothes requested doesn't exist")
-        return FileResponse(clothes["image"])
+
+        image_stream = BytesIO(clothes["image"])
+        return StreamingResponse(image_stream, media_type="image/png")
     except Exception as e:
+        print(f"Error fetching image: {e}")
         raise HTTPException(status_code=500, detail="An error occurred while fetching the clothes image.")
+
 
 @app.get("/api/clothes", response_model=clothes_without_img, tags=["clothes"])
 def get_clothes(token: str = Security(get_current_user_token)):
