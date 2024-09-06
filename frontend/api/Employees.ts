@@ -138,6 +138,50 @@ const getEmployeeImage = async (token: string, id: string): Promise<Blob | null>
   }
 }
 
+const putEmployee = async (token: string, id: number, data: any): Promise<Employee | null> => {
+  const config = {
+    url: `http://localhost:8000/api/employees/${id}`,
+    method: 'put',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    data,
+  };
+
+  try {
+    const response = await axios(config);
+
+    return response.data;
+  } catch (error) {
+    console.error('putEmployee', error);
+
+    return null;
+  }
+}
+
+const postEmployee = async (token: string, data: any): Promise<Employee | null> => {
+  const config = {
+    url: 'http://localhost:8000/api/employees',
+    method: 'post',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    data,
+  };
+
+  try {
+    const response = await axios(config);
+
+    return response.data;
+  } catch (error) {
+    console.error('postEmployee', error);
+
+    return null;
+  }
+}
+
 export {
   getEmployees,
   getEmployee,
@@ -145,4 +189,6 @@ export {
   employeeLogin,
   getMe,
   getEmployeeImage,
+  putEmployee,
+  postEmployee,
 };
