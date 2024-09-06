@@ -26,8 +26,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-)
-
+)   
 
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://mongod:27017/")
 
@@ -71,7 +70,7 @@ class api_Employee_me(BaseModel):
     birth_date: str
     gender: str
     work: str
-
+    customers_ids: List[int]     
 
 class api_customer(BaseModel):
     id: int
@@ -136,13 +135,21 @@ class api_events(BaseModel):
     id: int
     name: str
     date: str
-    max_partcipants: int
+    duration: int
+    max_participants: int
+    location_x: str
+    location_y: str
+    type: str
+    employee_id: int
+    location_name: str
+    max_participants: int
 
 class api_event_id(BaseModel):
     id: int
     name: str
     date: str
-    max_partcipants: int
+    duration: int
+    max_participants: int
     location_x: str
     location_y: str
     type: str
@@ -156,6 +163,16 @@ class   ClothesDetail(BaseModel):
 
 # ////////////////  EMPLOYEES  ////////////////
 
+class api_Employee(BaseModel):
+    id: int
+    email: str
+    name: str
+    surname: str
+    birth_date: str
+    gender: str
+    work: str
+    customers_ids: List[int]
+
 @app.get("/api/employees",
          response_model=List[api_Employee],
          tags=["employees"]
@@ -163,7 +180,7 @@ class   ClothesDetail(BaseModel):
 def get_employees():
     try:
         collection = database.employees
-        employees = list(collection.find({}, {"_id": 0}))
+        employees = list(collection.find({}, {"_id": 0, "image": 0}))
         return employees
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -749,18 +766,6 @@ def get_events():
         return events
     except Exception as e:
         print(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/api/tips",
-            response_model=List[api_tips],
-            tags=["tips"])
-def get_tips():
-    try:
-        collection = database.tips
-        tips = list(collection.find({}, {"_id": 0}))
-        return tips
-    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 

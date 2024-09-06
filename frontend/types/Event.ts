@@ -2,6 +2,7 @@ interface Event {
   id: number;
   name: string;
   date: string;
+  duration: number;
   max_participants: number;
   location_x?: number;
   location_y?: number;
