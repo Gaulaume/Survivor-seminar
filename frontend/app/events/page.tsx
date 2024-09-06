@@ -33,26 +33,26 @@ export default function EventPage() {
       }
     };
 
-    if (!events)
-        fetchEvents();
-  }, [events]);
+    fetchEvents(); // Fetch the events regardless of the current state
+  }, []);
 
   const handleEventSelect = (event: Event) => {
+    console.log("Event selected: ", event);
+    console.log("Selected event coordinates: ", event.location_x, event.location_y);
     setSelectedEvent(event);
   };
+  
+  
 
   return (
     <div className="flex flex-col md:flex-row">
+      {/* Left side: Event List */}
       <div className="w-full md:w-1/2">
         <h2 className="text-2xl font-semibold mb-2">Events</h2>
         <hr className="w-full border-t border-gray-300 mb-4" />
         <div className="grid grid-cols-1 gap-4">
           {events?.map((event) => (
-            <Card
-              key={event.id}
-              className="cursor-pointer"
-              onClick={() => handleEventSelect(event)}
-            >
+            <Card key={event.id} className="cursor-pointer" onClick={() => handleEventSelect(event)}>
               <CardHeader>
                 <CardTitle>{event.name}</CardTitle>
               </CardHeader>
@@ -65,27 +65,38 @@ export default function EventPage() {
           ))}
         </div>
       </div>
+
+      {/* Right side: Map and Event Details */}
       <div className="w-full md:w-1/2 mt-8 md:mt-0">
         {selectedEvent && (
           <div>
-            <h3 className="text-xl font-semibold mb-2">
-              Détails de l'événement: {selectedEvent.name}
-            </h3>
+            <h3 className="text-xl font-semibold mb-2">Détails de l'événement: {selectedEvent.name}</h3>
             <p>Date: {new Date(selectedEvent.date).toLocaleDateString()}</p>
             <p>Participants maximum: {selectedEvent.max_participants}</p>
             {selectedEvent.location_name && <p>Lieu: {selectedEvent.location_name}</p>}
 
+            {/* MapContainer with dynamic center and zoom */}
             <div className="h-96 mt-4">
-              <MapContainer className="h-full w-full">
-                <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              <MapContainer
+                center={
+                  selectedEvent.location_x && selectedEvent.location_y
+                    ? [selectedEvent.location_x, selectedEvent.location_y]
+                    : [48.8566, 2.3522] // Default to Paris if no coordinates
+                }
+                zoom={selectedEvent.location_y && selectedEvent.location_x ? 13 : 5}
+                style={{ height: '100%', width: '100%', zIndex: 1 }} // Ensure map fills the container
+              >
+                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                <AttributionControl
+                  position="bottomright"
+                  prefix='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
                 />
-                <AttributionControl position="bottomright" prefix='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>' />
-                <Marker
-                  position={[selectedEvent.location_y || 0, selectedEvent.location_x || 0]}
-                >
-                  <Popup>{selectedEvent.name}</Popup>
-                </Marker>
+                {selectedEvent.location_x && selectedEvent.location_y && (
+                  <Marker position={[selectedEvent.location_x, selectedEvent.location_y]}>
+                    
+                    <Popup>{selectedEvent.name}</Popup>
+                  </Marker>
+                )}
               </MapContainer>
             </div>
           </div>
