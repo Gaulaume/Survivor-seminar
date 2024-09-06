@@ -15,8 +15,10 @@ interface Tip {
 }
 
 export default function CoachingTips() {
-  const [openTip, setOpenTip] = useState<number | null>(null);
   const [tips, setTips] = useState<Tip[] | null>(null);
+  const [filteredTips, setFilteredTips] = useState<Tip[] | null>(null);
+  const [openTip, setOpenTip] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const fetchTips = async () => {
@@ -24,6 +26,7 @@ export default function CoachingTips() {
         const data = await getTips();
         if (!data) throw new Error('Failed to fetch tips');
         setTips(data);
+        setFilteredTips(data); // Set initial filtered tips to all tips
       } catch (e) {
         console.error(e);
       }
@@ -38,15 +41,35 @@ export default function CoachingTips() {
     setOpenTip(openTip === tipId ? null : tipId);
   };
 
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const query = event.target.value.toLowerCase();
+    setSearchQuery(query);
+
+    if (tips) {
+      const filteredTips = tips.filter((tip) =>
+        tip.title.toLowerCase().includes(query) ||
+        tip.tip.toLowerCase().includes(query)
+      );
+      setFilteredTips(filteredTips);
+    }
+  };
+
   return (
     <div className="w-full mx-auto">
       <div className="flex flex-col items-start">
         <h2 className="text-2xl font-semibold mb-2">Tips</h2>
         <hr className="w-full border-t border-gray-300 mb-4" />
+        <input
+          type="text"
+          placeholder="Search tips..."
+          className="border border-gray-300 px-4 py-2 rounded-md mb-4 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          onChange={handleSearchChange}
+          value={searchQuery}
+        />
       </div>
 
       <div className="grid grid-cols-4 gap-4 ">
-        {tips?.map((tip) => (
+        {filteredTips?.map((tip) => (
           <Card
             key={tip.id}
             onClick={() => handleTipToggle(tip.id)}
