@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const getEmployees = async (token: string): Promise<Employee[] | null> => {
   const config = {
-    url: 'https://soul-connection.fr/api/employees',
+    url: 'http://localhost:8000/api/employees',
     method: 'get',
     headers: {
       'Content-Type': 'application/json',
@@ -24,7 +24,7 @@ const getEmployees = async (token: string): Promise<Employee[] | null> => {
 
 const getEmployee = async (token: string, id: string): Promise<Employee | null> => {
   const config = {
-    url: `https://soul-connection.fr/api/employees/${id}`,
+    url: `http://localhost:8000/api/employees/${id}`,
     method: 'get',
     headers: {
       'Content-Type': 'application/json',
@@ -43,12 +43,38 @@ const getEmployee = async (token: string, id: string): Promise<Employee | null> 
   }
 }
 
+const getEmployeeStats = async (token: string, id: number): Promise<{
+  average_rating: number;
+  clients_length: number;
+  clients_length_female: number;
+  clients_length_male: number;
+} | null> => {
+  const config = {
+    url: `http://localhost:8000/api/employees/${id}/stats`,
+    method: 'get',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  };
+
+  try {
+    const response = await axios(config);
+
+    return response.data;
+  } catch (error) {
+    console.error('getEmployeeStats', error);
+
+    return null;
+  }
+}
+
 const employeeLogin = async (email: string, password: string): Promise<any | null> => {
   return {
     token: "mock-token"
   }
   const config = {
-    url: 'https://soul-connection.fr/api/employees/login',
+    url: 'http://localhost:8000/api/employees/login',
     method: 'post',
     headers: {
       'Content-Type': 'application/json',
@@ -72,7 +98,7 @@ const employeeLogin = async (email: string, password: string): Promise<any | nul
 
 const getMe = async (token: string): Promise<Employee | null> => {
   const config = {
-    url: 'https://soul-connection.fr/api/employees/me',
+    url: 'http://localhost:8000/api/employees/me',
     method: 'get',
     headers: {
       'Content-Type': 'application/json',
@@ -93,7 +119,7 @@ const getMe = async (token: string): Promise<Employee | null> => {
 
 const getEmployeeImage = async (token: string, id: string): Promise<Blob | null> => {
   const config = {
-    url: `https://soul-connection.fr/api/employees/${id}/image`,
+    url: `http://localhost:8000/api/employees/${id}/image`,
     method: 'get',
     headers: {
       'Content-Type': 'application/json',
@@ -115,6 +141,7 @@ const getEmployeeImage = async (token: string, id: string): Promise<Blob | null>
 export {
   getEmployees,
   getEmployee,
+  getEmployeeStats,
   employeeLogin,
   getMe,
   getEmployeeImage,

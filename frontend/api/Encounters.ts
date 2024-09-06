@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const getEncounters = async (token: string): Promise<Encounter[] | null> => {
   const config = {
-    url: 'https://soul-connection.fr/api/encounters',
+    url: 'http://localhost:8000/api/encounters',
     method: 'get',
     headers: {
       'Content-Type': 'application/json',
@@ -24,7 +24,7 @@ const getEncounters = async (token: string): Promise<Encounter[] | null> => {
 
 const getEncounter = async (token: string, id: string): Promise<Encounter | null> => {
   const config = {
-    url: `https://soul-connection.fr/api/encounters/${id}`,
+    url: `http://localhost:8000/api/encounters/${id}`,
     method: 'get',
     headers: {
       'Content-Type': 'application/json',
@@ -45,7 +45,7 @@ const getEncounter = async (token: string, id: string): Promise<Encounter | null
 
 const getCustomerEncounters = async (token: string, id: string): Promise<Encounter[] | null> => {
   const config = {
-    url: `https://soul-connection.fr/api/encounters/customer/${id}`,
+    url: `http://localhost:8000/api/encounters/customer/${id}`,
     method: 'get',
     headers: {
       'Content-Type': 'application/json',
