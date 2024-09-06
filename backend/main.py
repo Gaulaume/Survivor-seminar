@@ -169,12 +169,14 @@ class   ClothesDetail(BaseModel):
          tags=["employees"]
 )
 def get_employees(token: str = Security(get_current_user_token)):
-    try:
-        collection = database.employees
-        employees = list(collection.find({}, {"_id": 0}))
+    collection = database.employees
+    employees = list(collection.find({}, {"_id": 0}))
+    if (token.role == 2):
         return employees
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    if (token.role == 1):
+        print(traceback.format_exc())
+        return list(collection.find({"email": token.email}, {"_id": 0}))
+    raise HTTPException(status_code=401, detail="Unauthorized to acces at this is")
 
 @app.post("/api/employees/login",
          response_model=api_Employee_login_cred,
@@ -193,7 +195,7 @@ def login_employee(employee: api_Employee_login):
     user = collection.find_one({"email": employee.email})
     if user is None:
         raise HTTPException(status_code=401, detail="Employee not found")
-    login_cred = insertDataLogin(employee.email, employee.password, user['id'])
+    login_cred = insertDataLogin(employee.email, employee.password, user['id'], user['work'])
     return api_Employee_login_cred(**login_cred)
 
 
@@ -254,14 +256,19 @@ def get_employee_me(current_user: TokenData = Security(get_current_user_token)):
         },
 )
 def get_employee(employee_id: int, token: str = Security(get_current_user_token)):
-    try:
-        collection = database.employees
-        employee = collection.find_one({"id": employee_id})
-        if employee is None:
-            raise HTTPException(status_code=404, detail="Employee requested doesn't exist")
+    collection = database.employees
+    employee = collection.find_one({"id": employee_id})
+    if employee is None:
+        raise HTTPException(status_code=404, detail="Employee requested doesn't exist")
+    if (token.role == 2):
         return employee
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="An error occurred while fetching the employee details.")
+    if (token.role == 1):
+        if token.id == employee_id:
+            return employee
+    raise HTTPException(status_code=401, detail="Unauthorized to acces at this is")
+
+
+
 
 
 
@@ -376,7 +383,7 @@ def get_employee_image(employee_id: int, token: str = Security(get_current_user_
              },
          },
 )
-def get_employee_stats(employee_id: int):
+def get_employee_stats(employee_id: int, token: str = Security(get_current_user_token)):
     try:
         collection = database.employees
         employee = collection.find_one({"id": employee_id})
@@ -439,14 +446,30 @@ def get_employee_stats(employee_id: int):
 @app.get("/api/customers",
         response_model=List[api_customer_id],
         tags=["customers"])
-
 def get_customers(token: str = Security(get_current_user_token)):
-    try:
-        collection = database.customers
-        customers = list(collection.find({}, {"_id": 0}))
+    collection_emp = database.employees
+    collection_cus = database.customers
+
+    customers = list(collection_cus.find({}, {"_id": 0}))
+    employee = collection_emp.find_one({"id": token.id})
+
+    if (token.role == 1):
+        customers_ids = employee['customers_ids']
+        if not customers_ids:
+            raise HTTPException(status_code=400, detail="Employee has no customers")
+        return list(collection_cus.find({"id": {"$in": customers_ids}}))
+    else:
         return customers
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+
+        #POUR GET CUSTOMERS
+        #if (token.role == 1):
+        #    customers_ids = employee['customers_ids']
+        #    if not customers_ids:
+        #        raise HTTPException(status_code=400, detail="Employee has no customers")
+        #    for customer_id in customers_ids:
+        #        if employee_id == customer_id:
+        #            return employee
+
 
 @app.get("/api/customers/{customer_id}",
         response_model=api_customer_id,
@@ -553,16 +576,16 @@ def get_customer_image(customer_id: int, token: str = Security(get_current_user_
          response_model=List[Payment],
          tags=["customers"])
 def get_payments_history(customer_id: int, token: str = Security(get_current_user_token)):
-    try:
-        collection = database.customers
-        customer = collection.find_one({"id": customer_id})
-        if customer is None:
-            raise HTTPException(status_code=404, detail="Customer requested doesn't exist")
-        if "payment_history" not in customer:
-            raise HTTPException(status_code=404, detail="No payment history found for this customer")
-        return customer["payment_history"]
-    except Exception as e:
-            raise HTTPException(status_code=500, detail="An error occurred while fetching the customer payments.")
+    if (token.role != 2):
+        raise HTTPException(status_code=403, detail="Unauthorised use")
+    collection = database.customers
+    customer = collection.find_one({"id": customer_id})
+    if customer is None:
+        raise HTTPException(status_code=404, detail="Customer requested doesn't exist")
+    if "payment_history" not in customer:
+        raise HTTPException(status_code=404, detail="No payment history found for this customer")
+    return customer["payment_history"]
+
 
 
 @app.get("/api/customers/{customer_id}/clothes",

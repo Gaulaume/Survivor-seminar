@@ -5,21 +5,27 @@ from pymongo import MongoClient
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 import jwt
-from fastapi.security import APIKeyHeader, HTTPBearer
+from fastapi.security import APIKeyHeader, HTTPBearer, OAuth2PasswordBearer
 from jose import JWTError
+import os
 
 
-SECRET_KEY = "your_secret_key"  # À personnaliser et à garder sécurisé
-ALGORITHM = "HS256"  # Algorithme pour JWT
-ACCESS_TOKEN_EXPIRE_MINUTES = 30  # Durée de validité du token (en minutes)
+SECRET_KEY = "SecretKey"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 1440
+
+
+username = os.getenv('MONGO_INITDB_ROOT_USERNAME')  # Assure-toi que cette variable d'environnement est bien définie
+password = os.getenv('MONGO_INITDB_ROOT_PASSWORD')
 
 client = MongoClient('mongodb://AugustinAdmin:KoalaAdmin@mongodb:27017/')
-client.drop_database('soul-connection')
 db = client['soul-connection']
 
 api_key_header = APIKeyHeader(name="AuthentificationHeader")
 
 security = HTTPBearer()
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
@@ -56,21 +62,27 @@ def insertDataRegister(email, pwd, id):
 
 class TokenData(BaseModel):
     email: str
+    id: int
+    role: int
 
-def insertDataLogin(email, pwd, id):
+def insertDataLogin(email, pwd, id, work):
     collection = db.auth
     data = {'email': email, 'pwd': pwd, 'id': id}
     user = collection.find_one({"email": email})
-
+    role = 0 # 0 = Nothing, 1 = Coach, 2 = Manager
     hashed_pwd = hash_password(pwd)
     # if hashed_pwd != user['password']:
     #     raise HTTPException(status_code=400, detail="Email or password incorrect")
-
+    if (work == "Coach"):
+        role = 1
+    else:
+        role = 2
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     TokenData.email = {"email": email}
     TokenData.id = {"id": id}
-    access_token = create_access_token(data={"email": email, "id": id}, expires_delta=access_token_expires)
-    
+    TokenData.role = {"role": role}
+    access_token = create_access_token(data={"email": email, "id": id, "role": role}, expires_delta=access_token_expires)
+
     return {"access_token": access_token}
 
 
@@ -84,10 +96,32 @@ def get_current_user_token(token: str = Security(api_key_header)) -> TokenData:
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("email")
+        email = payload.get("email")
+        role = payload.get("role")
+        id = payload.get("id")
+        if role is None:
+            raise HTTPException(status_code=403, detail="Role not found in token")
         if email is None:
-            raise credentials_exception
-        token_data = TokenData(email=email)
+            raise HTTPException(status_code=403, detail="Email not found in token")
+        if id is None:
+            raise HTTPException(status_code=403, detail="id not found in token")
+        token_data = TokenData(email=email, role=role, id=id)
     except JWTError:
         raise credentials_exception
     return token_data
+
+
+def decode_jwt_token(token: str):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+
+def get_role_from_token(token: str):
+    payload = decode_jwt_token(token)
+    role = payload.get("role")  # Récupérer le champ "role"
+    if role is None:
+        raise HTTPException(status_code=403, detail="Role not found in token")
+    return role
