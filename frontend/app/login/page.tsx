@@ -55,6 +55,7 @@ export default function LoginPage() {
           </CardContent>
           <CardFooter className='flex flex-col space-y-4'>
             <Button className='w-full' type='submit' disabled={isLoading}>
+              {isLoading && <ArrowPathIcon className='mr-2 h-4 w-4 animate-spin' />}
               Sign In
             </Button>
           </CardFooter>

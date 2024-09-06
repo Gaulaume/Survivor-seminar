@@ -219,6 +219,7 @@ export default function StatisticsPage() {
             </CardHeader>
             <CardContent className='grid gap-4 grid-cols-1 lg:grid-cols-2'>
               <div className='flex items-center space-x-4'>
+                <UsersIcon className='h-6 w-6 text-muted-foreground' />
                 <div>
                   <p className='text-sm font-medium'>Total Encounters</p>
                   {isLoading ?
@@ -231,6 +232,7 @@ export default function StatisticsPage() {
                 </div>
               </div>
               <div className='flex items-center space-x-4'>
+                <CalendarIcon className='h-6 w-6 text-muted-foreground' />
                 <div>
                   <p className='text-sm font-medium'>Average Rating</p>
                   {isLoading ? (
@@ -391,6 +393,11 @@ export default function StatisticsPage() {
               }}
             >
               Lauch Comparison
+              {comparing ? (
+                <ArrowPathIcon className='h-4 w-4 ml-2 animate-spin' />
+              ) : (
+                <SparklesIcon className='h-4 w-4 ml-2' />
+              )}
             </Button>
             <div>
               <Combobox
