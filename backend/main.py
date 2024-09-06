@@ -134,7 +134,7 @@ class api_events(BaseModel):
     id: int
     name: str
     date: str
-    max_partcipants: int
+    max_participants: int
 
 class api_event_id(BaseModel):
     id: int
@@ -172,7 +172,6 @@ def get_employees():
     try:
         collection = database.employees
         employees = list(collection.find({}, {"_id": 0, "image": 0}))
-        print(employees)
         return employees
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
