@@ -74,22 +74,16 @@ const Sidebar = ({ className }: { className?: string }) => {
   return (
     <aside className={className}>
       <div className={clsx(
-        'flex flex-col space-y-4 py-4 w-64 border-r border-muted h-screen',
+        'flex flex-col space-y-4 py-4 w-64 border-r h-screen',
       )}>
-        <Link href='/' className='flex items-center space-x-2 px-4'>
-          <HeartIcon className='size-5' />
-          <span className='text-lg font-bold'>
-            Soul Connection
-          </span>
-        </Link>
         <nav className='space-y-2 px-2'>
           {SiderBarContent.map((item, index) => (
             <button
               disabled={item.disabled}
               key={index}
               className={clsx(
-                'flex items-center w-full px-3 py-1.5 rounded-md hover:bg-muted transition-colors duration-200 text-base',
-                actualPath === item.href && 'bg-accent-foreground text-white hover:!bg-accent-foreground/90',
+                'flex items-center w-full px-3 py-1.5 rounded-md hover:bg-muted transition-colors duration-200 text-base border-b',
+                actualPath === item.href && 'bg-muted-foreground',
                 'disabled:opacity-60 disabled:cursor-not-allowed'
               )}
               onClick={() => {
@@ -97,7 +91,6 @@ const Sidebar = ({ className }: { className?: string }) => {
                   router.push(item.href);
               }}
             >
-              <item.icon className='size-4 mr-1' />
               <span>{item.title}</span>
             </button>
           ))}

@@ -12,10 +12,10 @@ import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AuthCheck, useAuth } from '../actions';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ArrowPathIcon, CheckIcon, ChevronDownIcon, SparklesIcon, TrashIcon } from '@heroicons/react/20/solid';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import clsx from 'clsx';
 import { motion } from 'framer-motion';
+import { CheckIcon } from '@heroicons/react/20/solid';
 
 const Combobox = memo(({
   value,
@@ -47,7 +47,6 @@ const Combobox = memo(({
               customers.find((c: Customer) => c.id === value)?.astrological_sign + ')'
             ) : 'Select a customer...'
           }
-          <ChevronDownIcon className='h-4 w-4' />
         </Button>
       </PopoverTrigger>
       <PopoverContent className='max-w-xs w-full p-0'>
@@ -229,7 +228,6 @@ export default function WardrobePage() {
               <Card key={type} className='w-40'>
                 <CardHeader className='p-4'>
                   <CardTitle className='text-sm flex items-center gap-2'>
-                    {getIconForType(type)}
                     {type.charAt(0).toUpperCase() + type.slice(1)}
                   </CardTitle>
                 </CardHeader>
@@ -251,12 +249,11 @@ export default function WardrobePage() {
             ))}
             <div className='flex flex-col md:flex-row gap-2 w-full mt-5'>
               <Button
-                variant='destructive'
+                variant='default'
                 disabled={Object.values(selectedOutfit).every((item) => item === null)}
                 onClick={() => setSelectedOutfit({ top: null, bottom: null, shoes: null, 'hat/cap': null })}
               >
                 Clear outfit
-                <TrashIcon className='h-4 w-4 ml-2' />
               </Button>
               <Button
                 variant='outline'
@@ -264,11 +261,6 @@ export default function WardrobePage() {
                 disabled={!clothes || clothes.length <= 0 || randomLoading}
               >
                 Random outfit
-                {randomLoading ? (
-                  <ArrowPathIcon className='h-4 w-4 ml-2 animate-spin' />
-                ) : (
-                  <SparklesIcon className='h-4 w-4 ml-2' />
-                )}
               </Button>
             </div>
           </CardContent>

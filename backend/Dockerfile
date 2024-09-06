@@ -20,4 +20,5 @@ RUN chmod +x entrypoint.sh
 EXPOSE 8000
 
 # Define the entrypoint script to run the application
+
 ENTRYPOINT ["./entrypoint.sh"]
