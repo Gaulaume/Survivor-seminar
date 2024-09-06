@@ -187,6 +187,11 @@ async def assign_customers_to_coach(session, base_url, headers, db):
     for employee in employees:
         if employee['work'] == 'Coach':
             coaches.append(employee)
+        else:
+            collection.update_one(
+                {'id': employee['id']},
+                {'$set': {'customers_ids': []}}
+            )
 
     customers = list(db.customers.find({}, {"_id": 0, "id": 1}))
     customers = [customer['id'] for customer in customers]

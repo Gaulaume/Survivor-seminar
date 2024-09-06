@@ -30,8 +30,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-)
-
+)   
 
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://mongod:27017/")
 
@@ -77,7 +76,7 @@ class api_Employee_me(BaseModel):
     birth_date: str
     gender: str
     work: str
-
+    customers_ids: List[int]     
 class Token(BaseModel):
     access_token: str
 
@@ -164,13 +163,24 @@ class   ClothesDetail(BaseModel):
 
 # ////////////////  EMPLOYEES  ////////////////
 
+class api_Employee(BaseModel):
+    id: int
+    email: str
+    name: str
+    surname: str
+    birth_date: str
+    gender: str
+    work: str
+    customers_ids: List[int]
+
 @app.get("/api/employees",
          response_model=List[api_Employee],
          tags=["employees"]
 )
 def get_employees(token: str = Security(get_current_user_token)):
     collection = database.employees
-    employees = list(collection.find({}, {"_id": 0}))
+    employees = list(collection.find({}, {"_id": 0, "image": 0}))
+    print(employees)
     if (token.role == 2):
         return employees
     if (token.role == 1):
