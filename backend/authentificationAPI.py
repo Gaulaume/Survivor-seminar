@@ -18,8 +18,11 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 1440
 username = os.getenv('MONGO_INITDB_ROOT_USERNAME')  # Assure-toi que cette variable d'environnement est bien définie
 password = os.getenv('MONGO_INITDB_ROOT_PASSWORD')
 
-client = MongoClient('mongodb://AugustinAdmin:KoalaAdmin@mongodb:27017/')
-db = client['soul-connection']
+MONGO_URL = os.getenv("MONGO_URL", "mongodb://mongod:27017/")
+MONGO_DB = os.getenv("MONGO_DB", "soul-connection")
+client = MongoClient(MONGO_URL)
+
+db = client[MONGO_DB]
 
 api_key_header = APIKeyHeader(name="AuthentificationHeader")
 

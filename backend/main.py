@@ -394,7 +394,7 @@ def get_employee_stats(employee_id: int, token: str = Security(get_current_user_
         print("employee", employee)
         
         if employee['work'] != 'Coach':
-            raise HTTPException(status_code=400, detail="Employee is not a coach")
+            raise HTTPException(status_code=403, detail="Employee is not a coach")
         
         customers_ids = employee['customers_ids']
         if not customers_ids:
