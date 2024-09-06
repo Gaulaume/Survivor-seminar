@@ -1,7 +1,7 @@
 'use client';
 
 import { getCustomers } from '@/api/Customers';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import Customer from '@/types/Customer';
 import { CalendarIcon, UsersIcon } from '@heroicons/react/20/solid';
 import React, { useEffect, useState } from 'react';
@@ -136,8 +136,9 @@ export default function HomePage() {
   return (
     <AuthCheck>
       <div className='container mx-auto space-y-6'>
-        <div className='flex flex-col space-y-3'>
-          <h1 className='text-lg md:text-2xl font-bold'>Customers Statistics</h1>
+        <div className='flex flex-col space-y-3 justify-center items-center'>
+          <h1 className='text-2xl md:text-7xl font-bold'>SOUL CONNECTION</h1>
+          <p className='text-xl md:text-6xl font-bold'>Dashboard</p>
           <hr className='w-full' />
         </div>
         <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
@@ -178,6 +179,7 @@ export default function HomePage() {
                 </div>
               </div>
             </CardContent>
+            <CardFooter/>
           </Card>
           <Card className='flex flex-col'>
             <CardHeader>
@@ -216,6 +218,7 @@ export default function HomePage() {
                 </ChartContainer>
               )}
             </CardContent>
+            <CardFooter/>
           </Card>
           <Card className='flex flex-col'>
             <CardHeader>
@@ -248,6 +251,7 @@ export default function HomePage() {
                 </ChartContainer>
               )}
             </CardContent>
+            <CardFooter/>
           </Card>
           <Card className='flex flex-col'>
             <CardHeader>
@@ -286,6 +290,7 @@ export default function HomePage() {
                 </ChartContainer>
               )}
             </CardContent>
+            <CardFooter/>
           </Card>
         </div>
         <div className='flex flex-col space-y-3'>
@@ -330,6 +335,7 @@ export default function HomePage() {
                 </div>
               </div>
             </CardContent>
+            <CardFooter/>
           </Card>
           <Card className='flex flex-col'>
             <CardHeader>
@@ -364,6 +370,7 @@ export default function HomePage() {
                 </ChartContainer>
               )}
             </CardContent>
+            <CardFooter/>
           </Card>
           <Card className='flex flex-col'>
             <CardHeader>
@@ -376,32 +383,28 @@ export default function HomePage() {
               ) : (
                 <ChartContainer
                   config={chartConfig}
-                  className='mx-auto aspect-square max-h-[250px]'
                 >
-                  <PieChart>
-                    <Pie
-                      data={Object.entries(sourceData).map(([name, value]) => ({ name, value }))}
-                      cx='50%'
-                      cy='50%'
-                      labelLine={false}
-                      outerRadius={80}
-                      fill='#8884d8'
-                      dataKey='value'
-                    >
-                      {Object.entries(sourceData).map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
+                  <BarChart
+                    data={Object.entries(sourceData).map(([name, value]) => ({ name, value }))}
+                  >
+                    <CartesianGrid vertical={false} />
+                    <XAxis
+                      dataKey='name'
+                      tickLine={false}
+                      tickMargin={10}
+                      axisLine={false}
+                    />
                     <ChartTooltip
                       cursor={false}
-                      content={<ChartTooltipContent hideLabel />}
+                      content={<ChartTooltipContent indicator='dashed' />}
                     />
                     <Tooltip />
-                    <Legend />
-                  </PieChart>
+                    <Bar dataKey='value' fill='hsl(var(--chart-1))' radius={[5, 5, 0, 0]} />
+                  </BarChart>
                 </ChartContainer>
               )}
             </CardContent>
+            <CardFooter/>
           </Card>
           <Card className='flex flex-col'>
             <CardHeader>
@@ -416,7 +419,7 @@ export default function HomePage() {
                   config={chartConfig}
                 >
                   <LineChart
-                    data={processedEncounterData()}
+                    data={processedEncounterData().slice(-50)}
                   >
                     <CartesianGrid vertical={false} />
                     <XAxis
@@ -449,6 +452,7 @@ export default function HomePage() {
                 </ChartContainer>
               )}
             </CardContent>
+            <CardFooter/>
           </Card>
         </div>
       </div>
