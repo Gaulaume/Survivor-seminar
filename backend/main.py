@@ -57,6 +57,7 @@ class api_Employee(BaseModel):
     email: str
     name: str
     surname: str
+    work: str
 
 class api_Employee_login(BaseModel):
     email: str

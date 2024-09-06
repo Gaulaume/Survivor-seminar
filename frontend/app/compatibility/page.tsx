@@ -285,8 +285,8 @@ export default function CompatibilityPage() {
                 </motion.div>
               ) : (
                 <div className='relative items-center justify-center flex'>
-                  <HeartIcon className='absolute size-7 animate-ping fill-primary' />
-                  <HeartIcon className='absolute size-7 fill-primary' />
+                  <HeartIcon className='absolute size-7 animate-ping fill-red-600' />
+                  <HeartIcon className='absolute size-7 fill-red-600' />
                 </div>
               )}
               <Combobox value={secondCustomer} setValue={setSecondCustomer} customers={customers.filter((c) => c.id !== firstCustomer)} />
@@ -307,6 +307,7 @@ export default function CompatibilityPage() {
               )}
             >
               Reveal Compatibility
+              <SparklesIcon className='size-5 ml-2' />
             </Button>
             <Progress value={compareProgress} />
           </CardContent>
