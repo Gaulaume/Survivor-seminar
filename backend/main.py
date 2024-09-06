@@ -176,7 +176,7 @@ def get_employees(token: str = Security(get_current_user_token)):
     if (token.role == 1):
         print(traceback.format_exc())
         return list(collection.find({"email": token.email}, {"_id": 0}))
-    raise HTTPException(status_code=401, detail="Unauthorized to acces at this is")
+    raise HTTPException(status_code=403, detail="Not authorised to access this")
 
 @app.post("/api/employees/login",
          response_model=api_Employee_login_cred,
@@ -265,7 +265,7 @@ def get_employee(employee_id: int, token: str = Security(get_current_user_token)
     if (token.role == 1):
         if token.id == employee_id:
             return employee
-    raise HTTPException(status_code=401, detail="Unauthorized to acces at this is")
+    raise HTTPException(status_code=403, detail="Not authorised to access this")
 
 
 
