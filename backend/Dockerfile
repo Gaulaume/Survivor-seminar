@@ -13,8 +13,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application code into the container
 COPY . .
 
+# Make the entrypoint script executable
+RUN chmod +x entrypoint.sh
+
 # Expose the port the app runs on
 EXPOSE 8000
 
-# Define the command to run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Define the entrypoint script to run the application
+ENTRYPOINT ["./entrypoint.sh"]

@@ -6,8 +6,14 @@ from pydantic import BaseModel
 from typing import Union, List
 from fastapi.middleware.cors import CORSMiddleware
 import traceback
+from fastapi.responses import StreamingResponse, FileResponse
+from io import BytesIO
 import base64
-
+import data_fetcher
+import os
+from typing import List, Dict
+from typing import Optional
+import asyncio
 
 origins = [
     "*"
@@ -21,11 +27,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-import os
-from typing import List, Dict
-from typing import Optional
-
 
 
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://mongod:27017/")
@@ -53,6 +54,7 @@ class api_Employee(BaseModel):
     email: str
     name: str
     surname: str
+    work: str
 
 class api_Employee_login(BaseModel):
     email: str
@@ -311,6 +313,97 @@ def get_employee_image(employee_id: int):
         raise HTTPException(status_code=500, detail="An error occurred while fetching the employee image.")
 
 
+
+
+@app.get("/api/employees/{employee_id}/stats",
+         tags=["employees"],
+         responses={
+             200: {
+                 "description": "Returns employee's statistics.",
+                 "content": {
+                     "application/json": {
+                         "example": {
+                             "average_rating": 4.5,
+                             "clients_length": 10,
+                             "clients_length_female": 4,
+                             "clients_length_male": 6
+                         }
+                     }
+                 },
+             },
+             404: {
+                 "description": "Employee requested doesn't exist",
+                 "content": {
+                     "application/json": {
+                         "example": {"detail": "Employee requested doesn't exist"}
+                     }
+                 }
+             },
+             500: {
+                 "description": "Internal server error",
+                 "content": {
+                     "application/json": {
+                         "example": {"detail": "An error occurred while fetching the employee statistics."}
+                     }
+                 }
+             },
+         },
+)
+def get_employee_stats(employee_id: int):
+    try:
+        collection = database.employees
+        employee = collection.find_one({"id": employee_id})
+
+        if employee is None:
+            raise HTTPException(status_code=404, detail="Employee requested doesn't exist")
+        
+        print("employee", employee)
+        
+        if employee['work'] != 'Coach':
+            raise HTTPException(status_code=400, detail="Employee is not a coach")
+        
+        customers_ids = employee['customers_ids']
+        if not customers_ids:
+            raise HTTPException(status_code=400, detail="Employee has no customers")
+        
+        clients_length = len(customers_ids)
+        clients_length_female = 0
+        clients_length_male = 0
+
+        for customer_id in customers_ids:
+            customer = database.customers.find_one({"id": customer_id})
+            if customer['gender'] == 'Female':
+                clients_length_female += 1
+            else:
+                clients_length_male += 1
+
+        if clients_length == 0:
+            average_rating = 0
+        else:
+            count_encounters = 0
+            sum = 0
+            for customer_id in customers_ids:
+                encounters = database.encounters.find({"customer_id": customer_id})
+                for encounter in encounters:
+                    count_encounters += 1
+                    sum += encounter['rating']
+
+            average_rating = sum / count_encounters
+            average_rating = round(average_rating, 2)
+
+        return {
+            "average_rating": average_rating,
+            "clients_length": clients_length,
+            "clients_length_female": clients_length_female,
+            "clients_length_male": clients_length_male,
+        }
+
+    except HTTPException as http_err:
+        # Let FastAPI handle the HTTPException
+        raise http_err
+    except Exception as e:
+        # For other exceptions, return a generic error
+        raise HTTPException(status_code=500, detail=f"An internal error occurred: {str(e)}")
 
 # ////////////////  CUSTOMERS  ////////////////
 
@@ -745,9 +838,52 @@ def delete_event(event_id: int):
 
 # ////////////////  CLOTHES  ////////////////
 
+# Clothes Models
+class Clothes(BaseModel):
+    id: int
+    type: str
+    image: bytes
+
+class ClothesWithoutImg(BaseModel):
+    id: int
+    type: str
 
 
-@app.get("/api/clothes/{clothes_id}/image", tags=["clothes"])
+@app.get("/api/clothes",
+         response_model=List[ClothesWithoutImg],
+         tags=["clothes"])
+def get_clothes():
+    try:
+        collection = database.clothes
+        clothes_list = list(collection.find({}, {"_id": 0, "image": 0}))  # Exclude image field
+        return clothes_list
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/clothes/{clothes_id}",
+         response_model=ClothesWithoutImg,
+         tags=["clothes"])
+def get_clothes_by_id(clothes_id: int):
+    try:
+        collection = database.clothes
+        clothes = collection.find_one({"id": clothes_id}, {"_id": 0, "image": 0})
+        if clothes is None:
+            raise HTTPException(status_code=404, detail="Clothes requested doesn't exist")
+        return clothes
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="An error occurred while fetching the clothes details.")
+
+@app.get("/api/clothes/{clothes_id}/image",
+         tags=["clothes"],
+         responses={
+             200: {"description": "Returns clothes image.",
+                   "content": {"image/png": {}}},
+             404: {"description": "Clothes requested doesn't exist",
+                   "content": {"application/json": {"example": {"detail": "Clothes requested doesn't exist"}}}},
+             500: {"description": "Internal server error",
+                   "content": {"application/json": {"example": {"detail": "An error occurred while fetching the clothes image."}}}},
+         })
 def get_clothes_image(clothes_id: int):
     try:
         collection = database.clothes
@@ -757,49 +893,39 @@ def get_clothes_image(clothes_id: int):
 
         image_stream = BytesIO(clothes["image"])
         return StreamingResponse(image_stream, media_type="image/png")
+
+        image_stream = BytesIO(clothes["image"])
+        return StreamingResponse(image_stream, media_type="image/png")
     except Exception as e:
         print(f"Error fetching image: {e}")
         raise HTTPException(status_code=500, detail="An error occurred while fetching the clothes image.")
-
-
-@app.get("/api/clothes", response_model=clothes_without_img, tags=["clothes"])
-def get_clothes():
+    
+@app.post("/api/clothes/create",
+          response_model=Clothes,
+          tags=["clothes"])
+def create_clothes(clothes: Clothes):
     try:
         collection = database.clothes
-        clothes = list(collection.find({}, {"_id": 0, "image": 0}))
-
-        return clothes
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/api/clothes/{clothes_id}", response_model=clothes, tags=["clothes"])
-def get_clothes(clothes_id: int):
-    try:
-        collection = database.clothes
-        clothes = collection.find_one({"id": clothes_id})
-        if clothes is None:
-            raise HTTPException(status_code=404, detail="Clothes requested doesn't exist")
-        return clothes
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="An error occurred while fetching the clothes details.")
-
-
-@app.post("/api/clothes/create", response_model=clothes, tags=["clothes"])
-def create_clothes(clothes: clothes):
-    try:
-        clothes.id = len(list(database.clothes.find())) + 1
-        collection = database.clothes
-        id = collection.find_one({"id": clothes.id})
-        if id is not None:
-            raise HTTPException(status_code=400, detail="Clothes with this id already exists")
+        clothes.id = len(list(collection.find())) + 1
+        id_check = collection.find_one({"id": clothes.id})
+        if id_check is not None:
+            raise HTTPException(status_code=400, detail="Clothes with this ID already exists")
+        collection.insert_one(clothes.dict())
         return clothes, {"message": "Clothes created successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.put("/api/clothes/update", response_model=clothes, tags=["clothes"])
-def update_clothes(clothes_id: int, clothes: clothes):
+@app.put("/api/clothes/update",
+         response_model=Clothes,
+         tags=["clothes"],
+         responses={
+             200: {"description": "Clothes updated successfully",
+                   "content": {"application/json": {"example": {"id": 1, "type": "string", "image": "byte string"}}}},
+             400: {"description": "Invalid request",
+                   "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
+         })
+def update_clothes(clothes_id: int, clothes: Clothes):
     try:
         collection = database.clothes
         result = collection.update_one({"id": clothes_id}, {"$set": clothes.dict()})
@@ -810,8 +936,14 @@ def update_clothes(clothes_id: int, clothes: clothes):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-
-@app.delete("/api/clothes/delete", response_model=clothes, tags=["clothes"])
+@app.delete("/api/clothes/delete",
+            tags=["clothes"],
+            responses={
+                200: {"description": "Clothes deleted successfully",
+                      "content": {"application/json": {"example": {"id": 1, "type": "string"}}}},
+                400: {"description": "Invalid request",
+                      "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
+            })
 def delete_clothes(clothes_id: int):
     try:
         collection = database.clothes
@@ -821,7 +953,7 @@ def delete_clothes(clothes_id: int):
         return {"message": "Clothes deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
+        
 # ////////////////  COMPATIBILITY  ////////////////
 
 def get_customer_by_id(customer_id: int):

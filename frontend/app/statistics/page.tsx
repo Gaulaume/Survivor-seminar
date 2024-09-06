@@ -135,7 +135,7 @@ export default function StatisticsPage() {
         const token = getToken();
         const data = await getEmployees(token);
         if (!data) throw new Error('Failed to fetch employees');
-        setEmployees(data);
+        setEmployees(data.filter((e: Employee) => e.work === 'Coach'));
       } catch (error) {
         console.error('Error fetching employees:', error);
         toast.error('Failed to fetch employees', {
