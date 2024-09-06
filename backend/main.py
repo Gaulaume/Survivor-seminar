@@ -140,7 +140,7 @@ class api_event_id(BaseModel):
     id: int
     name: str
     date: str
-    max_partcipants: int
+    max_participants: int
     location_x: str
     location_y: str
     type: str
