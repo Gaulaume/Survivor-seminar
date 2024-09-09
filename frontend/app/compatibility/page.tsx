@@ -200,6 +200,21 @@ export default function CompatibilityPage() {
     setCompareProgress(0);
     setCompatibilityValue(null);
 
+    try {
+      const token = getToken();
+      if (token && firstCustomer && secondCustomer) {
+        const data = await getCompatibility(token, firstCustomer, secondCustomer);
+
+        if (!data)
+          throw new Error('Failed to fetch compatibility');
+        setCompatibilityValue(data.result);
+      }
+    } catch (error) {
+      toast.error('Failed to fetch compatibility', {
+        duration: 5000,
+      });
+    }
+
     intervalRef.current = setInterval(() => {
       setCompareProgress((prev) => {
         if (prev < 90) {

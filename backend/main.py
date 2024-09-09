@@ -1,6 +1,8 @@
 from io import BytesIO
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse, FileResponse
+from fastapi import Depends, FastAPI, HTTPException, Security
+from fastapi.responses import FileResponse
 from pymongo import MongoClient
 from pydantic import BaseModel
 from typing import Union, List
@@ -14,6 +16,8 @@ import os
 from typing import List, Dict
 from typing import Optional
 import asyncio
+from authentificationAPI import Role, get_current_user_token, insertDataRegister, insertDataLogin, last_connection_employees
+
 
 origins = [
     "*"
@@ -26,7 +30,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-)   
+)
 
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://mongod:27017/")
 
@@ -62,6 +66,9 @@ class api_Employee_login(BaseModel):
 class api_Employee_login_cred(BaseModel):
     access_token: str
 
+class TokenData(BaseModel):
+    email: str
+
 class api_Employee_me(BaseModel):
     id: int
     email: str
@@ -70,7 +77,10 @@ class api_Employee_me(BaseModel):
     birth_date: str
     gender: str
     work: str
-    customers_ids: List[int]     
+    customers_ids: List[int]
+
+class Token(BaseModel):
+    access_token: str
 
 class api_customer(BaseModel):
     id: int
@@ -91,6 +101,9 @@ class api_customer_id(BaseModel):
     gender: str
     description: str
     astrological_sign: str
+    phone_number: str
+    address: str
+    image: str
 
 class Payment(BaseModel):
     id: int
@@ -113,6 +126,8 @@ class api_encounters(BaseModel):
     customer_id: int
     date: str
     rating: int
+    comment: str
+    source: str
 
 class api_encounter_id(BaseModel):
     id: int
@@ -135,20 +150,12 @@ class api_events(BaseModel):
     id: int
     name: str
     date: str
-    duration: int
-    max_participants: int
-    location_x: str
-    location_y: str
-    type: str
-    employee_id: int
-    location_name: str
     max_participants: int
 
 class api_event_id(BaseModel):
     id: int
     name: str
     date: str
-    duration: int
     max_participants: int
     location_x: str
     location_y: str
@@ -177,22 +184,21 @@ class api_Employee(BaseModel):
          response_model=List[api_Employee],
          tags=["employees"]
 )
-def get_employees():
-    try:
-        collection = database.employees
-        employees = list(collection.find({}, {"_id": 0, "image": 0}))
-        print(employees)
+def get_employees(token: str = Security(get_current_user_token)):
+    collection = database.employees
+    employees = list(collection.find({}, {"_id": 0, "image": 0}))
+    if (token.role == Role.Manager):
         return employees
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
+    if (token.role == Role.Coach):
+        print(traceback.format_exc())
+        return list(collection.find({"email": token.email}, {"_id": 0}))
+    raise HTTPException(status_code=403, detail="Not authorised to access this")
 
 @app.post("/api/employees/login",
-         response_model=api_Employee_login,
+         response_model=api_Employee_login_cred,
          tags=["employees"],
             responses={
-                200: {"description": "Login successful",
+                200: {"description": "Register successful",
                       "content": {"application/json": {"example": {"access token": "string"}}}},
                 401: {"description": "Invalid credentials",
                     "content": {"application/json": {"example": {"detail": "Invalid Email and Password combination."}}}},
@@ -201,16 +207,38 @@ def get_employees():
             },
 )
 def login_employee(employee: api_Employee_login):
+    collection = database.employees
+    user = collection.find_one({"email": employee.email})
+    if user is None:
+        raise HTTPException(status_code=401, detail="Employee not found")
+    last_connection_employees(user['id'])
+    login_cred = insertDataLogin(employee.email, employee.password, user['id'], user['work'])
+    return api_Employee_login_cred(**login_cred)
+
+
+@app.post("/api/employees/register",
+         response_model=api_Employee_login,
+         tags=["employees"],
+            responses={
+                200: {"description": "Register successful",
+                      "content": {"application/json": {"example": {"access token": "string"}}}},
+                401: {"description": "Invalid credentials",
+                    "content": {"application/json": {"example": {"detail": "Email already used"}}}},
+                500: {"description": "Internal server error",
+                    "content": {"application/json": {"example": {"detail": "An error occurred while logging in."}}}},
+            },
+)
+def register_employee(employee: api_Employee_login):
     try:
         collection = database.employees
-        employee = collection.find_one({"email": employee.email, "id": employee.id})
-        if employee is None:
-            raise HTTPException(status_code=404, detail="Employee not found")
-        return employee
+        user = collection.find_one({"email": employee.email})
+        if user is None:
+            return insertDataRegister(employee.email, employee.password, user['id'])
+        raise HTTPException(status_code=401, detail="Employee not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error")
 
-
+#check si email est déjà stocké sinon l'inscrire avec mdp et token si oui  dire que le mail est déjà utilisé
 
 @app.get("/api/employees/me",
          response_model=api_Employee_me,
@@ -222,16 +250,16 @@ def login_employee(employee: api_Employee_login):
                     "content": {"application/json": {"example": {"detail": "An error occurred while fetching the employee details."}}}},
             },
 )
-def get_employee_me():
+def get_employee_me(current_user: TokenData = Security(get_current_user_token)):
     try:
         collection = database.employees
-        employee = collection.find_one({"id": 1})
+        employee = collection.find_one({"email": current_user.email})
         if employee is None:
             raise HTTPException(status_code=404, detail="Employee not found")
         return employee
     except Exception as e:
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail="An error occurred while fetching the employee details.")
-
 
 
 @app.get("/api/employees/{employee_id}",
@@ -244,20 +272,24 @@ def get_employee_me():
                     "content": {"application/json": {"example": {"detail": "An error occurred while fetching the employee details."}}}},
         },
 )
-def get_employee(employee_id: int):
-    try:
-        collection = database.employees
-        employee = collection.find_one({"id": employee_id})
-        if employee is None:
-            raise HTTPException(status_code=404, detail="Employee requested doesn't exist")
+def get_employee(employee_id: int, token: str = Security(get_current_user_token)):
+    collection = database.employees
+    employee = collection.find_one({"id": employee_id})
+    if employee is None:
+        raise HTTPException(status_code=404, detail="Employee requested doesn't exist")
+    if (token.role == Role.Manager):
         return employee
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="An error occurred while fetching the employee details.")
+    if (token.role == Role.Coach):
+        if token.id == employee_id:
+            return employee
+    raise HTTPException(status_code=403, detail="Not authorised to access this")
+
+
 
 
 
 @app.post("/api/employee", response_model=api_Employee_me, tags=["employees"])
-def create_employee(employee: api_Employee_me):
+def create_employee(employee: api_Employee_me, token: str = Security(get_current_user_token)):
     try:
         employee.id = len(list(database.employees.find())) + 1
         collection = database.employees
@@ -279,7 +311,7 @@ def create_employee(employee: api_Employee_me):
                         "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
             },
 )
-def update_employee(employee_id: int, employee: api_Employee_me):
+def update_employee(employee_id: int, employee: api_Employee_me, token: str = Security(get_current_user_token)):
     try:
         collection = database.employees
         result = collection.update_one({"id": employee_id}, {"$set": employee.dict()})
@@ -291,7 +323,7 @@ def update_employee(employee_id: int, employee: api_Employee_me):
 
 
 @app.delete("/api/employee/{employee_id}", tags=["employees"])
-def delete_employee(employee_id: int):
+def delete_employee(employee_id: int, token: str = Security(get_current_user_token)):
     try:
         collection = database.employees
         result = collection.delete_one({"id": employee_id})
@@ -306,7 +338,7 @@ def delete_employee(employee_id: int):
          tags=["employees"],
          responses={
              200: {"description": "Returns employee's profile picture.",
-                   "content": {"image/png": {}}},
+                   "content": {"application/json": {}}},
              400: {"description": "Employee image is not in PNG format",
                      "content": {"application/json": {"example": {"detail": "Employee image is not in PNG format"}}}},
              404: {"description": "Employee requested doesn't exist",
@@ -315,16 +347,14 @@ def delete_employee(employee_id: int):
                    "content": {"application/json": {"example": {"detail": "An error occurred while fetching the employee image."}}}},
          },
 )
-def get_employee_image(employee_id: int):
+def get_employee_image(employee_id: int, token: str = Security(get_current_user_token)):
     try:
         collection = database.employees
         employee = collection.find_one({"id": employee_id})
         if employee is None:
             raise HTTPException(status_code=404, detail="Employee requested doesn't exist")
-        image_path = employee["image"]
-        if not image_path.endswith(".png"):
-            raise HTTPException(status_code=400, detail="Employee image is not in PNG format")
-        return FileResponse(image_path, media_type="image/png")
+        employee["image"] = "data:image/png;base64," + base64.b64encode(employee["image"]).decode('utf-8')
+        return employee["image"]
     except HTTPException as e:
         raise e
     except Exception as e:
@@ -367,7 +397,7 @@ def get_employee_image(employee_id: int):
              },
          },
 )
-def get_employee_stats(employee_id: int):
+def get_employee_stats(employee_id: int, token: str = Security(get_current_user_token)):
     try:
         collection = database.employees
         employee = collection.find_one({"id": employee_id})
@@ -378,7 +408,7 @@ def get_employee_stats(employee_id: int):
         print("employee", employee)
         
         if employee['work'] != 'Coach':
-            raise HTTPException(status_code=400, detail="Employee is not a coach")
+            raise HTTPException(status_code=403, detail="Employee is not a coach")
         
         customers_ids = employee['customers_ids']
         if not customers_ids:
@@ -430,22 +460,39 @@ def get_employee_stats(employee_id: int):
 @app.get("/api/customers",
         response_model=List[api_customer_id],
         tags=["customers"])
+def get_customers(token: str = Security(get_current_user_token)):
+    collection_emp = database.employees
+    collection_cus = database.customers
 
-def get_customers():
-    try:
-        collection = database.customers
-        customers = list(collection.find({}, {"_id": 0}))
+    customers = list(collection_cus.find({}, {"_id": 0}))
+    employee = collection_emp.find_one({"id": token.id})
+
+    if (token.role == Role.Coach):
+        customers_ids = employee['customers_ids']
+        if not customers_ids:
+            raise HTTPException(status_code=400, detail="Employee has no customers")
+        return list(collection_cus.find({"id": {"$in": customers_ids}}))
+    else:
         return customers
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+
+        #POUR GET CUSTOMERS
+        #if (token.role == 1):
+        #    customers_ids = employee['customers_ids']
+        #    if not customers_ids:
+        #        raise HTTPException(status_code=400, detail="Employee has no customers")
+        #    for customer_id in customers_ids:
+        #        if employee_id == customer_id:
+        #            return employee
+
 
 @app.get("/api/customers/{customer_id}",
         response_model=api_customer_id,
         tags=["customers"])
-def get_customer(customer_id: int):
+def get_customer(customer_id: int, token: str = Security(get_current_user_token)):
     try:
         collection = database.customers
         customer = collection.find_one({"id": customer_id})
+        customer["image"] = "data:image/png;base64," + base64.b64encode(customer["image"]).decode('utf-8')
         if customer is None:
             raise HTTPException(status_code=404, detail="Customer requested doesn't exist")
         return customer
@@ -464,7 +511,7 @@ def get_customer(customer_id: int):
                     "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
         },
 )
-def create_customer(customer: api_customer_id):
+def create_customer(customer: api_customer_id, token: str = Security(get_current_user_token)):
     try:
         customer.id = len(list(database.customers.find())) + 1
         collection = database.customers
@@ -485,7 +532,7 @@ def create_customer(customer: api_customer_id):
                     "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
         },
 )
-def update_customer(customer_id: int, customer: api_customer_id):
+def update_customer(customer_id: int, customer: api_customer_id, token: str = Security(get_current_user_token)):
     try:
         collection = database.customers
         result = collection.update_one({"id": customer_id}, {"$set": customer.dict()})
@@ -506,7 +553,7 @@ def update_customer(customer_id: int, customer: api_customer_id):
                     "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
         },
 )
-def delete_customer(customer_id: int):
+def delete_customer(customer_id: int, token: str = Security(get_current_user_token)):
     try:
         collection = database.customers
         result = collection.delete_one({"id": customer_id})
@@ -516,26 +563,50 @@ def delete_customer(customer_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/customers/{customer_id}/payments_history",
-         response_model=List[Payment],
-         tags=["customers"])
-def get_payments_history(customer_id: int):
+
+@app.get("/api/customers/{customer_id}/image",
+        tags=["customers"],
+        responses={
+            200: {"description": "Returns customer's profile picture.",
+                    "content": {"image/png": {}}},
+            404: {"description": "Customer requested doesn't exist",
+                    "content": {"application/json": {"example": {"detail": "Customer requested doesn't exist"}}}},
+            500: {"description": "Internal server error",
+                    "content": {"application/json": {"example": {"detail": "An error occurred while fetching the customer image."}}}},
+        },
+)
+def get_customer_image(customer_id: int, token: str = Security(get_current_user_token)):
     try:
         collection = database.customers
         customer = collection.find_one({"id": customer_id})
         if customer is None:
             raise HTTPException(status_code=404, detail="Customer requested doesn't exist")
-        if "payment_history" not in customer:
-            raise HTTPException(status_code=404, detail="No payment history found for this customer")
-        return customer["payment_history"]
+        return FileResponse(customer["image"])
     except Exception as e:
-            raise HTTPException(status_code=500, detail="An error occurred while fetching the customer payments.")
+        raise HTTPException(status_code=500, detail="An error occurred while fetching the customer image.")
+
+
+
+@app.get("/api/customers/{customer_id}/payments_history",
+         response_model=List[Payment],
+         tags=["customers"])
+def get_payments_history(customer_id: int, token: str = Security(get_current_user_token)):
+    if (token.role != Role.Manager):
+        raise HTTPException(status_code=403, detail="Unauthorised use")
+    collection = database.customers
+    customer = collection.find_one({"id": customer_id})
+    if customer is None:
+        raise HTTPException(status_code=404, detail="Customer requested doesn't exist")
+    if "payment_history" not in customer:
+        raise HTTPException(status_code=404, detail="No payment history found for this customer")
+    return customer["payment_history"]
+
 
 
 @app.get("/api/customers/{customer_id}/clothes",
          response_model=List[ClothesDetail],
          tags=["customers"])
-def get_clothes(customer_id: int):
+def get_clothes(customer_id: int, token: str = Security(get_current_user_token)):
     try:
         customer_collection = database.customers
         customer = customer_collection.find_one({"id": customer_id})
@@ -571,7 +642,7 @@ def get_clothes(customer_id: int):
 @app.get("/api/encounters",
             response_model=List[api_encounter_id],
             tags=["encounters"])
-def get_encounters():
+def get_encounters(token: str = Security(get_current_user_token)):
     try:
         collection = database.encounters
         encounters = list(collection.find({}, {"_id": 0}))
@@ -584,7 +655,7 @@ def get_encounters():
 @app.get("/api/encounters/{encounter_id}",
             response_model=api_encounter_id,
             tags=["encounters"])
-def get_encounter(encounter_id: int):
+def get_encounter(encounter_id: int, token: str = Security(get_current_user_token)):
     try:
         collection = database.encounters
         encounter = collection.find_one({"id": encounter_id})
@@ -606,7 +677,7 @@ def get_encounter(encounter_id: int):
                     "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
             },
 )
-def create_encounter(encounter: api_encounters):
+def create_encounter(encounter: api_encounters, token: str = Security(get_current_user_token)):
     try:
         encounter.id = len(list(database.encounters.find())) + 1
         collection = database.encounters
@@ -628,7 +699,7 @@ def create_encounter(encounter: api_encounters):
                     "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
             },
 )
-def update_encounter(encounter_id: int, encounter: api_encounter_id):
+def update_encounter(encounter_id: int, encounter: api_encounter_id, token: str = Security(get_current_user_token)):
     try:
         collection = database.encounters
         result = collection.update_one({"id": encounter_id}, {"$set": encounter.dict()})
@@ -649,7 +720,7 @@ def update_encounter(encounter_id: int, encounter: api_encounter_id):
                     "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
             },
 )
-def delete_encounter(encounter_id: int):
+def delete_encounter(encounter_id: int, token: str = Security(get_current_user_token)):
     try:
         collection = database.encounters
         result = collection.delete_one({"id": encounter_id})
@@ -664,7 +735,7 @@ def delete_encounter(encounter_id: int):
 @app.get("/api/encounter/customer/{customer_id}",
             response_model=List[api_encounters],
             tags=["encounters"])
-def get_encounter_customer(customer_id: int):
+def get_encounter_customer(customer_id: int, token: str = Security(get_current_user_token)):
     try:
         collection = database.encounters
         encounters = list(collection.find({"customer_id": customer_id}, {"_id": 0}))
@@ -681,7 +752,7 @@ def get_encounter_customer(customer_id: int):
 @app.get("/api/tips",
             response_model=List[api_tips],
             tags=["tips"])
-def get_tips():
+def get_tips(token: str = Security(get_current_user_token)):
     try:
         collection = database.tips
         tips = list(collection.find({}, {"_id": 0}))
@@ -693,7 +764,7 @@ def get_tips():
 @app.get("/api/tips/{tip_id}",
             response_model=api_tips,
             tags=["tips"])
-def get_tip(tip_id: int):
+def get_tip(tip_id: int, token: str = Security(get_current_user_token)):
     try:
         collection = database.tips
         tip = collection.find_one({"id": tip_id})
@@ -707,7 +778,7 @@ def get_tip(tip_id: int):
 
 
 @app.post("/api/tip", response_model=api_tips, tags=["tips"])
-def create_tip(tip: api_tips):
+def create_tip(tip: api_tips, token: str = Security(get_current_user_token)):
     try:
         tip.id = len(list(database.tips.find())) + 1
         collection = database.tips
@@ -729,7 +800,7 @@ def create_tip(tip: api_tips):
                             "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
                             },
 )
-def update_tips(tips_id: int, tips: api_tips_update):
+def update_tips(tips_id: int, tips: api_tips_update, token: str = Security(get_current_user_token)):
     try:
         collection = database.tips
         result = collection.update_one({"id": tips_id}, {"$set": tips.dict()})
@@ -741,7 +812,7 @@ def update_tips(tips_id: int, tips: api_tips_update):
 
 
 @app.delete("/api/tip/{employee_id}", tags=["tips"])
-def delete_tips(tips_id: int):
+def delete_tips(tips_id: int, token: str = Security(get_current_user_token)):
     try:
         collection = database.tips
         result = collection.delete_one({"id": tips_id})
@@ -760,7 +831,7 @@ def delete_tips(tips_id: int):
 @app.get("/api/events",
             response_model=List[api_events],
             tags=["events"])
-def get_events():
+def get_events(token: str = Security(get_current_user_token)):
     try:
         collection = database.events
         events = list(collection.find({}, {"_id": 0}))
@@ -769,11 +840,10 @@ def get_events():
         print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @app.get("/api/events/{event_id}",
             response_model=api_event_id,
             tags=["events"])
-def get_event(event_id: int):
+def get_event(event_id: int, token: str = Security(get_current_user_token)):
     try:
         collection = database.events
         event = collection.find_one({"id": event_id})
@@ -786,7 +856,7 @@ def get_event(event_id: int):
 
 
 @app.post("/api/events", response_model=api_event_id, tags=["events"])
-def create_event(event: api_event_id):
+def create_event(event: api_event_id, token: str = Security(get_current_user_token)):
     try:
         event.id = len(list(database.events.find())) + 1
         collection = database.events
@@ -809,7 +879,7 @@ def create_event(event: api_event_id):
                       "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
             },
 )
-def update_event(event_id: int, event: api_event_id):
+def update_event(event_id: int, event: api_event_id, token: str = Security(get_current_user_token)):
     try:
         collection = database.events
         result = collection.update_one({"id": event_id}, {"$set": event.dict()})
@@ -831,7 +901,7 @@ def update_event(event_id: int, event: api_event_id):
                       "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
             },
 )
-def delete_event(event_id: int):
+def delete_event(event_id: int, token: str = Security(get_current_user_token)):
     try:
         collection = database.events
         result = collection.delete_one({"id": event_id})
@@ -855,10 +925,25 @@ class ClothesWithoutImg(BaseModel):
     type: str
 
 
+@app.get("/api/clothes/{clothes_id}/image", tags=["clothes"])
+def get_clothes_image(clothes_id: int, token: str = Security(get_current_user_token)):
+    try:
+        collection = database.clothes
+        clothes = collection.find_one({"id": clothes_id})
+        if clothes is None:
+            raise HTTPException(status_code=404, detail="Clothes requested doesn't exist")
+
+        image_stream = BytesIO(clothes["image"])
+        return StreamingResponse(image_stream, media_type="image/png")
+    except Exception as e:
+        print(f"Error fetching image: {e}")
+        raise HTTPException(status_code=500, detail="An error occurred while fetching the clothes image.")
+
+
 @app.get("/api/clothes",
          response_model=List[ClothesWithoutImg],
          tags=["clothes"])
-def get_clothes():
+def get_clothes(token: str = Security(get_current_user_token)):
     try:
         collection = database.clothes
         clothes_list = list(collection.find({}, {"_id": 0, "image": 0}))  # Exclude image field
@@ -870,7 +955,7 @@ def get_clothes():
 @app.get("/api/clothes/{clothes_id}",
          response_model=ClothesWithoutImg,
          tags=["clothes"])
-def get_clothes_by_id(clothes_id: int):
+def get_clothes_by_id(clothes_id: int, token: str = Security(get_current_user_token)):
     try:
         collection = database.clothes
         clothes = collection.find_one({"id": clothes_id}, {"_id": 0, "image": 0})
@@ -896,9 +981,6 @@ def get_clothes_image(clothes_id: int):
         clothes = collection.find_one({"id": clothes_id})
         if clothes is None:
             raise HTTPException(status_code=404, detail="Clothes requested doesn't exist")
-
-        image_stream = BytesIO(clothes["image"])
-        return StreamingResponse(image_stream, media_type="image/png")
 
         image_stream = BytesIO(clothes["image"])
         return StreamingResponse(image_stream, media_type="image/png")
@@ -931,7 +1013,7 @@ def create_clothes(clothes: Clothes):
              400: {"description": "Invalid request",
                    "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
          })
-def update_clothes(clothes_id: int, clothes: Clothes):
+def update_clothes(clothes_id: int, clothes: Clothes, token: str = Security(get_current_user_token)):
     try:
         collection = database.clothes
         result = collection.update_one({"id": clothes_id}, {"$set": clothes.dict()})
@@ -950,7 +1032,7 @@ def update_clothes(clothes_id: int, clothes: Clothes):
                 400: {"description": "Invalid request",
                       "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
             })
-def delete_clothes(clothes_id: int):
+def delete_clothes(clothes_id: int, token: str = Security(get_current_user_token)):
     try:
         collection = database.clothes
         result = collection.delete_one({"id": clothes_id})
@@ -962,7 +1044,7 @@ def delete_clothes(clothes_id: int):
 
 # ////////////////  COMPATIBILITY  ////////////////
 
-def get_customer_by_id(customer_id: int):
+def get_customer_by_id(customer_id: int, token: str = Security(get_current_user_token)):
     try:
         collection = database.customers
         customer = collection.find_one({"id": customer_id})
@@ -972,7 +1054,7 @@ def get_customer_by_id(customer_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving customer: {str(e)}")
 
-def calculate_compatibility(customer1: api_customer_id, customer2: api_customer_id):
+def calculate_compatibility(customer1: api_customer_id, customer2: api_customer_id, token: str = Security(get_current_user_token)):
 
     compatibility_scores = {
         ("Aries", "Aries"): 2,
@@ -1073,7 +1155,7 @@ def calculate_compatibility(customer1: api_customer_id, customer2: api_customer_
         raise HTTPException(status_code=400, detail="Invalid astrological signs provided")
 
 @app.post("/api/compatibility", tags=["compatibility"])
-def get_compatibility(customer1_id: int, customer2_id: int):
+def get_compatibility(customer1_id: int, customer2_id: int, token: str = Security(get_current_user_token)):
     """Calculates compatibility between two customers."""
     try:
         customer1 = get_customer_by_id(customer1_id)
