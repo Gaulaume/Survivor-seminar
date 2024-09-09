@@ -16,8 +16,8 @@ export const handleLogout = async (): Promise<void> => {
   window.location.href = '/login';
 };
 
-export const handleLoginEmail = async (email: string): Promise<boolean> => {
-  const response = await employeeLogin(email, 'password');
+export const handleLoginEmail = async (email: string, rememberMe: boolean): Promise<boolean> => {
+  const response = await employeeLogin(email, 'password'); // Put rememberMe in the request
 
   if (!response)
     return false;

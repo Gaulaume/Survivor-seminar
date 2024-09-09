@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowPathIcon, HeartIcon } from '@heroicons/react/20/solid';
+import { ArrowLeftIcon, ArrowPathIcon, CheckCircleIcon, DocumentCheckIcon, EnvelopeIcon, HeartIcon, PaperAirplaneIcon } from '@heroicons/react/20/solid';
 import Link from 'next/link';
 import { useState } from 'react';
 import { handleLoginEmail, handleLoginPin } from '../actions';
@@ -21,11 +21,14 @@ import {
 } from '@/components/ui/input-otp';
 import { useEffect } from 'react';
 import clsx from 'clsx';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const emailSchema = z.object({
   email: z.string().email({
     message: 'Please enter a valid email address.',
   }),
+  rememberMe: z.boolean().default(false),
 })
 
 const codeSchema = z.object({
@@ -39,7 +42,7 @@ const fadeIn = {
   visible: { opacity: 1, y: 0 },
 }
 
-export default function LoginPage() {
+const Login = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [step, setStep] = useState<number>(1);
   const router = useRouter();
@@ -49,6 +52,7 @@ export default function LoginPage() {
     resolver: zodResolver(emailSchema),
     defaultValues: {
       email: '',
+      rememberMe: false,
     },
   })
 
@@ -73,10 +77,10 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      const emailValue = values.email;
-      const response = await handleLoginEmail(emailValue);
-      if (!response)
-        throw new Error('Invalid login credentials');
+      const { email, rememberMe } = values;
+      const response = await handleLoginEmail(email, rememberMe);
+      //if (!response)
+      //  throw new Error('Invalid login credentials');
       setStep(2);
     } catch (error) {
       if (error instanceof Error)
@@ -107,7 +111,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className='container flex flex-col items-center justify-center h-screen w-full mx-auto'>
+    <div className='container flex flex-col items-center justify-center w-full mx-auto h-96'>
       <motion.div
         className='mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]'
         initial='hidden'
@@ -124,7 +128,7 @@ export default function LoginPage() {
               <HeartIcon className='absolute size-7 animate-ping fill-red-600' />
               <HeartIcon className='absolute size-7 fill-red-600' />
             </div>
-            <h2 className='text-2xl md:text-3xl font-semibold tracking-tight'>
+            <h2 className='text-2xl md:text-3xl font-bold tracking-tight'>
               Soul Connection
             </h2>
             <div className='relative items-center justify-center flex'>
@@ -138,55 +142,86 @@ export default function LoginPage() {
         </div>
         {step === 1 ? (
           <Form {...emailForm}>
-            <form onSubmit={emailForm.handleSubmit(onSubmit)} className='space-y-2'>
+            <form onSubmit={emailForm.handleSubmit(onSubmit)} className='space-y-4'>
               <motion.div
                 variants={fadeIn}
                 transition={{ delay: 0.2, duration: 0.5 }}
-            >
-              <FormField
-                control={emailForm.control}
-                name='email'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder='name@example.com' {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </motion.div>
-            <motion.div
-              variants={fadeIn}
-              transition={{ delay: 0.4, duration: 0.5 }}
-            >
-              <Button
-                className='w-full relative'
-                type='submit'
-                shiny
-                disabled={isLoading}
               >
-                {isLoading ? (
-                  <ArrowPathIcon className='mr-2 h-4 w-4 animate-spin' />
-                ) : 'Sign In with Email'}
-              </Button>
-            </motion.div>
-            <motion.p
-              className='px-8 text-center text-xs text-muted-foreground'
-              variants={fadeIn}
-              transition={{ delay: 0.6, duration: 0.5 }}
-            >
-              By signing in, you agree to our{' '}
-              <Link href='/terms' className='hover:text-brand underline underline-offset-4'>
-                Terms of Service
-              </Link>{' '}
-              and{' '}
-              <Link href='/privacy' className='hover:text-brand underline underline-offset-4'>
-                Privacy Policy
-              </Link>
-              .
-            </motion.p>
+                <FormField
+                  control={emailForm.control}
+                  name='email'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input placeholder='name.surname@soul-connection.com' {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </motion.div>
+              <motion.div
+                variants={fadeIn}
+                transition={{ delay: 0.3, duration: 0.5 }}
+              >
+                <FormField
+                  control={emailForm.control}
+                  name='rememberMe'
+                  render={({ field }) => (
+                    <FormItem className='flex flex-row items-center space-x-3 space-y-0'>
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <label
+                        htmlFor='terms'
+                        className='text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
+                      >
+                        Remember on this device
+                      </label>
+                    </FormItem>
+                  )}
+                />
+              </motion.div>
+              <motion.div
+                variants={fadeIn}
+                transition={{ delay: 0.4, duration: 0.5 }}
+              >
+                <Button
+                  className='w-full relative'
+                  type='submit'
+                  shiny
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <ArrowPathIcon className='mr-2 h-4 w-4 animate-spin' />
+                  ) : (
+                    <span className='flex items-center'>
+                      Sign In with Email
+                      <EnvelopeIcon className='size-4 inline-block ml-1' />
+                    </span>
+                  )}
+                </Button>
+              </motion.div>
+              <motion.p
+                className='px-8 text-center text-xs text-muted-foreground'
+                variants={fadeIn}
+                transition={{ delay: 0.6, duration: 0.5 }}
+              >
+                <DocumentCheckIcon className='size-4 inline-block mr-1' />
+                By signing in, you agree to our{' '}
+                <Link href='/terms' className='hover:text-brand underline underline-offset-4'>
+                  Terms of Service
+                </Link>{' '}
+                and{' '}
+                <Link href='/privacy' className='hover:text-brand underline underline-offset-4'>
+                  Privacy Policy
+                </Link>
+                .
+              </motion.p>
             </form>
           </Form>
         ) : (
@@ -205,15 +240,15 @@ export default function LoginPage() {
                         <div className='flex justify-center'>
                           <InputOTP maxLength={6} {...field}>
                             <InputOTPGroup>
-                            <InputOTPSlot index={0} />
-                            <InputOTPSlot index={1} />
-                            <InputOTPSlot index={2} />
-                          </InputOTPGroup>
-                          <InputOTPSeparator />
-                          <InputOTPGroup>
-                            <InputOTPSlot index={3} />
-                            <InputOTPSlot index={4} />
-                            <InputOTPSlot index={5} />
+                              <InputOTPSlot index={0} />
+                              <InputOTPSlot index={1} />
+                              <InputOTPSlot index={2} />
+                            </InputOTPGroup>
+                            <InputOTPSeparator />
+                            <InputOTPGroup>
+                              <InputOTPSlot index={3} />
+                              <InputOTPSlot index={4} />
+                              <InputOTPSlot index={5} />
                             </InputOTPGroup>
                           </InputOTP>
                         </div>
@@ -234,7 +269,12 @@ export default function LoginPage() {
               >
                 {isLoading ? (
                   <ArrowPathIcon className='mr-2 h-4 w-4 animate-spin' />
-                ) : 'Verify Code'}
+                ) : (
+                  <span className='flex items-center'>
+                    Verify Code
+                    <CheckCircleIcon className='size-4 inline-block ml-1' />
+                  </span>
+                )}
               </Button>
               <motion.div
                 variants={fadeIn}
@@ -256,13 +296,59 @@ export default function LoginPage() {
                     codeForm.resetField('pin');
                   }}
                 >
-                  Resend Code
+                  <span className='flex items-center'>
+                    Resend Code
+                    <PaperAirplaneIcon className='size-4 inline-block ml-1' />
+                  </span>
                 </Button>
               </motion.div>
             </form>
           </Form>
         )}
       </motion.div>
+    </div>
+  )
+}
+
+const Register = ({ setActiveTab }: { setActiveTab: (tab: string) => void }) => {
+  return (
+    <div className='container flex flex-col items-center justify-center h-96 w-full mx-auto space-y-4'>
+      <motion.p
+        className='px-8 text-center text-sm text-muted-foreground'
+        variants={fadeIn}
+        transition={{ delay: 0.6, duration: 0.5 }}
+      >
+        You don't have an account? Please <u className='underline-offset-4'>contact a manager</u> to create an account for you.
+      </motion.p>
+      <Button
+        className='w-full relative'
+        type='button'
+        variant='link'
+        onClick={() => setActiveTab('login')}
+      >
+        Back to Login
+      </Button>
+    </div>
+  )
+}
+
+export default function LoginPage() {
+  const [activeTab, setActiveTab] = useState<string>('login');
+
+  return (
+    <div className='container flex flex-col items-center justify-center h-screen w-full mx-auto'>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-[350px]">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="login">Login</TabsTrigger>
+          <TabsTrigger value="register">Register</TabsTrigger>
+        </TabsList>
+        <TabsContent value="login">
+          <Login />
+        </TabsContent>
+        <TabsContent value="register">
+          <Register setActiveTab={setActiveTab} />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
