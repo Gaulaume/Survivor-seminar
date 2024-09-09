@@ -1,7 +1,7 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
-
+import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
@@ -37,18 +37,45 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
+  shiny?: boolean
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, shiny = false, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
-    return (
+    
+    const buttonContent = (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
         {...props}
       />
     )
+
+    if (shiny) {
+      return (
+        <motion.div
+          className="relative overflow-hidden"
+          style={{ borderRadius: 'inherit' }}
+        >
+          {buttonContent}
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent pointer-events-none"
+            style={{ opacity: 0.2 }}
+            animate={{
+              x: ['-100%', '100%'],
+            }}
+            transition={{
+              repeat: Infinity,
+              duration: 1.5,
+              ease: 'linear',
+            }}
+          />
+        </motion.div>
+      )
+    }
+
+    return buttonContent
   }
 )
 Button.displayName = "Button"

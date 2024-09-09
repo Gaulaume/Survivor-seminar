@@ -117,17 +117,95 @@ const Sidebar = ({ className }: { className?: string }) => {
   );
 };
 
-export default function RootLayout({
+export default function Layout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+  const { getToken } = useAuth();
+  const router = useRouter();
+  const [user, setUser] = useState<Employee | null>(null);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const token = getToken();
+        const user = await getMe(token);
+        if (!user) throw new Error('User not found');
+        setUser(user);
+      } catch (error) {
+        toast.error('Failed to fetch user');
+      }
+    }
+
+    fetchUser();
+  }, []);
+
+
   return (
-    <html lang='en'>
-      <body className='md:flex bg-background'>
-        {children}
-        <Toaster />
-      </body>
-    </html>
+    <>
+      <Sidebar className='h-screen hidden md:flex sticky top-0' />
+      <div className='flex flex-1 flex-col'>
+        <header className='flex h-14 items-center border-b px-4 lg:px-6 sticky top-0 bg-white z-30'>
+          <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+            <SheetTrigger asChild>
+              <Button variant='ghost' size='icon' className='md:hidden'>
+                <Bars3Icon className='size-5' />
+                <span className='sr-only'>Toggle sidebar</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side='left' className='w-64 p-0'>
+              <Sidebar />
+            </SheetContent>
+          </Sheet>
+          <div className='flex flex-row justify-between w-full'>
+            <div className='flex items-center gap-2'>
+              <HeartIcon className='size-5 md:hidden' />
+              <span className='text-lg font-bold md:hidden'>
+                Soul Connection
+              </span>
+            </div>
+            <div className='flex flex-row'>
+              {user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button className='rounded-full' size='icon' variant='outline'>
+                      <Avatar className='h-8 w-8'>
+                        <AvatarImage alt='User avatar' src='/placeholder.svg?height=32&width=32' />
+                        <AvatarFallback>
+                          {user.name[0].toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className='sr-only'>Toggle user menu</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align='end'>
+                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => handleLogout()}>
+                      <ArrowLeftStartOnRectangleIcon className='mr-2 h-4 w-4' />
+                      Log out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Button
+                  variant='default'
+                  size='sm'
+                  onClick={() => router.push('/login')}
+                >
+                  Sign In
+                </Button>
+              )}
+            </div>
+          </div>
+        </header>
+        <main className='flex-1 overflow-y-auto p-4 lg:p-6'>
+          {children}
+        </main>
+      </div>
+    </>
   );
 }
