@@ -7,26 +7,33 @@ import { toast } from 'sonner'
 import Employee from '@/types/Employee'
 import Customer from '@/types/Customer'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { ArrowLeftEndOnRectangleIcon, CheckIcon, ChevronUpDownIcon, PlusIcon } from '@heroicons/react/20/solid'
+import { ArrowLeftEndOnRectangleIcon, CheckIcon, ChevronUpDownIcon, EllipsisHorizontalIcon, PencilIcon, PlusIcon, TrashIcon } from '@heroicons/react/20/solid'
 import { useAuth } from '../actions';
-import { getEmployees, postEmployee, putEmployee } from '@/api/Employees';
+import { deleteEmployee, getEmployees, postEmployee, putEmployee } from '@/api/Employees';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input'
-import { useForm } from 'react-hook-form'
+import { Input } from '@/components/ui/input';
+import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Select } from '@/components/ui/select'
-import { get } from 'http'
-import { getCustomers } from '@/api/Customers'
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { getCustomers } from '@/api/Customers';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Card } from '@/components/ui/card'
 
 
 type MultiSelectProps = {
@@ -50,11 +57,14 @@ function MultiSelect({ items, selectedItems, setSelectedItems }: MultiSelectProp
         </Button>
       </PopoverTrigger>
       <PopoverContent className='w-60'>
-        <div className='space-y-2'>
-          {items.map((item) => (
+        <div className='space-y-2 overflow-y-scroll max-h-52'>
+          {items
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .sort((a, b) => selectedItems.includes(b.id) ? 1 : -1)
+            .map((item) => (
             <button
               key={item.id}
-              className={`flex items-center w-full px-3 py-1.5 rounded-md hover:bg-muted transition-colors duration-200 ${
+              className={`flex gap-2 text-nowrap truncate items-center w-full px-3 py-1.5 rounded-md hover:bg-muted transition-colors duration-200 ${
                 selectedItems.includes(item.id) ? 'bg-muted' : ''
               }`}
               onClick={() => {
@@ -66,7 +76,7 @@ function MultiSelect({ items, selectedItems, setSelectedItems }: MultiSelectProp
                 }
               }}
             >
-              <div className='size-4 mr-2'>
+              <div className='size-4 flex-shrink-0'>
                 {selectedItems.includes(item.id) && <CheckIcon className='h-4 w-4' />}
               </div>
               <span>{item.name}</span>
@@ -93,6 +103,7 @@ export default function EmployeeManagementPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newImage, setNewImage] = useState<string | null>(null);
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const { getToken } = useAuth();
 
   const form = useForm<z.infer<typeof FormSchema>>({
@@ -127,20 +138,35 @@ export default function EmployeeManagementPage() {
     const token = getToken();
     try {
       const data = await putEmployee(token, employeeId, employee);
-      if (data)
+      if (data) {
         toast.success('Employee updated successfully');
-      else
+        const updatedEmployees = employees?.map(e => e.id === employeeId ? { ...e, ...employee } : e) || null;
+        setEmployees(updatedEmployees);
+      } else {
         throw new Error('Failed to update employee');
+      }
     } catch (error) {
       toast.error('Failed to update employee');
     }
   };
 
+  const handleDeleteEmployee = async (employeeId: number) => {
+    const token = getToken();
+    try {
+      const result = await deleteEmployee(token, employeeId);
+      if (!result) throw new Error('Failed to delete employee');
+      toast.success('Employee deleted successfully');
+      const updatedEmployees = employees?.filter(e => e.id !== employeeId) || null;
+      setEmployees(updatedEmployees);
+    } catch (error) {
+      toast.error('Failed to delete employee');
+    }
+  };
+
   const setEmployeesCustomers = (employeeId: number, customerIds: number[]) => {
     const updatedEmployees = employees?.map((employee) => {
-      if (employee.id === employeeId) {
+      if (employee.id === employeeId)
         return { ...employee, customers: customerIds };
-      }
       return employee;
     });
     if (!updatedEmployees) return;
@@ -153,17 +179,30 @@ export default function EmployeeManagementPage() {
 
     setIsDialogOpen(false);
     try {
-      console.log('data', data);
       if (newImage)
         data.image = newImage;
-      const resultData = await postEmployee(token, data);
-      if (resultData) {
-        toast.success('Employee updated successfully');
+      if (editingEmployee) {
+        const resultData = await putEmployee(token, editingEmployee.id, { ...editingEmployee, ...data });
+        if (resultData) {
+          toast.success('Employee updated successfully');
+          const updatedEmployees = employees?.map(e => e.id === editingEmployee.id ? { ...e, ...data } : e) || null;
+          setEmployees(updatedEmployees);
+        } else {
+          throw new Error('Failed to update employee');
+        }
       } else {
-        throw new Error('Failed to update employee');
+        const resultData = await postEmployee(token, data);
+        if (resultData) {
+          toast.success('Employee added successfully');
+          setEmployees(prev => prev ? [...prev, resultData] : [resultData]);
+        } else {
+          throw new Error('Failed to add employee');
+        }
       }
+      setEditingEmployee(null);
+      form.reset();
     } catch (error) {
-      toast.error('Failed to update employee');
+      toast.error(editingEmployee ? 'Failed to update employee' : 'Failed to add employee');
     }
   };
 
@@ -180,6 +219,11 @@ export default function EmployeeManagementPage() {
     }
   };
 
+  const openEditDialog = (employee: Employee) => {
+    setEditingEmployee(employee);
+    form.reset(employee);
+    setIsDialogOpen(true);
+  };
 
   return (
     <div className='flex flex-col space-y-4 h-full'>
@@ -194,9 +238,11 @@ export default function EmployeeManagementPage() {
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add New Employee</DialogTitle>
+            <DialogTitle>{editingEmployee ? 'Edit Employee' : 'Add New Employee'}</DialogTitle>
           </DialogHeader>
-          <DialogDescription>Fill out the information to add a new employee</DialogDescription>
+          <DialogDescription>
+            {editingEmployee ? 'Edit the information of the existing employee' : 'Fill out the information to add a new employee'}
+          </DialogDescription>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-3 mt-3'>
               <FormField
@@ -301,12 +347,16 @@ export default function EmployeeManagementPage() {
                   type='submit'
                   variant='default'
                 >
-                  Create New Employee
-                  <PlusIcon className='h-4 w-4 ml-2' />
+                  {editingEmployee ? 'Update Employee' : 'Create New Employee'}
+                  {editingEmployee ? <PencilIcon className='h-4 w-4 ml-2' /> : <PlusIcon className='h-4 w-4 ml-2' />}
                 </Button>
                 <Button
                   variant='outline'
-                  onClick={() => setIsDialogOpen(false)}
+                  onClick={() => {
+                    setIsDialogOpen(false);
+                    setEditingEmployee(null);
+                    form.reset();
+                  }}
                 >
                   Cancel and Close
                   <ArrowLeftEndOnRectangleIcon className='h-4 w-4 ml-2' />
@@ -317,7 +367,7 @@ export default function EmployeeManagementPage() {
         </DialogContent>
       </Dialog>
 
-      <div className='rounded-md border max-h-96 overflow-y-auto'>
+      <Card className='rounded-md border overflow-y-auto'>
         <Table>
           <TableHeader>
             <TableRow>
@@ -325,26 +375,56 @@ export default function EmployeeManagementPage() {
               <TableHead>Birthday</TableHead>
               <TableHead>Assigned Clients</TableHead>
               <TableHead>Last Connection</TableHead>
+              <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {employees?.map((employee) => (
+            {employees?.sort((a, b) => a.name.localeCompare(b.name)).map((employee) => (
               <TableRow key={employee.id}>
                 <TableCell>{employee.name} {employee.surname}</TableCell>
                 <TableCell>{employee.birth_date}</TableCell>
                 <TableCell>
                   <MultiSelect
                     items={customers.map((c) => ({ id: c.id, name: `${c.name} ${c.surname}` }))}
-                    selectedItems={employee.customers || []}
+                    selectedItems={employee.customers_ids || []}
                     setSelectedItems={(customerIds) => setEmployeesCustomers(employee.id, customerIds)}
                   />
                 </TableCell>
                 <TableCell>{employee.last_connection || 'Never'}</TableCell>
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant='ghost' size='icon'>
+                        <EllipsisHorizontalIcon className='size-5' />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className='w-56'>
+                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuGroup>
+                        <DropdownMenuItem
+                          className='cursor-pointer'
+                          onClick={() => openEditDialog(employee)}
+                        >
+                          <PencilIcon className='h-4 w-4 mr-2' />
+                          Edit employee
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className='cursor-pointer'
+                          onClick={() => handleDeleteEmployee(employee.id)}
+                        >
+                          <TrashIcon className='h-4 w-4 mr-2' />
+                          Delete employee
+                        </DropdownMenuItem>
+                      </DropdownMenuGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
-      </div>
+      </Card>
     </div>
   );
 }
