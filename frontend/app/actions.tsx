@@ -17,9 +17,9 @@ export const handleLogin = async (formData: FormData): Promise<void> => {
 
   console.log('response ', response);
 
-  if (response && response.token) {
-    console.log('response.token ', response.token);
-    localStorage.setItem('token', response.token);
+  if (response && response.access_token) {
+    console.log('response.access_token ', response.access_token);
+    localStorage.setItem('token', response.access_token);
     window.location.href = '/';
   } else {
     throw new Error('Invalid login credentials');
