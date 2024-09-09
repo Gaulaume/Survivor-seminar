@@ -10,12 +10,13 @@ from jose import JWTError
 import os
 import time
 
-SECRET_KEY = "SecretKey"
-ALGORITHM = "HS256"
+SECRET_KEY = os.getenv('SECRET_KEY')
+ALGORITHM = os.getenv('ALGORITHM')
+
 ACCESS_TOKEN_EXPIRE_MINUTES = 1440
 
 
-username = os.getenv('MONGO_INITDB_ROOT_USERNAME')  # Assure-toi que cette variable d'environnement est bien définie
+username = os.getenv('MONGO_INITDB_ROOT_USERNAME')
 password = os.getenv('MONGO_INITDB_ROOT_PASSWORD')
 
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://mongod:27017/")
