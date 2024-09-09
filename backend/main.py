@@ -144,13 +144,13 @@ class api_events(BaseModel):
     id: int
     name: str
     date: str
-    max_partcipants: int
+    max_participants: int
 
 class api_event_id(BaseModel):
     id: int
     name: str
     date: str
-    max_partcipants: int
+    max_participants: int
     location_x: str
     location_y: str
     type: str
@@ -284,7 +284,7 @@ def get_employee(employee_id: int, token: str = Security(get_current_user_token)
 
 
 
-@app.post("/api/employee/create", response_model=api_Employee_me, tags=["employees"])
+@app.post("/api/employee", response_model=api_Employee_me, tags=["employees"])
 def create_employee(employee: api_Employee_me, token: str = Security(get_current_user_token)):
     try:
         employee.id = len(list(database.employees.find())) + 1
@@ -297,7 +297,7 @@ def create_employee(employee: api_Employee_me, token: str = Security(get_current
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.put("/api/employee/update",
+@app.put("/api/employee/{employee_id}",
          response_model=api_Employee_me,
          tags=["employees"],
          responses={
@@ -318,7 +318,7 @@ def update_employee(employee_id: int, employee: api_Employee_me, token: str = Se
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.delete("/api/employee/delete", tags=["employees"])
+@app.delete("/api/employee/{employee_id}", tags=["employees"])
 def delete_employee(employee_id: int, token: str = Security(get_current_user_token)):
     try:
         collection = database.employees
@@ -498,7 +498,7 @@ def get_customer(customer_id: int, token: str = Security(get_current_user_token)
 
 
 
-@app.post("/api/customer/create",
+@app.post("/api/customer",
         response_model=api_customer_id,
         tags=["customers"],
         responses={
@@ -519,7 +519,7 @@ def create_customer(customer: api_customer_id, token: str = Security(get_current
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.put("/api/customer/update",
+@app.put("/api/customer/{employee_id}",
         response_model=api_customer_id,
         tags=["customers"],
         responses={
@@ -540,7 +540,7 @@ def update_customer(customer_id: int, customer: api_customer_id, token: str = Se
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.delete("/api/customer/delete",
+@app.delete("/api/customer/{employee_id}",
         response_model=api_customer_id,
         tags=["customers"],
         responses={
@@ -664,7 +664,7 @@ def get_encounter(encounter_id: int, token: str = Security(get_current_user_toke
 
 
 
-@app.post("/api/encounter/create",
+@app.post("/api/encounter",
             response_model=api_encounters,
             tags=["encounters"],
             responses={
@@ -686,7 +686,7 @@ def create_encounter(encounter: api_encounters, token: str = Security(get_curren
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.put("/api/encounter/update",
+@app.put("/api/encounter/{employee_id}",
             response_model=api_encounter_id,
             tags=["encounters"],
             responses={
@@ -707,7 +707,7 @@ def update_encounter(encounter_id: int, encounter: api_encounter_id, token: str 
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.delete("/api/encounter/delete",
+@app.delete("/api/encounter/{employee_id}",
             response_model=api_encounter_id,
             tags=["encounters"],
             responses={
@@ -774,7 +774,7 @@ def get_tip(tip_id: int, token: str = Security(get_current_user_token)):
 
 
 
-@app.post("/api/tip/create", response_model=api_tips, tags=["tips"])
+@app.post("/api/tip", response_model=api_tips, tags=["tips"])
 def create_tip(tip: api_tips, token: str = Security(get_current_user_token)):
     try:
         tip.id = len(list(database.tips.find())) + 1
@@ -787,7 +787,7 @@ def create_tip(tip: api_tips, token: str = Security(get_current_user_token)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.put("/api/tip/update",
+@app.put("/api/tip/{employee_id}",
             response_model=api_tips_update,
             tags=["tips"],
             responses={
@@ -808,7 +808,7 @@ def update_tips(tips_id: int, tips: api_tips_update, token: str = Security(get_c
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.delete("/api/tip/delete", tags=["tips"])
+@app.delete("/api/tip/{employee_id}", tags=["tips"])
 def delete_tips(tips_id: int, token: str = Security(get_current_user_token)):
     try:
         collection = database.tips
@@ -865,7 +865,7 @@ def get_event(event_id: int, token: str = Security(get_current_user_token)):
 
 
 
-@app.post("/api/events/create", response_model=api_event_id, tags=["events"])
+@app.post("/api/events", response_model=api_event_id, tags=["events"])
 def create_event(event: api_event_id, token: str = Security(get_current_user_token)):
     try:
         event.id = len(list(database.events.find())) + 1
@@ -879,7 +879,7 @@ def create_event(event: api_event_id, token: str = Security(get_current_user_tok
 
 
 
-@app.put("/api/events/update",
+@app.put("/api/events/{employee_id}",
             response_model=api_event_id,
             tags=["events"],
             responses={
@@ -901,7 +901,7 @@ def update_event(event_id: int, event: api_event_id, token: str = Security(get_c
 
 
 
-@app.delete("/api/events/delete",
+@app.delete("/api/events/{employee_id}",
             response_model=api_event_id,
             tags=["events"],
             responses={
@@ -1000,8 +1000,8 @@ def get_clothes_image(clothes_id: int):
     except Exception as e:
         print(f"Error fetching image: {e}")
         raise HTTPException(status_code=500, detail="An error occurred while fetching the clothes image.")
-    
-@app.post("/api/clothes/create",
+
+@app.post("/api/clothes",
           response_model=Clothes,
           tags=["clothes"])
 def create_clothes(clothes: Clothes):
@@ -1017,7 +1017,7 @@ def create_clothes(clothes: Clothes):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.put("/api/clothes/update",
+@app.put("/api/clothes/{employee_id}",
          response_model=Clothes,
          tags=["clothes"],
          responses={
@@ -1037,7 +1037,7 @@ def update_clothes(clothes_id: int, clothes: Clothes, token: str = Security(get_
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.delete("/api/clothes/delete",
+@app.delete("/api/clothes/{employee_id}",
             tags=["clothes"],
             responses={
                 200: {"description": "Clothes deleted successfully",
@@ -1054,7 +1054,7 @@ def delete_clothes(clothes_id: int, token: str = Security(get_current_user_token
         return {"message": "Clothes deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-        
+
 # ////////////////  COMPATIBILITY  ////////////////
 
 def get_customer_by_id(customer_id: int, token: str = Security(get_current_user_token)):
