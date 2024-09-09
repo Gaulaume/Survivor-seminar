@@ -49,14 +49,14 @@ const SiderBarContent = [
   {
     title: 'Tips',
     icon: ChatBubbleBottomCenterIcon,
-    href: '/messages',
-    disabled: true
+    href: '/tips',
+    disabled: false
   },
   {
     title: 'Events',
     icon: CalendarIcon,
     href: '/events',
-    disabled: true
+    disabled: false
   },
   {
     title: 'Compatibility',

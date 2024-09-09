@@ -135,13 +135,21 @@ class api_events(BaseModel):
     id: int
     name: str
     date: str
-    max_partcipants: int
+    duration: int
+    max_participants: int
+    location_x: str
+    location_y: str
+    type: str
+    employee_id: int
+    location_name: str
+    max_participants: int
 
 class api_event_id(BaseModel):
     id: int
     name: str
     date: str
-    max_partcipants: int
+    duration: int
+    max_participants: int
     location_x: str
     location_y: str
     type: str
@@ -759,18 +767,6 @@ def get_events():
         return events
     except Exception as e:
         print(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/api/tips",
-            response_model=List[api_tips],
-            tags=["tips"])
-def get_tips():
-    try:
-        collection = database.tips
-        tips = list(collection.find({}, {"_id": 0}))
-        return tips
-    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
