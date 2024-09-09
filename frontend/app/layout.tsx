@@ -3,6 +3,7 @@
 import './globals.css';
 import Link from 'next/link';
 import {
+  Bars3Icon,
   CalendarIcon,
   ChatBubbleBottomCenterIcon,
   HeartIcon,
@@ -16,6 +17,9 @@ import { useState } from 'react';
 import clsx from 'clsx';
 import { usePathname, useRouter } from 'next/navigation';
 import { Toaster } from '@/components/ui/sonner';
+import { useAuth } from './actions';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
 
 const SiderBarContent = [
   {
@@ -27,8 +31,8 @@ const SiderBarContent = [
   {
     title: 'Coaches',
     icon: UsersIcon,
-    href: '/clients',
-    disabled: true
+    href: '/manage',
+    disabled: false
   },
   {
     title: 'Customers',
@@ -113,15 +117,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
-  const [isLogin, setIsLogin] = useState<boolean>(false);
+  const { getToken } = useAuth();
   const router = useRouter();
+
 
   return (
     <html lang='en'>
-      <body className='flex bg-background'>
+      <body className='md:flex bg-background'>
         <Sidebar className='h-screen hidden md:flex sticky top-0' />
         <div className='flex flex-1 flex-col'>
-          {/*
           <header className='flex h-14 items-center border-b px-4 lg:px-6 sticky top-0 bg-white z-30'>
             <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
               <SheetTrigger asChild>
@@ -142,7 +146,7 @@ export default function RootLayout({
                 </span>
               </div>
               <div className='flex flex-row'>
-                {isLogin ? (
+                {getToken() ? (
                   <div className='rounded-full bg-accent-foreground size-6'/>
                 ) : (
                   <Button
@@ -156,8 +160,7 @@ export default function RootLayout({
               </div>
             </div>
           </header>
-          */}
-          <main className='flex-1 p-4 lg:p-6'>
+          <main className='flex-1 overflow-y-auto p-4 lg:p-6'>
             {children}
           </main>
           <Toaster />

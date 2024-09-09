@@ -181,6 +181,7 @@ def get_employees():
     try:
         collection = database.employees
         employees = list(collection.find({}, {"_id": 0, "image": 0}))
+        print(employees)
         return employees
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
