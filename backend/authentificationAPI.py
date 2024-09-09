@@ -1,4 +1,5 @@
 import hashlib
+import json
 from fastapi import Depends, HTTPException, Security
 from pydantic import BaseModel
 from pymongo import MongoClient
@@ -92,7 +93,7 @@ def insertDataLogin(email, pwd, id, work):
     TokenData.email = {"email": email}
     TokenData.id = {"id": id}
     TokenData.role = {"role": role}
-    access_token = create_access_token(data={"email": email, "id": id, "role": role}, expires_delta=access_token_expires)
+    access_token = create_access_token(data={"email": email, "id": id, "role": role.name}, expires_delta=access_token_expires)
 
     return {"access_token": access_token}
 

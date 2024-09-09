@@ -840,6 +840,7 @@ def get_events(token: str = Security(get_current_user_token)):
         print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.get("/api/events/{event_id}",
             response_model=api_event_id,
             tags=["events"])
