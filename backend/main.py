@@ -288,7 +288,6 @@ def get_employee(employee_id: int, token: str = Security(get_current_user_token)
 
 
 
-
 @app.post("/api/employee", response_model=api_Employee_me, tags=["employees"])
 def create_employee(employee: api_Employee_me, token: str = Security(get_current_user_token)):
     try:

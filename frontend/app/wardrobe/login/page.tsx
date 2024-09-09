@@ -12,10 +12,13 @@ import { toast } from 'sonner';
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsLoading(true);
+
     const formData = new FormData(event.currentTarget);
+
     try {
       await handleLogin(formData);
     } catch (err: any) {
