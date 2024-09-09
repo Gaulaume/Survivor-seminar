@@ -2,7 +2,12 @@
 
 import { employeeLogin } from '@/api/Employees';
 import { useRouter } from 'next/navigation';
-import { ComponentType, JSX, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+
+export const handleLogout = async (): Promise<void> => {
+  localStorage.removeItem('token');
+  window.location.href = '/login';
+};
 
 export const handleLogin = async (formData: FormData): Promise<void> => {
   const email = formData.get('email') as string;
