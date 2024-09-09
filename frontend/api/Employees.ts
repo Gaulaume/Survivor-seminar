@@ -22,7 +22,7 @@ const getEmployees = async (token: string): Promise<Employee[] | null> => {
   }
 }
 
-const getEmployee = async (token: string, id: string): Promise<Employee | null> => {
+const getEmployee = async (token: string, id: number): Promise<Employee | null> => {
   const config = {
     url: `http://localhost:8000/api/employees/${id}`,
     method: 'get',
@@ -117,7 +117,7 @@ const getMe = async (token: string): Promise<Employee | null> => {
   }
 }
 
-const getEmployeeImage = async (token: string, id: string): Promise<Blob | null> => {
+const getEmployeeImage = async (token: string, id: number): Promise<Blob | null> => {
   const config = {
     url: `http://localhost:8000/api/employees/${id}/image`,
     method: 'get',

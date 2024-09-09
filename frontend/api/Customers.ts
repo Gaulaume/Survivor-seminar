@@ -45,7 +45,7 @@ const getCustomer = async (token: string, id: string): Promise<Customer | null> 
   }
 }
 
-const customerImage = async (token: string, id: string): Promise<any | null> => {
+const getCustomerImage = async (token: string, id: number): Promise<any | null> => {
   const config = {
     url: `http://localhost:8000/api/customers/${id}/image`,
     method: 'get',
@@ -66,7 +66,7 @@ const customerImage = async (token: string, id: string): Promise<any | null> => 
   }
 }
 
-const getCustomerPayments = async (token: string, id: string): Promise<Payment[] | null> => {
+const getCustomerPayments = async (token: string, id: number): Promise<Payment[] | null> => {
   const config = {
     url: `http://localhost:8000/api/customers/${id}/payments_history`,
     method: 'get',
@@ -111,7 +111,7 @@ const getCustomerClothes = async (token: string, id: number): Promise<Clothe[] |
 export {
   getCustomers,
   getCustomer,
-  customerImage,
+  getCustomerImage,
   getCustomerPayments,
   getCustomerClothes,
 };

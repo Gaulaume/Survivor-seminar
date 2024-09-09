@@ -9,7 +9,7 @@ import Customer from '@/types/Customer'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ArrowLeftEndOnRectangleIcon, CheckIcon, ChevronUpDownIcon, PlusIcon } from '@heroicons/react/20/solid'
 import { useAuth } from '../actions';
-import { postEmployee, putEmployee } from '@/api/Employees';
+import { getEmployees, postEmployee, putEmployee } from '@/api/Employees';
 import {
   Dialog,
   DialogContent,
@@ -25,6 +25,8 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Select } from '@/components/ui/select'
+import { get } from 'http'
+import { getCustomers } from '@/api/Customers'
 
 
 type MultiSelectProps = {
@@ -76,80 +78,6 @@ function MultiSelect({ items, selectedItems, setSelectedItems }: MultiSelectProp
   );
 }
 
-const getEmployees = async (): Promise<Employee[]> => {
-  await new Promise(resolve => setTimeout(resolve, 500))
-  return [
-    { id: 1, email: 'john@example.com', name: 'John', surname: 'Doe', work: 'Coach', customers: [1], birth_date: '1990-01', gender: 'Male'},
-    { id: 2, email: 'jane@example.com', name: 'Jane', surname: 'Smith', work: 'Manager', customers: [] },
-  ]
-}
-
-const getCustomers = async (): Promise<Customer[]> => {
-  await new Promise(resolve => setTimeout(resolve, 500))
-  return [
-      {
-        id: 1,
-        email: 'margaud.valette188@gmail.com',
-        name: 'Margaud',
-        surname: 'Valette',
-        birth_date: '1967-11-18',
-        gender: 'Female',
-        description: 'I am looking for someone to share my passion for music and concerts.',
-        astrological_sign: 'Scorpio',
-        phone_number: '03 58 43 26 37',
-        address: '31 boulevard Perrot 88676 Poulain-sur-Mer',
-      },
-      {
-        id: 2,
-        email: 'george.blackwood72@example.com',
-        name: 'George',
-        surname: 'Blackwood',
-        birth_date: '1972-05-04',
-        gender: 'Male',
-        description: 'A food enthusiast searching for new culinary experiences.',
-        astrological_sign: 'Taurus',
-        phone_number: '04 67 29 18 92',
-        address: '12 rue des Artisans 69003 Lyon',
-      },
-      {
-        id: 3,
-        email: 'amelie.durant84@example.com',
-        name: 'Amelie',
-        surname: 'Durant',
-        birth_date: '1984-08-12',
-        gender: 'Female',
-        description: 'Creative soul with a deep love for painting and photography.',
-        astrological_sign: 'Leo',
-        phone_number: '01 45 78 12 34',
-        address: '56 avenue Victor Hugo 75016 Paris',
-      },
-      {
-        id: 4,
-        email: 'paul.martinez58@example.com',
-        name: 'Paul',
-        surname: 'Martinez',
-        birth_date: '1958-02-23',
-        gender: 'Male',
-        description: 'Retired teacher who enjoys gardening and chess.',
-        astrological_sign: 'Pisces',
-        phone_number: '02 62 17 56 81',
-        address: '43 chemin des Écoles 97400 Saint-Denis',
-      },
-      {
-        id: 5,
-        email: 'nathalie.bernard99@example.com',
-        name: 'Nathalie',
-        surname: 'Bernard',
-        birth_date: '1999-10-30',
-        gender: 'Female',
-        description: 'Passionate traveler, always seeking new cultures and adventures.',
-        astrological_sign: 'Scorpio',
-        phone_number: '06 58 94 12 75',
-        address: '98 rue des Fleurs 13001 Marseille',
-      }
-  ]
-}
-
 const FormSchema = z.object({
   name: z.string().min(2).max(50),
   surname: z.string().min(2).max(50),
@@ -176,9 +104,21 @@ export default function EmployeeManagementPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [fetchedEmployees, fetchedCustomers] = await Promise.all([getEmployees(), getCustomers()]);
-      setEmployees(fetchedEmployees.filter((e) => e.work === 'Coach'));
-      setCustomers(fetchedCustomers);
+      const token = getToken();
+      try {
+        const employeesData = await getEmployees(token);
+        const customersData = await getCustomers(token);
+
+        if (employeesData && customersData) {
+          setEmployees(employeesData);
+          setCustomers(customersData);
+        } else {
+          throw new Error('Failed to fetch employees or customers');
+        }
+      } catch (error) {
+        console.error('Failed to fetch employees or customers', error);
+        toast.error('Failed to fetch employees or customers');
+      }
     };
     if (!employees) fetchData();
   }, []);
@@ -187,11 +127,10 @@ export default function EmployeeManagementPage() {
     const token = getToken();
     try {
       const data = await putEmployee(token, employeeId, employee);
-      if (data) {
+      if (data)
         toast.success('Employee updated successfully');
-      } else {
+      else
         throw new Error('Failed to update employee');
-      }
     } catch (error) {
       toast.error('Failed to update employee');
     }
@@ -243,9 +182,9 @@ export default function EmployeeManagementPage() {
 
 
   return (
-    <div className='container mx-auto p-4 space-y-6'>
-      <h1 className='text-3xl font-bold tracking-tight'>Employee Management</h1>
-
+    <div className='flex flex-col space-y-4 h-full'>
+      <h1 className='text-lg md:text-2xl font-bold'>Employee Management</h1>
+      <hr className='w-full' />
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogTrigger asChild>
           <Button variant='secondary'>
@@ -383,18 +322,15 @@ export default function EmployeeManagementPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Gender</TableHead>
               <TableHead>Birthday</TableHead>
               <TableHead>Assigned Clients</TableHead>
+              <TableHead>Last Connection</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {employees?.map((employee) => (
               <TableRow key={employee.id}>
                 <TableCell>{employee.name} {employee.surname}</TableCell>
-                <TableCell>{employee.email}</TableCell>
-                <TableCell>{employee.gender}</TableCell>
                 <TableCell>{employee.birth_date}</TableCell>
                 <TableCell>
                   <MultiSelect
@@ -403,6 +339,7 @@ export default function EmployeeManagementPage() {
                     setSelectedItems={(customerIds) => setEmployeesCustomers(employee.id, customerIds)}
                   />
                 </TableCell>
+                <TableCell>{employee.last_connection || 'Never'}</TableCell>
               </TableRow>
             ))}
           </TableBody>

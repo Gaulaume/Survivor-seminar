@@ -31,14 +31,14 @@ const SiderBarContent = [
   {
     title: 'Coaches',
     icon: UsersIcon,
-    href: '/manage',
+    href: '/employees',
     disabled: false
   },
   {
     title: 'Customers',
     icon: UserGroupIcon,
     href: '/customers',
-    disabled: true
+    disabled: false
   },
   {
     title: 'Statistics',

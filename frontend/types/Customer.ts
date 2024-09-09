@@ -9,6 +9,7 @@ interface Customer {
   astrological_sign?: string;
   phone_number?: string;
   address?: string;
+  image?: string;
 }
 
 export default Customer;
