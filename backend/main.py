@@ -301,7 +301,7 @@ def delete_employee(employee_id: int):
          tags=["employees"],
          responses={
              200: {"description": "Returns employee's profile picture.",
-                   "content": {"image/png": {}}},
+                   "content": {"application/json": {}}},
              400: {"description": "Employee image is not in PNG format",
                      "content": {"application/json": {"example": {"detail": "Employee image is not in PNG format"}}}},
              404: {"description": "Employee requested doesn't exist",
@@ -316,10 +316,8 @@ def get_employee_image(employee_id: int):
         employee = collection.find_one({"id": employee_id})
         if employee is None:
             raise HTTPException(status_code=404, detail="Employee requested doesn't exist")
-        image_path = employee["image"]
-        if not image_path.endswith(".png"):
-            raise HTTPException(status_code=400, detail="Employee image is not in PNG format")
-        return FileResponse(image_path, media_type="image/png")
+        employee["image"] = "data:image/png;base64," + base64.b64encode(employee["image"]).decode('utf-8')
+        return employee["image"]
     except HTTPException as e:
         raise e
     except Exception as e:
@@ -904,9 +902,6 @@ def get_clothes_image(clothes_id: int):
         clothes = collection.find_one({"id": clothes_id})
         if clothes is None:
             raise HTTPException(status_code=404, detail="Clothes requested doesn't exist")
-
-        image_stream = BytesIO(clothes["image"])
-        return StreamingResponse(image_stream, media_type="image/png")
 
         image_stream = BytesIO(clothes["image"])
         return StreamingResponse(image_stream, media_type="image/png")
