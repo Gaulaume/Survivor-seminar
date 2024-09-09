@@ -8,7 +8,7 @@ import jwt
 from fastapi.security import APIKeyHeader, HTTPBearer, OAuth2PasswordBearer
 from jose import JWTError
 import os
-
+import time
 
 SECRET_KEY = "SecretKey"
 ALGORITHM = "HS256"
@@ -112,6 +112,26 @@ def get_current_user_token(token: str = Security(api_key_header)) -> TokenData:
     except JWTError:
         raise credentials_exception
     return token_data
+
+
+def getConnectionDate():
+    date_actuelle = datetime.now()
+    annee = date_actuelle.year
+    mois = date_actuelle.month
+    jour = date_actuelle.day
+    date = datetime(annee, mois, jour)
+    timestamp = int(time.mktime(date.timetuple()))
+    return timestamp
+
+
+def last_connection_employees(id):
+    last_connection = None
+    last_connection = getConnectionDate()
+    db.employees.update_one(
+            {'id': id},
+            {'$set': {'last_connection': last_connection}}
+        )
+    return
 
 
 def decode_jwt_token(token: str):

@@ -16,7 +16,7 @@ import os
 from typing import List, Dict
 from typing import Optional
 import asyncio
-from authentificationAPI import get_current_user_token, insertDataRegister, insertDataLogin
+from authentificationAPI import get_current_user_token, insertDataRegister, insertDataLogin, last_connection_employees
 
 
 origins = [
@@ -206,6 +206,7 @@ def login_employee(employee: api_Employee_login):
     user = collection.find_one({"email": employee.email})
     if user is None:
         raise HTTPException(status_code=401, detail="Employee not found")
+    last_connection_employees(user['id'])
     login_cred = insertDataLogin(employee.email, employee.password, user['id'], user['work'])
     return api_Employee_login_cred(**login_cred)
 
