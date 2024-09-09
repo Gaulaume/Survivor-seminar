@@ -9,6 +9,8 @@ from fastapi.security import APIKeyHeader, HTTPBearer, OAuth2PasswordBearer
 from jose import JWTError
 import os
 import time
+from enum import Enum
+
 
 SECRET_KEY = os.getenv('SECRET_KEY')
 ALGORITHM = os.getenv('ALGORITHM')
@@ -30,6 +32,11 @@ api_key_header = APIKeyHeader(name="AuthentificationHeader")
 security = HTTPBearer()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+
+class Role(Enum):
+    Coach = 1
+    Manager = 2
 
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
@@ -73,14 +80,14 @@ def insertDataLogin(email, pwd, id, work):
     collection = db.auth
     data = {'email': email, 'pwd': pwd, 'id': id}
     user = collection.find_one({"email": email})
-    role = 0 # 0 = Nothing, 1 = Coach, 2 = Manager
+    role = 0
     hashed_pwd = hash_password(pwd)
     # if hashed_pwd != user['password']:
     #     raise HTTPException(status_code=400, detail="Email or password incorrect")
     if (work == "Coach"):
-        role = 1
+        role = Role.Coach
     else:
-        role = 2
+        role = Role.Manager
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     TokenData.email = {"email": email}
     TokenData.id = {"id": id}

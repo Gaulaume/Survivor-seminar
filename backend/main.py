@@ -16,7 +16,7 @@ import os
 from typing import List, Dict
 from typing import Optional
 import asyncio
-from authentificationAPI import get_current_user_token, insertDataRegister, insertDataLogin, last_connection_employees
+from authentificationAPI import Role, get_current_user_token, insertDataRegister, insertDataLogin, last_connection_employees
 
 
 origins = [
@@ -187,10 +187,9 @@ class api_Employee(BaseModel):
 def get_employees(token: str = Security(get_current_user_token)):
     collection = database.employees
     employees = list(collection.find({}, {"_id": 0, "image": 0}))
-    print(employees)
-    if (token.role == 2):
+    if (token.role == Role.Manager):
         return employees
-    if (token.role == 1):
+    if (token.role == Role.Coach):
         print(traceback.format_exc())
         return list(collection.find({"email": token.email}, {"_id": 0}))
     raise HTTPException(status_code=403, detail="Not authorised to access this")
@@ -278,9 +277,9 @@ def get_employee(employee_id: int, token: str = Security(get_current_user_token)
     employee = collection.find_one({"id": employee_id})
     if employee is None:
         raise HTTPException(status_code=404, detail="Employee requested doesn't exist")
-    if (token.role == 2):
+    if (token.role == Role.Manager):
         return employee
-    if (token.role == 1):
+    if (token.role == Role.Coach):
         if token.id == employee_id:
             return employee
     raise HTTPException(status_code=403, detail="Not authorised to access this")
@@ -471,7 +470,7 @@ def get_customers(token: str = Security(get_current_user_token)):
     customers = list(collection_cus.find({}, {"_id": 0}))
     employee = collection_emp.find_one({"id": token.id})
 
-    if (token.role == 1):
+    if (token.role == Role.Coach):
         customers_ids = employee['customers_ids']
         if not customers_ids:
             raise HTTPException(status_code=400, detail="Employee has no customers")
@@ -595,7 +594,7 @@ def get_customer_image(customer_id: int, token: str = Security(get_current_user_
          response_model=List[Payment],
          tags=["customers"])
 def get_payments_history(customer_id: int, token: str = Security(get_current_user_token)):
-    if (token.role != 2):
+    if (token.role != Role.Manager):
         raise HTTPException(status_code=403, detail="Unauthorised use")
     collection = database.customers
     customer = collection.find_one({"id": customer_id})
