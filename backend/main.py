@@ -26,7 +26,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-)   
+)
 
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://mongod:27017/")
 
@@ -69,7 +69,7 @@ class api_Employee_me(BaseModel):
     birth_date: str
     gender: str
     work: str
-    customers_ids: List[int]     
+    customers_ids: List[int]
 
 class api_customer(BaseModel):
     id: int
@@ -90,6 +90,9 @@ class api_customer_id(BaseModel):
     gender: str
     description: str
     astrological_sign: str
+    phone_number: str
+    address: str
+    image: str
 
 class Payment(BaseModel):
     id: int
@@ -436,6 +439,7 @@ def get_customer(customer_id: int):
     try:
         collection = database.customers
         customer = collection.find_one({"id": customer_id})
+        customer["image"] = "data:image/png;base64," + base64.b64encode(customer["image"]).decode('utf-8')
         if customer is None:
             raise HTTPException(status_code=404, detail="Customer requested doesn't exist")
         return customer
