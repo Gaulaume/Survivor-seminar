@@ -3,6 +3,7 @@
 import './globals.css';
 import Link from 'next/link';
 import {
+  ArrowLeftEndOnRectangleIcon,
   ArrowLeftStartOnRectangleIcon,
   Bars3Icon,
   BriefcaseIcon,
@@ -17,12 +18,10 @@ import {
 import { useEffect, useState } from 'react';
 import clsx from 'clsx';
 import { usePathname, useRouter } from 'next/navigation';
-import { Toaster } from '@/components/ui/sonner';
 import { handleLogout, useAuth } from './actions';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import Employee from '@/types/Employee';
-import { getEmployee, getMe } from '@/api/Employees';
 import { toast } from 'sonner';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -196,7 +195,7 @@ export default function Layout({
                   size='sm'
                   onClick={() => router.push('/login')}
                 >
-                  Sign In
+                  Sign In <ArrowLeftEndOnRectangleIcon className='size-4 ml-1' />
                 </Button>
               )}
             </div>
