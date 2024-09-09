@@ -124,10 +124,10 @@ def get_current_user_token(token: str = Security(api_key_header)) -> TokenData:
 
 def getConnectionDate():
     date_actuelle = datetime.now()
-    annee = date_actuelle.year
-    mois = date_actuelle.month
-    jour = date_actuelle.day
-    date = datetime(annee, mois, jour)
+    year = date_actuelle.year
+    month = date_actuelle.month
+    day = date_actuelle.day
+    date = datetime(year, month, day)
     timestamp = int(time.mktime(date.timetuple()))
     return timestamp
 
