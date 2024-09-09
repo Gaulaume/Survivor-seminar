@@ -22,7 +22,7 @@ const getEmployees = async (token: string): Promise<Employee[] | null> => {
   }
 }
 
-const getEmployee = async (token: string, id: string): Promise<Employee | null> => {
+const getEmployee = async (token: string, id: number): Promise<Employee | null> => {
   const config = {
     url: `http://localhost:8000/api/employees/${id}`,
     method: 'get',
@@ -117,7 +117,7 @@ const getMe = async (token: string): Promise<Employee | null> => {
   }
 }
 
-const getEmployeeImage = async (token: string, id: string): Promise<Blob | null> => {
+const getEmployeeImage = async (token: string, id: number): Promise<Blob | null> => {
   const config = {
     url: `http://localhost:8000/api/employees/${id}/image`,
     method: 'get',
@@ -182,6 +182,27 @@ const postEmployee = async (token: string, data: any): Promise<Employee | null> 
   }
 }
 
+const deleteEmployee = async (token: string, id: number): Promise<boolean> => {
+  const config = {
+    url: `http://localhost:8000/api/employees/${id}`,
+    method: 'delete',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  };
+
+  try {
+    await axios(config);
+
+    return true;
+  } catch (error) {
+    console.error('deleteEmployee', error);
+
+    return false;
+  }
+}
+
 export {
   getEmployees,
   getEmployee,
@@ -191,4 +212,5 @@ export {
   getEmployeeImage,
   putEmployee,
   postEmployee,
+  deleteEmployee,
 };

@@ -7,24 +7,33 @@ import { toast } from 'sonner'
 import Employee from '@/types/Employee'
 import Customer from '@/types/Customer'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { ArrowLeftEndOnRectangleIcon, CheckIcon, ChevronUpDownIcon, PlusIcon } from '@heroicons/react/20/solid'
+import { ArrowLeftEndOnRectangleIcon, CheckIcon, ChevronUpDownIcon, EllipsisHorizontalIcon, PencilIcon, PlusIcon, TrashIcon } from '@heroicons/react/20/solid'
 import { useAuth } from '../actions';
-import { postEmployee, putEmployee } from '@/api/Employees';
+import { deleteEmployee, getEmployees, postEmployee, putEmployee } from '@/api/Employees';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input'
-import { useForm } from 'react-hook-form'
+import { Input } from '@/components/ui/input';
+import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Select } from '@/components/ui/select'
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { getCustomers } from '@/api/Customers';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Card } from '@/components/ui/card'
 
 
 type MultiSelectProps = {
@@ -48,11 +57,14 @@ function MultiSelect({ items, selectedItems, setSelectedItems }: MultiSelectProp
         </Button>
       </PopoverTrigger>
       <PopoverContent className='w-60'>
-        <div className='space-y-2'>
-          {items.map((item) => (
+        <div className='space-y-2 overflow-y-scroll max-h-52'>
+          {items
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .sort((a, b) => selectedItems.includes(b.id) ? 1 : -1)
+            .map((item) => (
             <button
               key={item.id}
-              className={`flex items-center w-full px-3 py-1.5 rounded-md hover:bg-muted transition-colors duration-200 ${
+              className={`flex gap-2 text-nowrap truncate items-center w-full px-3 py-1.5 rounded-md hover:bg-muted transition-colors duration-200 ${
                 selectedItems.includes(item.id) ? 'bg-muted' : ''
               }`}
               onClick={() => {
@@ -64,7 +76,7 @@ function MultiSelect({ items, selectedItems, setSelectedItems }: MultiSelectProp
                 }
               }}
             >
-              <div className='size-4 mr-2'>
+              <div className='size-4 flex-shrink-0'>
                 {selectedItems.includes(item.id) && <CheckIcon className='h-4 w-4' />}
               </div>
               <span>{item.name}</span>
@@ -74,80 +86,6 @@ function MultiSelect({ items, selectedItems, setSelectedItems }: MultiSelectProp
       </PopoverContent>
     </Popover>
   );
-}
-
-const getEmployees = async (): Promise<Employee[]> => {
-  await new Promise(resolve => setTimeout(resolve, 500))
-  return [
-    { id: 1, email: 'john@example.com', name: 'John', surname: 'Doe', work: 'Coach', customers: [1], birth_date: '1990-01', gender: 'Male'},
-    { id: 2, email: 'jane@example.com', name: 'Jane', surname: 'Smith', work: 'Manager', customers: [] },
-  ]
-}
-
-const getCustomers = async (): Promise<Customer[]> => {
-  await new Promise(resolve => setTimeout(resolve, 500))
-  return [
-      {
-        id: 1,
-        email: 'margaud.valette188@gmail.com',
-        name: 'Margaud',
-        surname: 'Valette',
-        birth_date: '1967-11-18',
-        gender: 'Female',
-        description: 'I am looking for someone to share my passion for music and concerts.',
-        astrological_sign: 'Scorpio',
-        phone_number: '03 58 43 26 37',
-        address: '31 boulevard Perrot 88676 Poulain-sur-Mer',
-      },
-      {
-        id: 2,
-        email: 'george.blackwood72@example.com',
-        name: 'George',
-        surname: 'Blackwood',
-        birth_date: '1972-05-04',
-        gender: 'Male',
-        description: 'A food enthusiast searching for new culinary experiences.',
-        astrological_sign: 'Taurus',
-        phone_number: '04 67 29 18 92',
-        address: '12 rue des Artisans 69003 Lyon',
-      },
-      {
-        id: 3,
-        email: 'amelie.durant84@example.com',
-        name: 'Amelie',
-        surname: 'Durant',
-        birth_date: '1984-08-12',
-        gender: 'Female',
-        description: 'Creative soul with a deep love for painting and photography.',
-        astrological_sign: 'Leo',
-        phone_number: '01 45 78 12 34',
-        address: '56 avenue Victor Hugo 75016 Paris',
-      },
-      {
-        id: 4,
-        email: 'paul.martinez58@example.com',
-        name: 'Paul',
-        surname: 'Martinez',
-        birth_date: '1958-02-23',
-        gender: 'Male',
-        description: 'Retired teacher who enjoys gardening and chess.',
-        astrological_sign: 'Pisces',
-        phone_number: '02 62 17 56 81',
-        address: '43 chemin des Écoles 97400 Saint-Denis',
-      },
-      {
-        id: 5,
-        email: 'nathalie.bernard99@example.com',
-        name: 'Nathalie',
-        surname: 'Bernard',
-        birth_date: '1999-10-30',
-        gender: 'Female',
-        description: 'Passionate traveler, always seeking new cultures and adventures.',
-        astrological_sign: 'Scorpio',
-        phone_number: '06 58 94 12 75',
-        address: '98 rue des Fleurs 13001 Marseille',
-      }
-  ]
 }
 
 const FormSchema = z.object({
@@ -165,6 +103,7 @@ export default function EmployeeManagementPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newImage, setNewImage] = useState<string | null>(null);
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const { getToken } = useAuth();
 
   const form = useForm<z.infer<typeof FormSchema>>({
@@ -176,9 +115,21 @@ export default function EmployeeManagementPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [fetchedEmployees, fetchedCustomers] = await Promise.all([getEmployees(), getCustomers()]);
-      setEmployees(fetchedEmployees.filter((e) => e.work === 'Coach'));
-      setCustomers(fetchedCustomers);
+      const token = getToken();
+      try {
+        const employeesData = await getEmployees(token);
+        const customersData = await getCustomers(token);
+
+        if (employeesData && customersData) {
+          setEmployees(employeesData);
+          setCustomers(customersData);
+        } else {
+          throw new Error('Failed to fetch employees or customers');
+        }
+      } catch (error) {
+        console.error('Failed to fetch employees or customers', error);
+        toast.error('Failed to fetch employees or customers');
+      }
     };
     if (!employees) fetchData();
   }, []);
@@ -189,6 +140,8 @@ export default function EmployeeManagementPage() {
       const data = await putEmployee(token, employeeId, employee);
       if (data) {
         toast.success('Employee updated successfully');
+        const updatedEmployees = employees?.map(e => e.id === employeeId ? { ...e, ...employee } : e) || null;
+        setEmployees(updatedEmployees);
       } else {
         throw new Error('Failed to update employee');
       }
@@ -197,11 +150,23 @@ export default function EmployeeManagementPage() {
     }
   };
 
+  const handleDeleteEmployee = async (employeeId: number) => {
+    const token = getToken();
+    try {
+      const result = await deleteEmployee(token, employeeId);
+      if (!result) throw new Error('Failed to delete employee');
+      toast.success('Employee deleted successfully');
+      const updatedEmployees = employees?.filter(e => e.id !== employeeId) || null;
+      setEmployees(updatedEmployees);
+    } catch (error) {
+      toast.error('Failed to delete employee');
+    }
+  };
+
   const setEmployeesCustomers = (employeeId: number, customerIds: number[]) => {
     const updatedEmployees = employees?.map((employee) => {
-      if (employee.id === employeeId) {
+      if (employee.id === employeeId)
         return { ...employee, customers: customerIds };
-      }
       return employee;
     });
     if (!updatedEmployees) return;
@@ -214,17 +179,30 @@ export default function EmployeeManagementPage() {
 
     setIsDialogOpen(false);
     try {
-      console.log('data', data);
       if (newImage)
         data.image = newImage;
-      const resultData = await postEmployee(token, data);
-      if (resultData) {
-        toast.success('Employee updated successfully');
+      if (editingEmployee) {
+        const resultData = await putEmployee(token, editingEmployee.id, { ...editingEmployee, ...data });
+        if (resultData) {
+          toast.success('Employee updated successfully');
+          const updatedEmployees = employees?.map(e => e.id === editingEmployee.id ? { ...e, ...data } : e) || null;
+          setEmployees(updatedEmployees);
+        } else {
+          throw new Error('Failed to update employee');
+        }
       } else {
-        throw new Error('Failed to update employee');
+        const resultData = await postEmployee(token, data);
+        if (resultData) {
+          toast.success('Employee added successfully');
+          setEmployees(prev => prev ? [...prev, resultData] : [resultData]);
+        } else {
+          throw new Error('Failed to add employee');
+        }
       }
+      setEditingEmployee(null);
+      form.reset();
     } catch (error) {
-      toast.error('Failed to update employee');
+      toast.error(editingEmployee ? 'Failed to update employee' : 'Failed to add employee');
     }
   };
 
@@ -241,11 +219,16 @@ export default function EmployeeManagementPage() {
     }
   };
 
+  const openEditDialog = (employee: Employee) => {
+    setEditingEmployee(employee);
+    form.reset(employee);
+    setIsDialogOpen(true);
+  };
 
   return (
-    <div className='container mx-auto p-4 space-y-6'>
-      <h1 className='text-3xl font-bold tracking-tight'>Employee Management</h1>
-
+    <div className='flex flex-col space-y-4 h-full'>
+      <h1 className='text-lg md:text-2xl font-bold'>Employee Management</h1>
+      <hr className='w-full' />
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogTrigger asChild>
           <Button variant='secondary'>
@@ -255,9 +238,11 @@ export default function EmployeeManagementPage() {
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add New Employee</DialogTitle>
+            <DialogTitle>{editingEmployee ? 'Edit Employee' : 'Add New Employee'}</DialogTitle>
           </DialogHeader>
-          <DialogDescription>Fill out the information to add a new employee</DialogDescription>
+          <DialogDescription>
+            {editingEmployee ? 'Edit the information of the existing employee' : 'Fill out the information to add a new employee'}
+          </DialogDescription>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-3 mt-3'>
               <FormField
@@ -362,12 +347,16 @@ export default function EmployeeManagementPage() {
                   type='submit'
                   variant='default'
                 >
-                  Create New Employee
-                  <PlusIcon className='h-4 w-4 ml-2' />
+                  {editingEmployee ? 'Update Employee' : 'Create New Employee'}
+                  {editingEmployee ? <PencilIcon className='h-4 w-4 ml-2' /> : <PlusIcon className='h-4 w-4 ml-2' />}
                 </Button>
                 <Button
                   variant='outline'
-                  onClick={() => setIsDialogOpen(false)}
+                  onClick={() => {
+                    setIsDialogOpen(false);
+                    setEditingEmployee(null);
+                    form.reset();
+                  }}
                 >
                   Cancel and Close
                   <ArrowLeftEndOnRectangleIcon className='h-4 w-4 ml-2' />
@@ -378,36 +367,64 @@ export default function EmployeeManagementPage() {
         </DialogContent>
       </Dialog>
 
-      <div className='rounded-md border max-h-96 overflow-y-auto'>
+      <Card className='rounded-md border overflow-y-auto'>
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Gender</TableHead>
               <TableHead>Birthday</TableHead>
               <TableHead>Assigned Clients</TableHead>
+              <TableHead>Last Connection</TableHead>
+              <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {employees?.map((employee) => (
+            {employees?.sort((a, b) => a.name.localeCompare(b.name)).map((employee) => (
               <TableRow key={employee.id}>
                 <TableCell>{employee.name} {employee.surname}</TableCell>
-                <TableCell>{employee.email}</TableCell>
-                <TableCell>{employee.gender}</TableCell>
                 <TableCell>{employee.birth_date}</TableCell>
                 <TableCell>
                   <MultiSelect
                     items={customers.map((c) => ({ id: c.id, name: `${c.name} ${c.surname}` }))}
-                    selectedItems={employee.customers || []}
+                    selectedItems={employee.customers_ids || []}
                     setSelectedItems={(customerIds) => setEmployeesCustomers(employee.id, customerIds)}
                   />
+                </TableCell>
+                <TableCell>{employee.last_connection || 'Never'}</TableCell>
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant='ghost' size='icon'>
+                        <EllipsisHorizontalIcon className='size-5' />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className='w-56'>
+                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuGroup>
+                        <DropdownMenuItem
+                          className='cursor-pointer'
+                          onClick={() => openEditDialog(employee)}
+                        >
+                          <PencilIcon className='h-4 w-4 mr-2' />
+                          Edit employee
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className='cursor-pointer'
+                          onClick={() => handleDeleteEmployee(employee.id)}
+                        >
+                          <TrashIcon className='h-4 w-4 mr-2' />
+                          Delete employee
+                        </DropdownMenuItem>
+                      </DropdownMenuGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
-      </div>
+      </Card>
     </div>
   );
 }

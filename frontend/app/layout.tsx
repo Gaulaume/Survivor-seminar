@@ -4,6 +4,7 @@ import './globals.css';
 import Link from 'next/link';
 import {
   Bars3Icon,
+  BriefcaseIcon,
   CalendarIcon,
   ChatBubbleBottomCenterIcon,
   HeartIcon,
@@ -11,7 +12,6 @@ import {
   PresentationChartLineIcon,
   ShoppingBagIcon,
   UserGroupIcon,
-  UsersIcon
 } from '@heroicons/react/20/solid';
 import { useState } from 'react';
 import clsx from 'clsx';
@@ -30,15 +30,15 @@ const SiderBarContent = [
   },
   {
     title: 'Coaches',
-    icon: UsersIcon,
-    href: '/manage',
+    icon: BriefcaseIcon,
+    href: '/employees',
     disabled: false
   },
   {
     title: 'Customers',
     icon: UserGroupIcon,
     href: '/customers',
-    disabled: true
+    disabled: false
   },
   {
     title: 'Statistics',

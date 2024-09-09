@@ -43,7 +43,7 @@ const getEncounter = async (token: string, id: string): Promise<Encounter | null
   }
 }
 
-const getCustomerEncounters = async (token: string, id: string): Promise<Encounter[] | null> => {
+const getCustomerEncounters = async (token: string, id: number): Promise<Encounter[] | null> => {
   const config = {
     url: `http://localhost:8000/api/encounters/customer/${id}`,
     method: 'get',

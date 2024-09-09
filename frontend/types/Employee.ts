@@ -6,7 +6,8 @@ interface Employee {
   birth_date?: string;
   gender?: string;
   work?: string;
-  customers?: number[];
+  customers_ids?: number[];
+  last_connection?: number;
 }
 
 export default Employee;

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { getTips } from '@/api/Tip';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
 import clsx from 'clsx';
 import { Button } from '@/components/ui/button';
@@ -26,7 +26,7 @@ export default function CoachingTips() {
         const data = await getTips();
         if (!data) throw new Error('Failed to fetch tips');
         setTips(data);
-        setFilteredTips(data); // Set initial filtered tips to all tips
+        setFilteredTips(data);
       } catch (e) {
         console.error(e);
       }
@@ -68,38 +68,44 @@ export default function CoachingTips() {
         />
       </div>
 
-      <div className="grid grid-cols-4 gap-4 ">
-        {filteredTips?.map((tip) => (
-          <Card
-            key={tip.id}
-            onClick={() => handleTipToggle(tip.id)}
-          >
-            <CardHeader>
-              {tip.title}
-            </CardHeader>
-            <CardContent>
-              <Button
-                onClick={() => handleTipToggle(tip.id)}
-                variant='outline'
-                className='w-full mb-2'
-              >
-                {openTip === tip.id ? 'Close tip' : 'Open tip'}
-                <ChevronDownIcon
-                  className={clsx(
-                    'w-4 h-4 ml-2',
-                    openTip === tip.id && 'transform rotate-180 transition-all duration-300'
-                  )}
-                />
-              </Button>
-              {openTip === tip.id && (
-                <p className='text-muted-foreground mt-2'>
-                  {tip.tip}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {filteredTips?.length === 0 ? (
+        <div className="text-center w-full col-span-4">
+          <p className="text-lg text-gray-500">No tips found matching your search.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-4 gap-4">
+          {filteredTips?.map((tip) => (
+            <Card
+              key={tip.id}
+              onClick={() => handleTipToggle(tip.id)}
+            >
+              <CardHeader>
+                {tip.title}
+              </CardHeader>
+              <CardContent>
+                <Button
+                  onClick={() => handleTipToggle(tip.id)}
+                  variant='outline'
+                  className='w-full mb-2'
+                >
+                  {openTip === tip.id ? 'Close tip' : 'Open tip'}
+                  <ChevronDownIcon
+                    className={clsx(
+                      'w-4 h-4 ml-2',
+                      openTip === tip.id && 'transform rotate-180 transition-all duration-300'
+                    )}
+                  />
+                </Button>
+                {openTip === tip.id && (
+                  <p className='text-muted-foreground mt-2'>
+                    {tip.tip}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
