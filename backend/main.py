@@ -115,6 +115,8 @@ class api_encounters(BaseModel):
     customer_id: int
     date: str
     rating: int
+    comment: str
+    source: str
 
 class api_encounter_id(BaseModel):
     id: int
