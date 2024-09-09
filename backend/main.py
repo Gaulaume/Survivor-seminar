@@ -842,18 +842,6 @@ def get_events(token: str = Security(get_current_user_token)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/tips",
-            response_model=List[api_tips],
-            tags=["tips"])
-def get_tips(token: str = Security(get_current_user_token)):
-    try:
-        collection = database.tips
-        tips = list(collection.find({}, {"_id": 0}))
-        return tips
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 @app.get("/api/events/{event_id}",
             response_model=api_event_id,
             tags=["events"])
