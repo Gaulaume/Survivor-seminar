@@ -3,6 +3,7 @@
 import './globals.css';
 import Link from 'next/link';
 import {
+  ArrowLeftStartOnRectangleIcon,
   Bars3Icon,
   BriefcaseIcon,
   CalendarIcon,
@@ -13,13 +14,18 @@ import {
   ShoppingBagIcon,
   UserGroupIcon,
 } from '@heroicons/react/20/solid';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import clsx from 'clsx';
 import { usePathname, useRouter } from 'next/navigation';
 import { Toaster } from '@/components/ui/sonner';
-import { useAuth } from './actions';
+import { handleLogout, useAuth } from './actions';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
+import Employee from '@/types/Employee';
+import { getEmployee, getMe } from '@/api/Employees';
+import { toast } from 'sonner';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const SiderBarContent = [
   {
@@ -119,6 +125,22 @@ export default function RootLayout({
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const { getToken } = useAuth();
   const router = useRouter();
+  const [user, setUser] = useState<Employee | null>(null);
+  const token = getToken();
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const user = await getMe(token);
+        if (!user) throw new Error('User not found');
+        setUser(user);
+      } catch (error) {
+        toast.error('Failed to fetch user');
+      }
+    }
+
+    fetchUser();
+  }, []);
 
 
   return (
@@ -146,8 +168,28 @@ export default function RootLayout({
                 </span>
               </div>
               <div className='flex flex-row'>
-                {getToken() ? (
-                  <div className='rounded-full bg-accent-foreground size-6'/>
+                {user ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button className='rounded-full' size='icon' variant='outline'>
+                        <Avatar className='h-8 w-8'>
+                          <AvatarImage alt='User avatar' src='/placeholder.svg?height=32&width=32' />
+                          <AvatarFallback>
+                            {user.name[0].toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className='sr-only'>Toggle user menu</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align='end'>
+                      <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => handleLogout()}>
+                        <ArrowLeftStartOnRectangleIcon className='mr-2 h-4 w-4' />
+                        Log out
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 ) : (
                   <Button
                     variant='default'
