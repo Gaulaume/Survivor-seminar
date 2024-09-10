@@ -1,12 +1,13 @@
 import Event from '@/types/Event';
 import axios from 'axios';
 
-const getEvents = async (): Promise<Event[] | null> => {
+const getEvents = async (token: string): Promise<Event[] | null> => {
   const config = {
     url: 'http://localhost:8000/api/events',
     method: 'get',
     headers: {
       'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
     },
   };
 

@@ -7,8 +7,9 @@ import { MapContainer, TileLayer, Marker, Popup, AttributionControl, useMap } fr
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import clsx from 'clsx';
-import { Button } from '@/components/ui/button'; // Assuming this is where the Button component is imported
-import { Input } from '@/components/ui/input'; // Add this import
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useAuth } from '../actions';
 
 interface Event {
   id: number;
@@ -43,12 +44,14 @@ export default function EventPage() {
   const [selectedEvents, setSelectedEvents] = useState<Event[]>([]);
   const [lastSelectedEvent, setLastSelectedEvent] = useState<Event | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const { getToken, getRole } = useAuth();
 
   useEffect(() => {
     // Fetch events on component mount
     const fetchEvents = async () => {
       try {
-        const data = await getEvents();
+        const token = getToken();
+        const data = await getEvents(token);
         // If no data, throw an error
         if (!data) throw new Error('Failed to fetch events');
         setEvents(data);
@@ -133,7 +136,7 @@ export default function EventPage() {
         </div>
 
         {/* Event List */}
-        <div className="w-full md:w-1/3 md:sticky top-4 h-screen overflow-y-auto"> {/* sticky with top and auto-scroll */}
+        <div className="w-full md:w-1/3 md:sticky top-4 flex flex-col h-screen">
           <Input
             type="text"
             placeholder="Search events..."
@@ -141,26 +144,28 @@ export default function EventPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="mb-4"
           />
-          <div className="grid grid-cols-1 gap-4">
-            {filteredEvents?.map((event) => (
-              <Card
-                key={event.id}
-                className={clsx(
-                  'cursor-pointer',
-                  selectedEvents.find((e) => e.id === event.id) && 'bg-accent-foreground text-white'
-                )}
-                onClick={() => handleEventSelect(event)}
-              >
+          <div className="overflow-y-auto flex-grow">
+            <div className="grid grid-cols-1 gap-4">
+              {filteredEvents?.map((event) => (
+                <Card
+                  key={event.id}
+                  className={clsx(
+                    'cursor-pointer',
+                    selectedEvents.find((e) => e.id === event.id) && 'bg-accent-foreground text-white'
+                  )}
+                  onClick={() => handleEventSelect(event)}
+                >
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-lg">{event.name}</CardTitle>
-                  <p className="text-sm text-gray-500">{new Date(event.date).toLocaleDateString()}</p>
-                </CardHeader>
-                <CardContent>
-                  <p>Max participants: {event.max_participants}</p>
-                  {event.location_name && <p>📍{event.location_name}</p>}
-                </CardContent>
-              </Card>
-            ))}
+                    <CardTitle className="text-lg">{event.name}</CardTitle>
+                    <p className="text-sm text-gray-500">{new Date(event.date).toLocaleDateString()}</p>
+                  </CardHeader>
+                  <CardContent>
+                    <p>Max participants: {event.max_participants}</p>
+                    {event.location_name && <p>📍{event.location_name}</p>}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         </div>
       </div>
