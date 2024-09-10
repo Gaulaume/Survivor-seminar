@@ -58,7 +58,7 @@ class api_Employee(BaseModel):
     name: str
     surname: str
     work: str
-    last_connection: str
+    last_connection: str = "0"
 
 class api_Employee_login(BaseModel):
     email: str
@@ -79,7 +79,7 @@ class api_Employee_me(BaseModel):
     gender: str
     work: str
     customers_ids: List[int]
-    last_connection: str
+    last_connection: str = "0"
 
 class Token(BaseModel):
     access_token: str
@@ -118,7 +118,7 @@ class api_customer_id(BaseModel):
     phone_number: str
     address: str
     image: bytes
-    last_connection: str
+    last_connection: str = "0"
 
 class Payment(BaseModel):
     id: int
@@ -229,6 +229,7 @@ def login_employee(employee: api_Employee_login):
         raise HTTPException(status_code=401, detail="Employee not found")
     last_connection_employees(user['id'])
     login_cred = insertDataLogin(employee.email, employee.password, user['id'], user['work'])
+    print(traceback.format_exc())
     return api_Employee_login_cred(**login_cred)
 
 
@@ -497,15 +498,21 @@ def get_customers(token: str = Security(get_current_user_token)):
         response_model=api_customer_id,
         tags=["customers"])
 def get_customer(customer_id: int, token: str = Security(get_current_user_token)):
-    try:
-        collection = database.customers
-        customer = collection.find_one({"id": customer_id})
+    collection = database.customers
+    collection_employees = database.employees
+    employee = collection_employees.find_one({"id": token.id})
+    customer = collection.find_one({"id": customer_id})
+    if customer is None:
+        raise HTTPException(status_code=404, detail="Customer requested doesn't exist")
+    if (token.role == Role.Manager.value):
         customer["image"] = "data:image/png;base64," + base64.b64encode(customer["image"]).decode('utf-8')
-        if customer is None:
-            raise HTTPException(status_code=404, detail="Customer requested doesn't exist")
         return customer
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="An error occurred while fetching the customer details.")
+    if (token.role == Role.Coach.value):
+        if customer_id in employee["customers_ids"]:
+            customer["image"] = "data:image/png;base64," + base64.b64encode(customer["image"]).decode('utf-8')
+            return customer
+    raise HTTPException(status_code=403, detail="Authorization denied")
+
 
 
 
