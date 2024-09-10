@@ -210,10 +210,8 @@ async def get_employees(token: str = Security(get_current_user_token)):
     employees = list(collection.find({}, {"_id": 0, "image": 0}))
     if (token.role == Role.Manager.value):
         return employees
-    if (token.role == Role.Coach.value):
-        print(traceback.format_exc())
-        return list(collection.find({"email": token.email}, {"_id": 0}))
-    raise HTTPException(status_code=403, detail="Not authorised to access this")
+    else:
+        raise HTTPException(status_code=403, detail="Authorization denied")
 
 @app.post("/api/employees/login",
          response_model=api_Employee_login_cred,
@@ -237,30 +235,6 @@ def login_employee(employee: api_Employee_login):
     print(traceback.format_exc())
     return api_Employee_login_cred(**login_cred)
 
-
-@app.post("/api/employees/register",
-         response_model=api_Employee_login,
-         tags=["employees"],
-            responses={
-                200: {"description": "Register successful",
-                      "content": {"application/json": {"example": {"access token": "string"}}}},
-                401: {"description": "Invalid credentials",
-                    "content": {"application/json": {"example": {"detail": "Email already used"}}}},
-                500: {"description": "Internal server error",
-                    "content": {"application/json": {"example": {"detail": "An error occurred while logging in."}}}},
-            },
-)
-def register_employee(employee: api_Employee_login):
-    try:
-        collection = database.employees
-        user = collection.find_one({"email": employee.email})
-        if user is None:
-            return insertDataRegister(employee.email, employee.password, user['id'])
-        raise HTTPException(status_code=401, detail="Employee not found")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error")
-
-#check si email est déjà stocké sinon l'inscrire avec mdp et token si oui  dire que le mail est déjà utilisé
 
 @app.get("/api/employees/me",
          response_model=api_Employee_me,
@@ -305,7 +279,7 @@ def get_employee(employee_id: int, token: str = Security(get_current_user_token)
     if (token.role == Role.Coach.value):
         if token.id == employee_id:
             return employee
-    raise HTTPException(status_code=403, detail="Not authorised to access this")
+    raise HTTPException(status_code=403, detail="Authorization Denied")
 
 
 
@@ -688,8 +662,8 @@ def get_customer_image(customer_id: int, token: str = Security(get_current_user_
          response_model=List[Payment],
          tags=["customers"])
 def get_payments_history(customer_id: int, token: str = Security(get_current_user_token)):
-    if (token.role != Role.Manager.value):
-        raise HTTPException(status_code=403, detail="Unauthorised use")
+    if (token.role == Role.Coach.value):
+        raise HTTPException(status_code=403, detail="Authorization denied")
     collection = database.customers
     customer = collection.find_one({"id": customer_id})
     if customer is None:
