@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import Employee from '@/types/Employee'
 import Customer from '@/types/Customer'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { ArrowLeftEndOnRectangleIcon, CheckIcon, ChevronDoubleLeftIcon, ChevronDoubleRightIcon, ChevronLeftIcon, ChevronRightIcon, ChevronUpDownIcon, EllipsisHorizontalIcon, PencilIcon, PlusIcon, TrashIcon } from '@heroicons/react/20/solid'
+import { ArrowLeftEndOnRectangleIcon, CheckIcon, ChevronDoubleLeftIcon, ChevronDoubleRightIcon, ChevronLeftIcon, ChevronRightIcon, ChevronUpDownIcon, EllipsisHorizontalIcon, FunnelIcon, PencilIcon, PlusIcon, TrashIcon } from '@heroicons/react/20/solid'
 import { useAuth } from '../actions';
 import { deleteEmployee, getEmployees, postEmployee, putEmployee } from '@/api/Employees';
 import {
@@ -53,6 +53,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { CalendarIcon } from "@heroicons/react/20/solid";
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 
 
 type MultiSelectProps = {
@@ -106,6 +107,57 @@ function MultiSelect({ items, selectedItems, setSelectedItems }: MultiSelectProp
   );
 }
 
+function MultiSelectCheckbox({ items, selectedItems, setSelectedItems }: MultiSelectProps) {
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+
+  return (
+    <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant='outline'
+          className='h-8 w-full md:w-auto'
+          onClick={() => setIsPopoverOpen(!isPopoverOpen)}
+        >
+          Filter
+          <FunnelIcon className='h-4 w-4 ml-2' />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className='w-60'>
+        <div className='space-y-2 max-h-52'>
+          {items.map((item) => (
+            <div key={item.id} className='flex flex-row items-center space-x-3 space-y-0'>
+              <Checkbox
+                id={item.id.toString()}
+                checked={selectedItems.includes(item.id)}
+                onCheckedChange={(checked) => {
+                  if (checked) setSelectedItems([...selectedItems, item.id]);
+                  else setSelectedItems(selectedItems.filter((id) => id !== item.id));
+                }}
+              />
+              <Label htmlFor={item.id.toString()}>{item.name}</Label>
+            </div>
+          ))}
+          <hr className='my-2' />
+          <div className='flex flex-row items-center space-x-3 space-y-0'>
+              <Checkbox
+                checked={selectedItems.length > 0}
+                onCheckedChange={() => {
+                  if (selectedItems.length > 0)
+                    setSelectedItems([]);
+                  else
+                    setSelectedItems(items.map(item => item.id));
+                }}
+              />
+              <Label htmlFor='clear-checkbox'>
+                {selectedItems.length > 0 ? 'Unselect All' : 'Select All'}
+              </Label>
+            </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 const FormSchema = z.object({
   name: z.string().min(2).max(50),
   surname: z.string().min(2).max(50),
@@ -131,7 +183,7 @@ const TablePagination = ({
 }) => {
   return (
     <div className='flex items-center gap-4'>
-      <div className='flex items-center gap-2 text-nowrap flex-nowrap text-sm font-medium'>
+      <div className='hidden md:flex items-center gap-2 text-nowrap flex-nowrap text-sm font-medium'>
         Rows per page
         <Select
           value={rowsPerPage.toString()}
@@ -267,7 +319,7 @@ const TableModal = ({
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
-        <Button variant='secondary'>
+        <Button variant='secondary' className='h-8'>
           Add Employee
           <PlusIcon className='h-4 w-4 ml-2' />
         </Button>
@@ -435,42 +487,80 @@ const TableModal = ({
   );
 };
 
-const TableSettings = ({ workFilter, setWorkFilter, uniqueWorkTypes }: {
-  workFilter: string;
-  setWorkFilter: (filter: string) => void;
-  uniqueWorkTypes: string[];
+const TableSettings = ({
+  workFilter,
+  setWorkFilter,
+  uniqueWorkTypes,
+  nameFilter,
+  setNameFilter
+}: {
+  workFilter: number[];
+  setWorkFilter: (filter: number[]) => void;
+  uniqueWorkTypes: { id: number; name: string; }[];
+  nameFilter: string;
+  setNameFilter: (filter: string) => void;
 }) => {
   return (
-    <div className='flex items-center gap-2'>
-      <Label htmlFor='work-filter'>Filter by work:</Label>
-      <Select
-        value={workFilter}
-        onValueChange={setWorkFilter}
-      >
-        <SelectTrigger className='w-[180px]' id='work-filter'>
-          <SelectValue placeholder='Select work type' />
-        </SelectTrigger>
-        <SelectContent>
-          {uniqueWorkTypes.map((workType) => (
-            <SelectItem key={workType} value={workType}>
-              {workType}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+    <div className='flex md:items-center gap-2 md:gap-4 flex-col md:flex-row mt-4 md:mt-0'>
+      <div className='flex items-center gap-2'>
+        <Label htmlFor='name-filter' className='hidden md:block'>
+          Search:
+        </Label>
+        <Input
+          id='name-filter'
+          value={nameFilter}
+          onChange={(e) => setNameFilter(e.target.value)}
+          placeholder='Filter by name'
+          className='w-full md:max-w-[200px] h-8'
+        />
+      </div>
+      <div className='flex items-center gap-2'>
+        <Label htmlFor='work-filter' className='hidden md:block'>
+          Filter by work:
+        </Label>
+        <MultiSelectCheckbox
+          items={uniqueWorkTypes}
+          selectedItems={workFilter}
+          setSelectedItems={setWorkFilter}
+        />
+      </div>
     </div>
   )
 }
 
 export default function EmployeeManagementPage() {
-  const [employees, setEmployees] = useState<Employee[] | null>(null);
+  const [employees, setEmployees] = useState<Employee[] | null>([
+    {
+      id: 1,
+      name: 'John',
+      surname: 'Doe',
+      email: 'john.doe@example.com',
+      birth_date: '1990-01-01',
+      gender: 'Male',
+      work: 'Coach',
+      customers_ids: [1, 2, 3],
+      last_connection: 1714857600
+    },
+    {
+      id: 2,
+      name: 'Jane',
+      surname: 'Doe',
+      email: 'jane.doe@example.com',
+      birth_date: '1990-01-01',
+      gender: 'Female',
+      work: 'Trainer',
+      customers_ids: [4, 5],
+      last_connection: 1714857600
+    }
+  ]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const { getToken } = useAuth();
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [rowsPerPage, setRowsPerPage] = useState<number>(5);
-  const [workFilter, setWorkFilter] = useState<string>('All');
+  const [workFilter, setWorkFilter] = useState<number[]>([]);
+  const [nameFilter, setNameFilter] = useState<string>('');
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -546,18 +636,28 @@ export default function EmployeeManagementPage() {
     setIsDialogOpen(true);
   };
 
-  const uniqueWorkTypes = ['All', ...Array.from(new Set(employees?.map(e => e.work || 'Not specified')))];
+  const uniqueWorkTypes = [
+    { id: 0, name: 'All' },
+    ...Array.from(new Set(employees?.map(e => e.work || 'Not specified')))
+      .map((work, index) => ({ id: index + 1, name: work }))
+  ];
 
-  const filteredEmployees = employees?.filter(employee =>
-    workFilter === 'All' || employee.work === workFilter || (!employee.work && workFilter === 'Not specified')
-  );
+  const filteredEmployees = employees?.filter(employee => {
+    const worksObjects = uniqueWorkTypes.filter(work => work.name === employee.work);
+    const workMatch = worksObjects.length > 0 && worksObjects.some(work => work.name === employee.work);
+    const nameMatch = employee.name.toLowerCase().includes(nameFilter.toLowerCase()) ||
+                      employee.surname.toLowerCase().includes(nameFilter.toLowerCase());
+    return nameMatch && workMatch;
+  });
 
-  const paginatedEmployees = filteredEmployees?
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .slice(
-      (currentPage - 1) * rowsPerPage,
-      currentPage * rowsPerPage
-    ) || [];
+  const paginatedEmployees = filteredEmployees
+    ? filteredEmployees
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .slice(
+          (currentPage - 1) * rowsPerPage,
+          currentPage * rowsPerPage
+        )
+    : [];
 
   const totalPages = filteredEmployees ? Math.ceil(filteredEmployees.length / rowsPerPage) : 1;
 
@@ -565,7 +665,7 @@ export default function EmployeeManagementPage() {
     <div className='flex flex-col space-y-4 h-full'>
       <h1 className='text-lg md:text-2xl font-bold'>Employee Management</h1>
       <hr className='w-full' />
-      <div className='flex justify-between items-center'>
+      <div className='flex justify-between md:items-center flex-col md:flex-row'>
         <TableModal
           isDialogOpen={isDialogOpen}
           setIsDialogOpen={setIsDialogOpen}
@@ -579,6 +679,8 @@ export default function EmployeeManagementPage() {
           workFilter={workFilter}
           setWorkFilter={setWorkFilter}
           uniqueWorkTypes={uniqueWorkTypes}
+          nameFilter={nameFilter}
+          setNameFilter={setNameFilter}
         />
       </div>
       <Card className='rounded-md border overflow-y-auto'>
