@@ -748,8 +748,6 @@ def get_encounters(token: str = Security(get_current_user_token)):
 
 
 
-import traceback
-
 @app.get("/api/encounters/{encounter_id}",
          response_model=api_encounter_id,
          tags=["encounters"])
