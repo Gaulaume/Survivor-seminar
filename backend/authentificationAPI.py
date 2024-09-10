@@ -76,7 +76,6 @@ def insertDataLogin(email, pwd, id, work):
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(data={"email": email, "id": id, "role": role.value}, expires_delta=access_token_expires)
-
     return {"access_token": access_token}
 
 # Extraction et vérification des données du token Bearer
@@ -108,12 +107,16 @@ def get_role_from_token(credentials: HTTPAuthorizationCredentials = Security(sec
         raise HTTPException(status_code=403, detail="Role not found in token")
     return role
 
+
 def getConnectionDate():
     date_now = datetime.now()
     year = date_now.year
     month = date_now.month
     day = date_now.day
-    date = datetime(year, month, day)
+    hour = date_now.hour
+    minute = date_now.minute
+    second = date_now.second
+    date = datetime(year, month, day, hour, minute, second)
     timestamp = int(time.mktime(date.timetuple()))
     timestamp = str(timestamp)
     return timestamp
