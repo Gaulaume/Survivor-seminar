@@ -70,9 +70,6 @@ const getEmployeeStats = async (token: string, id: number): Promise<{
 }
 
 const employeeLogin = async (email: string, password: string): Promise<any | null> => {
-  return {
-    token: "mock-token"
-  }
   const config = {
     url: 'http://localhost:8000/api/employees/login',
     method: 'post',

@@ -12,6 +12,7 @@ import Encounter from '@/types/Encounter';
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { AuthCheck, useAuth } from './actions';
 import { getEncounters } from '@/api/Encounters';
+import Layout from './pagesLayout';
 
 const getAge = (birthDate: string) => {
   const today = new Date();
@@ -134,7 +135,7 @@ export default function HomePage() {
   const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))', 'hsl(var(--chart-6))'];
 
   return (
-    <AuthCheck>
+    <Layout>
       <div className='container mx-auto space-y-6'>
         <div className='flex flex-col space-y-3'>
           <h1 className='text-lg md:text-2xl font-bold'>Customers Statistics</h1>
@@ -455,6 +456,6 @@ export default function HomePage() {
           </Card>
         </div>
       </div>
-    </AuthCheck>
+    </Layout>
   );
 }

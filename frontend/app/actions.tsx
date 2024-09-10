@@ -4,43 +4,40 @@ import { employeeLogin } from '@/api/Employees';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+export const handleApiError = (error: any) => {
+  if (!error.response || error.response.status !== 403)
+    return;
+  localStorage.removeItem('token');
+  window.location.href = '/login';
+}
+
 export const handleLogout = async (): Promise<void> => {
   localStorage.removeItem('token');
   window.location.href = '/login';
 };
 
-export const handleLogin = async (formData: FormData): Promise<void> => {
-  const email = formData.get('email') as string;
-  const password = formData.get('password') as string;
+export const handleLoginEmail = async (email: string, rememberMe: boolean): Promise<boolean> => {
+  const response = await employeeLogin(email, 'password'); // Put rememberMe in the request
 
-  const response = await employeeLogin(email, password);
-
-  console.log('response ', response);
-
-  if (response && response.token) {
-    console.log('response.token ', response.token);
-    localStorage.setItem('token', response.token);
-    window.location.href = '/';
-  } else {
-    throw new Error('Invalid login credentials');
-  }
+  if (!response)
+    return false;
+  localStorage.setItem('token', response.access_token); // TODO: remove this
+  return true;
 };
 
+export const handleLoginPin = async (pin: string): Promise<void> => {
+  // TODO: implement pin login
+  window.location.href = '/';
+}
 export const useAuth = (): { getToken: () => string } => {
   const router = useRouter();
-  const [token, setToken] = useState<string>('');
-
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    console.log('gettt token ', token);
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-    setToken(token);
-  }, []);
 
   const getToken = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/login');
+      throw new Error('No token found');
+    }
     return token;
   };
 
