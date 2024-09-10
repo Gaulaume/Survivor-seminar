@@ -205,10 +205,8 @@ def get_employees(token: str = Security(get_current_user_token)):
     employees = list(collection.find({}, {"_id": 0, "image": 0}))
     if (token.role == Role.Manager.value):
         return employees
-    if (token.role == Role.Coach.value):
-        print(traceback.format_exc())
-        return list(collection.find({"email": token.email}, {"_id": 0}))
-    raise HTTPException(status_code=403, detail="Not authorised to access this")
+    else:
+        raise HTTPException(status_code=403, detail="Authorized denied")
 
 @app.post("/api/employees/login",
          response_model=api_Employee_login_cred,
