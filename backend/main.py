@@ -206,7 +206,7 @@ def get_employees(token: str = Security(get_current_user_token)):
     if (token.role == Role.Manager.value):
         return employees
     else:
-        raise HTTPException(status_code=403, detail="Authorized denied")
+        raise HTTPException(status_code=403, detail="Authorization denied")
 
 @app.post("/api/employees/login",
          response_model=api_Employee_login_cred,
@@ -274,7 +274,7 @@ def get_employee(employee_id: int, token: str = Security(get_current_user_token)
     if (token.role == Role.Coach.value):
         if token.id == employee_id:
             return employee
-    raise HTTPException(status_code=403, detail="Not authorised to access this")
+    raise HTTPException(status_code=403, detail="Authorization Denied")
 
 
 
@@ -582,7 +582,7 @@ def get_customer_image(customer_id: int, token: str = Security(get_current_user_
          tags=["customers"])
 def get_payments_history(customer_id: int, token: str = Security(get_current_user_token)):
     if (token.role == Role.Coach.value):
-        raise HTTPException(status_code=403, detail="Unauthorised use")
+        raise HTTPException(status_code=403, detail="Authorization denied")
     collection = database.customers
     customer = collection.find_one({"id": customer_id})
     if customer is None:
