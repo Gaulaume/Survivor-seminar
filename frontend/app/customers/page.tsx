@@ -11,7 +11,8 @@ import {
   UserIcon,
   CalendarIcon,
   PhoneIcon,
-  BanknotesIcon
+  BanknotesIcon,
+  MapPinIcon
 } from '@heroicons/react/20/solid';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '../actions';
@@ -45,7 +46,7 @@ const Combobox = memo(({ value, setValue, customers }: ComboboxProps) => {
           variant='outline'
           role='combobox'
           aria-expanded={open}
-          className='w-full md:w-fit justify-between'
+          className='w-full md:w-72 justify-between'
         >
           {
             value
@@ -109,7 +110,7 @@ export default function CustomerProfile() {
   const [customerPayments, setCustomerPayments] = useState<Payment[]>([]);
   const [customerMeetings, setCustomerMeetings] = useState<Encounter[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const { getToken } = useAuth();
+  const { getToken, getRole } = useAuth();
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -138,10 +139,10 @@ export default function CustomerProfile() {
           const meetings = await getCustomerEncounters(token, selectedCustomer.id);
 
           if (!payments) throw new Error('Failed to fetch payments');
-          //if (!meetings) throw new Error('Failed to fetch meetings');
+          if (!meetings) throw new Error('Failed to fetch meetings');
 
           setCustomerPayments(payments);
-          //setCustomerMeetings(meetings);
+          setCustomerMeetings(meetings);
         } catch (error) {
           console.error('Error fetching customer data:', error);
           toast.error('Failed to fetch customer details', {
@@ -152,6 +153,8 @@ export default function CustomerProfile() {
       fetchPaymentsAndMeetings();
     }
   }, [selectedCustomer]);
+
+  console.log('role : ', getRole());
 
   return (
     <div className='flex flex-col space-y-4 h-full'>
@@ -169,7 +172,7 @@ export default function CustomerProfile() {
             <>
               <p className='text-xl md:text-2xl font-bold'>
                 <UserIcon className='size-4 md:size-6 mr-2 inline-block' />
-                {selectedCustomer.name}
+                {selectedCustomer.name} {selectedCustomer.surname}
               </p>
               {selectedCustomer.birth_date && (
                 <p className='text-base'>
@@ -179,6 +182,7 @@ export default function CustomerProfile() {
               )}
               {selectedCustomer.address && (
                 <p className='text-base'>
+                  <MapPinIcon className='size-4 md:size-6 mr-2 inline-block' />
                   {selectedCustomer.address}
                 </p>
               )}
@@ -210,7 +214,12 @@ export default function CustomerProfile() {
       </div>
       <hr className='w-full' />
       <div className='flex flex-col lg:flex-row space-y-4 lg:space-x-4 lg:space-y-0 w-full'>
-        <div className='flex flex-col space-y-4 w-full'>
+        <div
+          className={clsx(
+            'flex flex-col space-y-4 w-full',
+            getRole() !== 2 && 'hidden'
+          )}
+        >
           <h6 className='text-lg font-bold'>Payments</h6>
 
           <Card className='rounded-md border overflow-y-auto'>
@@ -268,7 +277,9 @@ export default function CustomerProfile() {
                 {customerMeetings.length > 0 ? (
                   customerMeetings.map((meeting, index) => (
                     <TableRow key={index}>
-                      <TableCell>{meeting.date}</TableCell>
+                      <TableCell className='text-nowrap'>
+                        {meeting.date}
+                      </TableCell>
                       <TableCell className='flex space-x-1'>
                         {Array.from({ length: 5 }, (_, i) => (
                           <StarIcon key={i} className={`size-4 ${i < meeting.rating ? 'text-accent-foreground' : 'text-muted'}`} />
