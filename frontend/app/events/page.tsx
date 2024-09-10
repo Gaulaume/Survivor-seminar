@@ -84,13 +84,13 @@ export default function EventPage() {
   );
 
   return (
-    <div className="w-full mx-auto">
-      <h2 className="text-2xl font-semibold mb-2">Events</h2>
-      <hr className="w-full border-t border-gray-300 mb-4" />
-      <div className="flex flex-col md:flex-row w-full">
+    <div className='w-full mx-auto'>
+      <h2 className='text-2xl font-semibold mb-2'>Events</h2>
+      <hr className='w-full border-t border-gray-300 mb-4' />
+      <div className='flex flex-col md:flex-row w-full'>
         {/* Map and Clear Button */}
-        <div className="w-full md:w-2/3 md:mr-4 flex flex-col">
-          <Card className="h-96 mb-4 overflow-hidden">
+        <div className='w-full md:w-2/3 md:mr-4 flex flex-col'>
+          <Card className='h-96 mb-4 overflow-hidden'>
             <MapContainer
               center={
                 lastSelectedEvent?.location_x && lastSelectedEvent?.location_y
@@ -100,9 +100,9 @@ export default function EventPage() {
               zoom={lastSelectedEvent?.location_y && lastSelectedEvent?.location_x ? 13 : 5}
               style={{ height: '100%', width: '100%' }}
             >
-              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              <TileLayer url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' />
               <AttributionControl
-                position="bottomright"
+                position='bottomright'
                 prefix='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
               />
 
@@ -126,41 +126,43 @@ export default function EventPage() {
           <Button
             onClick={handleClearSelection}
             disabled={selectedEvents.length === 0}
-            className="w-full"
+            className='w-full'
           >
             Clear Selection
           </Button>
         </div>
 
         {/* Event List */}
-        <div className="w-full md:w-1/3 md:sticky top-4 h-screen overflow-y-auto"> {/* sticky with top and auto-scroll */}
+        <div className='w-full'>
           <Input
-            type="text"
-            placeholder="Search events..."
+            type='text'
+            placeholder='Search events...'
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="mb-4"
+            className='mb-4'
           />
-          <div className="grid grid-cols-1 gap-4">
-            {filteredEvents?.map((event) => (
-              <Card
-                key={event.id}
-                className={clsx(
-                  'cursor-pointer',
-                  selectedEvents.find((e) => e.id === event.id) && 'bg-accent-foreground text-white'
-                )}
-                onClick={() => handleEventSelect(event)}
-              >
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-lg">{event.name}</CardTitle>
-                  <p className="text-sm text-gray-500">{new Date(event.date).toLocaleDateString()}</p>
-                </CardHeader>
-                <CardContent>
-                  <p>Max participants: {event.max_participants}</p>
-                  {event.location_name && <p>📍{event.location_name}</p>}
-                </CardContent>
-              </Card>
-            ))}
+          <div className='w-full md:w-1/3 md:sticky top-4 h-screen overflow-y-auto'> {/* sticky with top and auto-scroll */}
+            <div className='grid grid-cols-1 gap-4'>
+              {filteredEvents?.map((event) => (
+                <Card
+                  key={event.id}
+                  className={clsx(
+                    'cursor-pointer',
+                    selectedEvents.find((e) => e.id === event.id) && 'bg-accent-foreground text-white'
+                  )}
+                  onClick={() => handleEventSelect(event)}
+                >
+                    <CardHeader className='flex flex-row items-center justify-between pb-2'>
+                    <CardTitle className='text-lg'>{event.name}</CardTitle>
+                    <p className='text-sm text-gray-500'>{new Date(event.date).toLocaleDateString()}</p>
+                  </CardHeader>
+                  <CardContent>
+                    <p>Max participants: {event.max_participants}</p>
+                    {event.location_name && <p>📍{event.location_name}</p>}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         </div>
       </div>

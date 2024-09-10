@@ -7,6 +7,7 @@ import { ChevronDownIcon } from '@heroicons/react/20/solid';
 import clsx from 'clsx';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
+import { useAuth } from '../actions';
 
 interface Tip {
   id: number;
@@ -19,11 +20,13 @@ export default function CoachingTips() {
   const [filteredTips, setFilteredTips] = useState<Tip[] | null>(null);
   const [openTip, setOpenTip] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const { getToken } = useAuth();
 
   useEffect(() => {
     const fetchTips = async () => {
+      const token = getToken();
       try {
-        const data = await getTips();
+        const data = await getTips(token);
         if (!data) throw new Error('Failed to fetch tips');
         setTips(data);
         setFilteredTips(data);
@@ -55,25 +58,25 @@ export default function CoachingTips() {
   };
 
   return (
-    <div className="w-full mx-auto">
-      <div className="flex flex-col items-start">
-        <h2 className="text-2xl font-semibold mb-2">Tips</h2>
-        <hr className="w-full border-t border-gray-300 mb-4" />
+    <div className='w-full mx-auto'>
+      <div className='flex flex-col items-start'>
+        <h2 className='text-2xl font-semibold mb-2'>Tips</h2>
+        <hr className='w-full border-t border-gray-300 mb-4' />
         <input
-          type="text"
-          placeholder="Search tips..."
-          className="border border-gray-300 px-4 py-2 rounded-md mb-4 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          type='text'
+          placeholder='Search tips...'
+          className='border border-gray-300 px-4 py-2 rounded-md mb-4 focus:outline-none focus:ring-1 focus:ring-blue-500'
           onChange={handleSearchChange}
           value={searchQuery}
         />
       </div>
 
       {filteredTips?.length === 0 ? (
-        <div className="text-center w-full col-span-4">
-          <p className="text-lg text-gray-500">No tips found matching your search.</p>
+        <div className='text-center w-full col-span-4'>
+          <p className='text-lg text-gray-500'>No tips found matching your search.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-4 gap-4">
+        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'>
           {filteredTips?.map((tip) => (
             <Card
               key={tip.id}
