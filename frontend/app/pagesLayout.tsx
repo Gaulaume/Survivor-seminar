@@ -25,6 +25,7 @@ import Employee from '@/types/Employee';
 import { toast } from 'sonner';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getMe } from '@/api/Employees';
 
 const SiderBarContent = [
   {
