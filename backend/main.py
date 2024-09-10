@@ -166,6 +166,11 @@ class api_events(BaseModel):
     name: str
     date: str
     max_participants: int
+    location_x: str
+    location_y: str
+    type: str
+    employee_id: int
+    location_name: str
 
 class api_event_id(BaseModel):
     id: int
