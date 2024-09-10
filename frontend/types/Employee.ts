@@ -8,6 +8,7 @@ interface Employee {
   work?: string;
   customers_ids?: number[];
   last_connection?: number;
+  image?: string;
 }
 
 export default Employee;
