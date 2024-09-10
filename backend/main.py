@@ -5,7 +5,7 @@ from fastapi import Depends, FastAPI, HTTPException, Security
 from fastapi.responses import FileResponse
 from pymongo import MongoClient
 from pydantic import BaseModel
-from typing import Union, List
+from typing import ClassVar, Union, List
 from fastapi.middleware.cors import CORSMiddleware
 import traceback
 from fastapi.responses import StreamingResponse, FileResponse
@@ -58,6 +58,7 @@ class api_Employee(BaseModel):
     name: str
     surname: str
     work: str
+    last_connection: str
 
 class api_Employee_login(BaseModel):
     email: str
@@ -78,6 +79,7 @@ class api_Employee_me(BaseModel):
     gender: str
     work: str
     customers_ids: List[int]
+    last_connection: str
 
 class Token(BaseModel):
     access_token: str
@@ -116,6 +118,7 @@ class api_customer_id(BaseModel):
     phone_number: str
     address: str
     image: bytes
+    last_connection: str
 
 class Payment(BaseModel):
     id: int
@@ -191,6 +194,7 @@ class api_Employee(BaseModel):
     gender: str
     work: str
     customers_ids: List[int]
+    last_connection: str
 
 @app.get("/api/employees",
          response_model=List[api_Employee],
@@ -268,6 +272,7 @@ def get_employee_me(current_user: TokenData = Security(get_current_user_token)):
         employee = collection.find_one({"email": current_user.email})
         if employee is None:
             raise HTTPException(status_code=404, detail="Employee not found")
+        print(employee)
         return employee
     except Exception as e:
         print(traceback.format_exc())

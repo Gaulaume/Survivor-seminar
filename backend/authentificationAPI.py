@@ -115,6 +115,7 @@ def getConnectionDate():
     day = date_now.day
     date = datetime(year, month, day)
     timestamp = int(time.mktime(date.timetuple()))
+    timestamp = str(timestamp)
     return timestamp
 
 def last_connection_employees(id):
