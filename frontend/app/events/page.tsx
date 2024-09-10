@@ -90,9 +90,9 @@ export default function EventPage() {
     <div className='w-full mx-auto'>
       <h2 className='text-2xl font-semibold mb-2'>Events</h2>
       <hr className='w-full border-t border-gray-300 mb-4' />
-      <div className='flex flex-col md:flex-row w-full'>
+      <div className='flex flex-col lg:flex-row w-full'>
         {/* Map and Clear Button */}
-        <div className='w-full md:w-2/3 md:mr-4 flex flex-col mb-4'>
+        <div className='w-full lg:w-2/3 lg:mr-4 flex flex-col mb-4'>
           <Card className='h-96 mb-4 overflow-hidden'>
             <MapContainer
               center={
@@ -136,13 +136,13 @@ export default function EventPage() {
         </div>
 
         {/* Event List */}
-        <div className="w-full md:w-1/3 md:sticky top-4 flex flex-col h-screen">
+        <div className="w-full lg:w-1/3 lg:sticky top-4 flex flex-col h-screen">
           <Input
             type='text'
             placeholder='Search events...'
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className='md:mb-4'
+            className='mb-4'
           />
           <div className="overflow-y-auto flex-grow">
             <div className="grid grid-cols-1 gap-4">

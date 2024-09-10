@@ -263,7 +263,7 @@ export default function CustomerProfile() {
           </Card>
         </div>
         <div className='flex flex-col space-y-4 w-full'>
-          <h6 className='text-lg font-bold'>Meetings</h6>
+          <h6 className='text-lg font-bold'>Encounters</h6>
           <Card className='rounded-md border overflow-y-auto'>
             <Table>
               <TableHeader>
