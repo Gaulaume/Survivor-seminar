@@ -17,7 +17,8 @@ import {
   ChevronDownIcon,
   IdentificationIcon,
   CakeIcon,
-  ClockIcon
+  ClockIcon,
+  SparklesIcon
 } from '@heroicons/react/20/solid';
 import { useEffect, useState } from 'react';
 import clsx from 'clsx';
@@ -85,6 +86,13 @@ const SiderBarContent = [
     title: 'Wardrobe',
     icon: ShoppingBagIcon,
     href: '/wardrobe',
+    disabled: false,
+    role: 1
+  },
+  {
+    title: 'Video Analysis',
+    icon: SparklesIcon,
+    href: '/video',
     disabled: false,
     role: 1
   }

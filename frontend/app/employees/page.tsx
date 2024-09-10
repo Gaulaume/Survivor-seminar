@@ -52,7 +52,7 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { CalendarIcon } from "@heroicons/react/20/solid";
-import { Label } from '@/components/ui/label';
+import { Label } from '@/components/ui/label'
 
 
 type MultiSelectProps = {
@@ -546,9 +546,9 @@ export default function EmployeeManagementPage() {
     setIsDialogOpen(true);
   };
 
-  const uniqueWorkTypes = ['All', ...new Set(employees?.map(e => e.work || 'Not specified'))];
+  const uniqueWorkTypes = ['All', ...Array.from(new Set(employees?.map(e => e.work || 'Not specified')))];
 
-  const filteredEmployees = employees?.filter(employee => 
+  const filteredEmployees = employees?.filter(employee =>
     workFilter === 'All' || employee.work === workFilter || (!employee.work && workFilter === 'Not specified')
   );
 
@@ -594,7 +594,7 @@ export default function EmployeeManagementPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedEmployees?.map((employee) => (
+            {paginatedEmployees?.map((employee: Employee) => (
               <TableRow key={employee.id}>
                 <TableCell>{employee.name} {employee.surname}</TableCell>
                 <TableCell>{employee.birth_date}</TableCell>
