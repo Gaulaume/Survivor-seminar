@@ -14,6 +14,10 @@ import {
   PresentationChartLineIcon,
   ShoppingBagIcon,
   UserGroupIcon,
+  ChevronDownIcon,
+  IdentificationIcon,
+  CakeIcon,
+  ClockIcon
 } from '@heroicons/react/20/solid';
 import { useEffect, useState } from 'react';
 import clsx from 'clsx';
@@ -94,7 +98,7 @@ const Sidebar = ({ className }: { className?: string }) => {
   return (
     <aside className={className}>
       <div className={clsx(
-        'flex flex-col space-y-4 py-4 w-64 border-r border-muted h-screen',
+        'flex flex-col space-y-4 py-4 w-64 border-r border-muted h-screen z-50',
       )}>
         <Link href='/' className='flex items-center space-x-2 px-4'>
           <HeartIcon className='size-5' />
@@ -125,6 +129,63 @@ const Sidebar = ({ className }: { className?: string }) => {
         </nav>
       </div>
     </aside>
+  );
+};
+
+const UserDropdown = ({ user }: { user: Employee }) => {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          size='icon'
+          variant='outline'
+          className='rounded-full'
+        >
+          <Avatar className='h-8 w-8'>
+            {user.image && <AvatarImage alt='User avatar' src={user.image}/>}
+            <AvatarFallback>
+              {user.name[0].toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <span className='sr-only'>Toggle user menu</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align='end'>
+        <DropdownMenuLabel className='flex flex-col'>
+          <span className='flex flex-row flex-nowrap'>
+            {user.name} {user.surname}
+            <span className='text-muted-foreground font-normal ml-1'>
+              #{user.id}
+            </span>
+          </span>
+          <span className='text-muted-foreground font-normal'>
+            {user.email}
+          </span>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel className='flex flex-col'>
+          <span className='text-muted-foreground font-normal flex flex-nowrap items-center'>
+            <BriefcaseIcon className='size-4 mr-1' />
+            {user.work}
+          </span>
+          <span className='text-muted-foreground font-normal flex flex-nowrap items-center'>
+            <CakeIcon className='size-4 mr-1' />
+            {user.birth_date}
+            {new Date().toISOString().slice(5, 10) === user.birth_date?.slice(5, 10) && (
+              <span className="ml-2 text-green-500 font-bold">Happy Birthday!</span>
+            )}
+          </span>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => handleLogout()}
+          className='cursor-pointer'
+        >
+          <ArrowLeftStartOnRectangleIcon className='mr-2 h-4 w-4' />
+          Log out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
 
@@ -179,30 +240,7 @@ export default function Layout({
             </div>
             <div className='flex flex-row'>
               {user ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button className='rounded-full' size='icon' variant='outline'>
-                      <Avatar className='h-8 w-8'>
-                        {user.image && <AvatarImage alt='User avatar' src={user.image}/>}
-                        <AvatarFallback>
-                          {user.name[0].toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className='sr-only'>Toggle user menu</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align='end'>
-                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => handleLogout()}
-                      className='cursor-pointer'
-                    >
-                      <ArrowLeftStartOnRectangleIcon className='mr-2 h-4 w-4' />
-                      Log out
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <UserDropdown user={user} />
               ) : (
                 <Button
                   variant='default'

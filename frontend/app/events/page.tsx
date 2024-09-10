@@ -89,7 +89,7 @@ export default function EventPage() {
       <hr className='w-full border-t border-gray-300 mb-4' />
       <div className='flex flex-col md:flex-row w-full'>
         {/* Map and Clear Button */}
-        <div className='w-full md:w-2/3 md:mr-4 flex flex-col'>
+        <div className='w-full md:w-2/3 md:mr-4 flex flex-col mb-4'>
           <Card className='h-96 mb-4 overflow-hidden'>
             <MapContainer
               center={
@@ -98,7 +98,7 @@ export default function EventPage() {
                   : [48.8566, 2.3522]
               }
               zoom={lastSelectedEvent?.location_y && lastSelectedEvent?.location_x ? 13 : 5}
-              style={{ height: '100%', width: '100%' }}
+              style={{ height: '100%', width: '100%', zIndex: 1 }}
             >
               <TileLayer url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' />
               <AttributionControl
@@ -139,7 +139,7 @@ export default function EventPage() {
             placeholder='Search events...'
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className='mb-4'
+            className='md:mb-4'
           />
           <div className='w-full md:w-1/3 md:sticky top-4 h-screen overflow-y-auto'> {/* sticky with top and auto-scroll */}
             <div className='grid grid-cols-1 gap-4'>
