@@ -238,7 +238,9 @@ export default function EmployeeManagementPage() {
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingEmployee ? 'Edit Employee' : 'Add New Employee'}</DialogTitle>
+            <DialogTitle>
+              {editingEmployee ? 'Edit Employee' : 'Add New Employee'}
+            </DialogTitle>
           </DialogHeader>
           <DialogDescription>
             {editingEmployee ? 'Edit the information of the existing employee' : 'Fill out the information to add a new employee'}
@@ -374,6 +376,7 @@ export default function EmployeeManagementPage() {
               <TableHead>Name</TableHead>
               <TableHead>Birthday</TableHead>
               <TableHead>Assigned Clients</TableHead>
+              <TableHead>Work</TableHead>
               <TableHead>Last Connection</TableHead>
               <TableHead></TableHead>
             </TableRow>
@@ -389,6 +392,9 @@ export default function EmployeeManagementPage() {
                     selectedItems={employee.customers_ids || []}
                     setSelectedItems={(customerIds) => setEmployeesCustomers(employee.id, customerIds)}
                   />
+                </TableCell>
+                <TableCell>
+                  {employee.work || 'Not specified'}
                 </TableCell>
                 <TableCell>{employee.last_connection || 'Never'}</TableCell>
                 <TableCell>
