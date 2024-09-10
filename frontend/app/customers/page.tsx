@@ -139,9 +139,9 @@ export default function CustomerProfile() {
           const meetings = await getCustomerEncounters(token, selectedCustomer.id);
           const customerImage = await getCustomer(token, selectedCustomer.id);
 
-          //if (!payments) throw new Error('Failed to fetch payments');
+          if (!payments) throw new Error('Failed to fetch payments');
           if (!meetings) throw new Error('Failed to fetch meetings');
-          //setCustomerPayments(payments);
+          setCustomerPayments(payments);
           setCustomerMeetings(meetings);
 
           if (!customerImage) throw new Error('Failed to fetch customer image');

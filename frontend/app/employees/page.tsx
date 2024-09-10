@@ -19,7 +19,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { useForm } from 'react-hook-form';
+import { useForm, UseFormReturn } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -52,6 +52,7 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { CalendarIcon } from "@heroicons/react/20/solid";
+import { Label } from '@/components/ui/label';
 
 
 type MultiSelectProps = {
@@ -141,6 +142,7 @@ const TablePagination = ({
             <SelectValue placeholder={rowsPerPage.toString()} />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value='5'>5</SelectItem>
             <SelectItem value='10'>10</SelectItem>
             <SelectItem value='20'>20</SelectItem>
             <SelectItem value='30'>30</SelectItem>
@@ -205,6 +207,7 @@ const TableModal = ({
   setEditingEmployee,
   setEmployees,
   employees,
+  form
 }: {
   isDialogOpen: boolean,
   setIsDialogOpen: React.Dispatch<React.SetStateAction<boolean>>,
@@ -212,16 +215,10 @@ const TableModal = ({
   setEditingEmployee: React.Dispatch<React.SetStateAction<Employee | null>>,
   setEmployees: React.Dispatch<React.SetStateAction<Employee[] | null>>,
   employees: Employee[] | null,
+  form: UseFormReturn<z.infer<typeof FormSchema>>,
 }) => {
   const { getToken } = useAuth();
   const [newImage, setNewImage] = useState<string | null>(null);
-
-  const form = useForm<z.infer<typeof FormSchema>>({
-    resolver: zodResolver(FormSchema),
-    defaultValues: {
-      work: 'Coach',
-    },
-  });
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -438,6 +435,33 @@ const TableModal = ({
   );
 };
 
+const TableSettings = ({ workFilter, setWorkFilter, uniqueWorkTypes }: {
+  workFilter: string;
+  setWorkFilter: (filter: string) => void;
+  uniqueWorkTypes: string[];
+}) => {
+  return (
+    <div className='flex items-center gap-2'>
+      <Label htmlFor='work-filter'>Filter by work:</Label>
+      <Select
+        value={workFilter}
+        onValueChange={setWorkFilter}
+      >
+        <SelectTrigger className='w-[180px]' id='work-filter'>
+          <SelectValue placeholder='Select work type' />
+        </SelectTrigger>
+        <SelectContent>
+          {uniqueWorkTypes.map((workType) => (
+            <SelectItem key={workType} value={workType}>
+              {workType}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+}
+
 export default function EmployeeManagementPage() {
   const [employees, setEmployees] = useState<Employee[] | null>(null);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -445,7 +469,15 @@ export default function EmployeeManagementPage() {
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const { getToken } = useAuth();
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [rowsPerPage, setRowsPerPage] = useState<number>(10);
+  const [rowsPerPage, setRowsPerPage] = useState<number>(5);
+  const [workFilter, setWorkFilter] = useState<string>('All');
+
+  const form = useForm<z.infer<typeof FormSchema>>({
+    resolver: zodResolver(FormSchema),
+    defaultValues: {
+      work: 'Coach',
+    },
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -510,28 +542,45 @@ export default function EmployeeManagementPage() {
 
   const openEditDialog = (employee: Employee) => {
     setEditingEmployee(employee);
+    form.reset(employee);
     setIsDialogOpen(true);
   };
 
-  const paginatedEmployees = employees?.slice(
-    (currentPage - 1) * rowsPerPage,
-    currentPage * rowsPerPage
-  ) || [];
+  const uniqueWorkTypes = ['All', ...new Set(employees?.map(e => e.work || 'Not specified'))];
 
-  const totalPages = employees ? Math.ceil(employees.length / rowsPerPage) : 1;
+  const filteredEmployees = employees?.filter(employee => 
+    workFilter === 'All' || employee.work === workFilter || (!employee.work && workFilter === 'Not specified')
+  );
+
+  const paginatedEmployees = filteredEmployees?
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .slice(
+      (currentPage - 1) * rowsPerPage,
+      currentPage * rowsPerPage
+    ) || [];
+
+  const totalPages = filteredEmployees ? Math.ceil(filteredEmployees.length / rowsPerPage) : 1;
 
   return (
     <div className='flex flex-col space-y-4 h-full'>
       <h1 className='text-lg md:text-2xl font-bold'>Employee Management</h1>
       <hr className='w-full' />
-      <TableModal
-        isDialogOpen={isDialogOpen}
-        setIsDialogOpen={setIsDialogOpen}
-        editingEmployee={editingEmployee}
-        setEditingEmployee={setEditingEmployee}
-        setEmployees={setEmployees}
-        employees={employees}
-      />
+      <div className='flex justify-between items-center'>
+        <TableModal
+          isDialogOpen={isDialogOpen}
+          setIsDialogOpen={setIsDialogOpen}
+          editingEmployee={editingEmployee}
+          setEditingEmployee={setEditingEmployee}
+          setEmployees={setEmployees}
+          employees={employees}
+          form={form}
+        />
+        <TableSettings
+          workFilter={workFilter}
+          setWorkFilter={setWorkFilter}
+          uniqueWorkTypes={uniqueWorkTypes}
+        />
+      </div>
       <Card className='rounded-md border overflow-y-auto'>
         <Table>
           <TableHeader>
@@ -545,7 +594,7 @@ export default function EmployeeManagementPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedEmployees?.sort((a, b) => a.name.localeCompare(b.name)).map((employee) => (
+            {paginatedEmployees?.map((employee) => (
               <TableRow key={employee.id}>
                 <TableCell>{employee.name} {employee.surname}</TableCell>
                 <TableCell>{employee.birth_date}</TableCell>
@@ -561,7 +610,9 @@ export default function EmployeeManagementPage() {
                     {employee.work || 'Not specified'}
                   </Badge>
                 </TableCell>
-                <TableCell>{employee.last_connection || 'Never'}</TableCell>
+                <TableCell>
+                  {employee.last_connection ? new Date(employee.last_connection * 1000).toLocaleString() : 'N/A'}
+                </TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -596,7 +647,7 @@ export default function EmployeeManagementPage() {
             {paginatedEmployees?.length === 0 && (
               <TableRow>
                 <TableCell colSpan={6} className='text-center'>
-                  No employees found
+                  No employees found for the selected work type
                 </TableCell>
               </TableRow>
             )}
