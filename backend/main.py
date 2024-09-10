@@ -198,9 +198,14 @@ class api_Employee(BaseModel):
 
 @app.get("/api/employees",
          response_model=List[api_Employee],
-         tags=["employees"]
-)
-def get_employees(token: str = Security(get_current_user_token)):
+         tags=["employees"])
+async def get_employees(token: str = Security(get_current_user_token)):
+    """
+    Retrieve a list of employees.
+
+    - **token**: JWT token for authentication
+    - Returns a list of employees (Managers see all, Coaches see only themselves)
+    """
     collection = database.employees
     employees = list(collection.find({}, {"_id": 0, "image": 0}))
     if (token.role == Role.Manager.value):
@@ -281,7 +286,14 @@ def get_employee(employee_id: int, token: str = Security(get_current_user_token)
 
 
 @app.post("/api/employee", response_model=api_Employee_me, tags=["employees"])
-def create_employee(employee: api_Employee_me, token: str = Security(get_current_user_token)):
+async def create_employee(employee: api_Employee_me, token: str = Security(get_current_user_token)):
+    """
+    Create a new employee.
+
+    - **employee**: Employee details to be created
+    - **token**: JWT token for authentication
+    - Returns the created employee details
+    """
     try:
         employee.id = len(list(database.employees.find())) + 1
         collection = database.employees
@@ -303,7 +315,15 @@ def create_employee(employee: api_Employee_me, token: str = Security(get_current
                         "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
             },
 )
-def update_employee(employee_id: int, employee: api_Employee_me, token: str = Security(get_current_user_token)):
+async def update_employee(employee_id: int, employee: api_Employee_me, token: str = Security(get_current_user_token)):
+    """
+    Update an existing employee.
+
+    - **employee_id**: ID of the employee to update
+    - **employee**: Updated employee details
+    - **token**: JWT token for authentication
+    - Returns the updated employee details
+    """
     try:
         collection = database.employees
         result = collection.update_one({"id": employee_id}, {"$set": employee.dict()})
@@ -315,7 +335,14 @@ def update_employee(employee_id: int, employee: api_Employee_me, token: str = Se
 
 
 @app.delete("/api/employee/{employee_id}", tags=["employees"])
-def delete_employee(employee_id: int, token: str = Security(get_current_user_token)):
+async def delete_employee(employee_id: int, token: str = Security(get_current_user_token)):
+    """
+    Delete an employee.
+
+    - **employee_id**: ID of the employee to delete
+    - **token**: JWT token for authentication
+    - Returns a success message
+    """
     try:
         collection = database.employees
         result = collection.delete_one({"id": employee_id})
@@ -452,7 +479,13 @@ def get_employee_stats(employee_id: int, token: str = Security(get_current_user_
 @app.get("/api/customers",
         response_model=List[api_customer_without_image],
         tags=["customers"])
-def get_customers(token: str = Security(get_current_user_token)):
+async def get_customers(token: str = Security(get_current_user_token)):
+    """
+    Retrieve a list of customers.
+
+    - **token**: JWT token for authentication
+    - Returns a list of customers (Managers see all, Coaches see only their assigned customers)
+    """
     collection_employees = database.employees
     collection_customers = database.customers
 
@@ -471,7 +504,14 @@ def get_customers(token: str = Security(get_current_user_token)):
 @app.get("/api/customers/{customer_id}",
         response_model=api_customer_id,
         tags=["customers"])
-def get_customer(customer_id: int, token: str = Security(get_current_user_token)):
+async def get_customer(customer_id: int, token: str = Security(get_current_user_token)):
+    """
+    Retrieve details of a specific customer.
+
+    - **customer_id**: ID of the customer to retrieve
+    - **token**: JWT token for authentication
+    - Returns customer details including the base64 encoded image
+    """
     collection = database.customers
     collection_employees = database.employees
     employee = collection_employees.find_one({"id": token.id})
@@ -500,7 +540,14 @@ def get_customer(customer_id: int, token: str = Security(get_current_user_token)
                     "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
         },
 )
-def create_customer(customer: api_customer_id, token: str = Security(get_current_user_token)):
+async def create_customer(customer: api_customer_id, token: str = Security(get_current_user_token)):
+    """
+    Create a new customer.
+
+    - **customer**: Customer details to be created
+    - **token**: JWT token for authentication
+    - Returns the created customer details
+    """
     try:
         customer.id = len(list(database.customers.find())) + 1
         collection = database.customers
@@ -521,7 +568,15 @@ def create_customer(customer: api_customer_id, token: str = Security(get_current
                     "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
         },
 )
-def update_customer(customer_id: int, customer: api_customer_id, token: str = Security(get_current_user_token)):
+async def update_customer(customer_id: int, customer: api_customer_id, token: str = Security(get_current_user_token)):
+    """
+    Update an existing customer.
+
+    - **customer_id**: ID of the customer to update
+    - **customer**: Updated customer details
+    - **token**: JWT token for authentication
+    - Returns the updated customer details
+    """
     try:
         collection = database.customers
         result = collection.update_one({"id": customer_id}, {"$set": customer.dict()})
@@ -542,7 +597,14 @@ def update_customer(customer_id: int, customer: api_customer_id, token: str = Se
                     "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
         },
 )
-def delete_customer(customer_id: int, token: str = Security(get_current_user_token)):
+async def delete_customer(customer_id: int, token: str = Security(get_current_user_token)):
+    """
+    Delete a customer.
+
+    - **customer_id**: ID of the customer to delete
+    - **token**: JWT token for authentication
+    - Returns a success message
+    """
     try:
         collection = database.customers
         result = collection.delete_one({"id": customer_id})
@@ -558,6 +620,8 @@ def delete_customer(customer_id: int, token: str = Security(get_current_user_tok
         responses={
             200: {"description": "Returns customer's profile picture.",
                     "content": {"image/png": {}}},
+            403: {"description": "Not authorized to access this customer's image",
+                    "content": {"application/json": {"example": {"detail": "Not authorized to access this customer's image"}}}},
             404: {"description": "Customer requested doesn't exist",
                     "content": {"application/json": {"example": {"detail": "Customer requested doesn't exist"}}}},
             500: {"description": "Internal server error",
@@ -566,15 +630,32 @@ def delete_customer(customer_id: int, token: str = Security(get_current_user_tok
 )
 def get_customer_image(customer_id: int, token: str = Security(get_current_user_token)):
     try:
-        collection = database.customers
-        customer = collection.find_one({"id": customer_id})
+        collection_customers = database.customers
+        collection_employees = database.employees
+
+        customer = collection_customers.find_one({"id": customer_id})
         if customer is None:
             raise HTTPException(status_code=404, detail="Customer requested doesn't exist")
-        customer["image"] = "data:image/png;base64," + base64.b64encode(customer["image"]).decode('utf-8')
-        return customer["image"]
+
+        if token.role == Role.Manager.value:
+            # Managers can access all customer images
+            customer["image"] = "data:image/png;base64," + base64.b64encode(customer["image"]).decode('utf-8')
+            return customer["image"]
+        elif token.role == Role.Coach.value:
+            # Coaches can only access images of their assigned customers
+            employee = collection_employees.find_one({"id": token.id})
+            if employee and "customers_ids" in employee and customer_id in employee["customers_ids"]:
+                customer["image"] = "data:image/png;base64," + base64.b64encode(customer["image"]).decode('utf-8')
+                return customer["image"]
+            else:
+                raise HTTPException(status_code=403, detail="Not authorized to access this customer's image")
+        else:
+            raise HTTPException(status_code=403, detail="Not authorized to access customer images")
+
+    except HTTPException as he:
+        raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail="An error occurred while fetching the customer image.")
-
 
 
 @app.get("/api/customers/{customer_id}/payments_history",
@@ -596,20 +677,32 @@ def get_payments_history(customer_id: int, token: str = Security(get_current_use
 @app.get("/api/customers/{customer_id}/clothes",
          response_model=List[ClothesDetail],
          tags=["customers"])
-def get_clothes(customer_id: int, token: str = Security(get_current_user_token)):
+def get_customer_clothes(customer_id: int, token: str = Security(get_current_user_token)):
     try:
         customer_collection = database.customers
-        customer = customer_collection.find_one({"id": customer_id})
+        clothes_collection = database.clothes
+        collection_employees = database.employees
 
+        customer = customer_collection.find_one({"id": customer_id})
         if customer is None:
             raise HTTPException(status_code=404, detail="Customer requested doesn't exist")
 
-        if "clothes_ids" not in customer:
-            raise HTTPException(status_code=404, detail="No clothes found for this customer")
+        # Authorization check
+        if token.role == Role.Manager.value:
+            # Managers can access all customer clothes
+            pass
+        elif token.role == Role.Coach.value:
+            # Coaches can only access clothes of their assigned customers
+            employee = collection_employees.find_one({"id": token.id})
+            if not employee or "customers_ids" not in employee or customer_id not in employee["customers_ids"]:
+                raise HTTPException(status_code=403, detail="Not authorized to access this customer's clothes")
+        else:
+            raise HTTPException(status_code=403, detail="Not authorized to access customer clothes")
+
+        if "clothes_ids" not in customer or not customer["clothes_ids"]:
+            return []  # Return an empty list if no clothes found
 
         clothes_details = []
-
-        clothes_collection = database.clothes
         for clothes_id in customer["clothes_ids"]:
             clothes = clothes_collection.find_one({"id": clothes_id})
             if clothes:
@@ -620,9 +713,10 @@ def get_clothes(customer_id: int, token: str = Security(get_current_user_token))
                 })
 
         return clothes_details
+    except HTTPException as he:
+        raise he
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
+        raise HTTPException(status_code=500, detail=f"An error occurred while fetching the customer's clothes: {str(e)}")
 
 
 # ////////////////  ENCOUNTERS  ////////////////
@@ -630,29 +724,75 @@ def get_clothes(customer_id: int, token: str = Security(get_current_user_token))
 
 
 @app.get("/api/encounters",
-            response_model=List[api_encounter_id],
-            tags=["encounters"])
+         response_model=List[api_encounter_id],
+         tags=["encounters"])
 def get_encounters(token: str = Security(get_current_user_token)):
     try:
-        collection = database.encounters
-        encounters = list(collection.find({}, {"_id": 0}))
+        collection_encounters = database.encounters
+        collection_employees = database.employees
+
+        if token.role == Role.Coach.value:
+            employee = collection_employees.find_one({"id": token.id})
+            if not employee or "customers_ids" not in employee:
+                raise HTTPException(status_code=400, detail="Employee has no assigned customers")
+            encounters = list(collection_encounters.find(
+                {"customer_id": {"$in": employee["customers_ids"]}},
+                {"_id": 0}
+            ))
+        else:
+            encounters = list(collection_encounters.find({}, {"_id": 0}))
+
         return encounters
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 
+import traceback
+
 @app.get("/api/encounters/{encounter_id}",
-            response_model=api_encounter_id,
-            tags=["encounters"])
+         response_model=api_encounter_id,
+         tags=["encounters"])
 def get_encounter(encounter_id: int, token: str = Security(get_current_user_token)):
     try:
-        collection = database.encounters
-        encounter = collection.find_one({"id": encounter_id})
+        collection_encounters = database.encounters
+        collection_employees = database.employees
+
+        # First, check if the encounter exists
+        encounter = collection_encounters.find_one({"id": encounter_id})
         if encounter is None:
-            raise HTTPException(status_code=404, detail="Encounter requested doesn't exist")
-        return encounter
+            raise HTTPException(status_code=404, detail="Encounter not found")
+
+        print(f"Encounter found: {encounter}")
+        print(f"User role: {token.role}")
+
+        # If the user is a manager, they can access all encounters
+        if token.role == Role.Manager.value:
+            return encounter
+
+        # For Coaches, check if they have permission
+        if token.role == Role.Coach.value:
+            employee = collection_employees.find_one({"id": token.id})
+            print(f"Employee data: {employee}")
+
+            if not employee or "customers_ids" not in employee:
+                raise HTTPException(status_code=403, detail="No assigned customers found for this employee")
+
+            print(f"Employee's customer_ids: {employee['customers_ids']}")
+            print(f"Encounter's customer_id: {encounter['customer_id']}")
+
+            if encounter["customer_id"] in employee["customers_ids"]:
+                return encounter
+            else:
+                raise HTTPException(status_code=403, detail="Not authorized to access this encounter")
+
+        # If we reach here, the user doesn't have a recognized role
+        raise HTTPException(status_code=403, detail="Unauthorized access")
+
+    except HTTPException as he:
+        raise he
     except Exception as e:
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail="An error occurred while fetching the encounter details.")
 
 
@@ -667,7 +807,14 @@ def get_encounter(encounter_id: int, token: str = Security(get_current_user_toke
                     "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
             },
 )
-def create_encounter(encounter: api_encounters, token: str = Security(get_current_user_token)):
+async def create_encounter(encounter: api_encounters, token: str = Security(get_current_user_token)):
+    """
+    Create a new encounter.
+
+    - **encounter**: Encounter details to be created
+    - **token**: JWT token for authentication
+    - Returns the created encounter details
+    """
     try:
         encounter.id = len(list(database.encounters.find())) + 1
         collection = database.encounters
@@ -679,7 +826,7 @@ def create_encounter(encounter: api_encounters, token: str = Security(get_curren
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.put("/api/encounter/{employee_id}",
+@app.put("/api/encounter/{encounter_id}",
             response_model=api_encounter_id,
             tags=["encounters"],
             responses={
@@ -689,6 +836,330 @@ def create_encounter(encounter: api_encounters, token: str = Security(get_curren
                     "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
             },
 )
+async def update_encounter(encounter_id: int, encounter: api_encounter_id, token: str = Security(get_current_user_token)):
+    """
+    Update an existing encounter.
+
+    - **encounter_id**: ID of the encounter to update
+    - **encounter**: Updated encounter details
+    - **token**: JWT token for authentication
+    - Returns the updated encounter details
+    """
+    try:
+        collection = database.encounters
+        result = collection.update_one({"id": encounter_id}, {"$set": encounter.dict()})
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Encounter not found")
+        return encounter, {"message": "Encounter updated successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/encounter/{encounter_id}", tags=["encounters"])
+async def delete_encounter(encounter_id: int, token: str = Security(get_current_user_token)):
+    """
+    Delete an encounter.
+
+    - **encounter_id**: ID of the encounter to delete
+    - **token**: JWT token for authentication
+    - Returns a success message
+    """
+    try:
+        collection = database.encounters
+        result = collection.delete_one({"id": encounter_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Encounter not found")
+        return {"message": "Encounter deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ////////////////  TIPS  ////////////////
+
+
+
+@app.get("/api/tips",
+         response_model=List[api_tips],
+         tags=["tips"])
+def get_tips(token: str = Security(get_current_user_token)):
+    try:
+        collection = database.tips
+        tips = list(collection.find({}, {"_id": 0}))
+        return tips
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@app.get("/api/tips/{tip_id}",
+            response_model=api_tips,
+            tags=["tips"])
+async def get_tip(tip_id: int, token: str = Security(get_current_user_token)):
+    """
+    Retrieve a specific tip.
+
+    - **tip_id**: ID of the tip to retrieve
+    - **token**: JWT token for authentication
+    - Returns the tip details
+    """
+    try:
+        collection = database.tips
+        tip = collection.find_one({"id": tip_id})
+        if tip is None:
+            raise HTTPException(status_code=404, detail="Tip not found")
+        return tip
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@app.post("/api/tip", response_model=api_tips, tags=["tips"])
+async def create_tip(tip: api_tips, token: str = Security(get_current_user_token)):
+    """
+    Create a new tip.
+
+    - **tip**: Tip details to be created
+    - **token**: JWT token for authentication
+    - Returns the created tip details
+    """
+    try:
+        tip.id = len(list(database.tips.find())) + 1
+        collection = database.tips
+        id = collection.find_one({"id": tip.id})
+        if id is not None:
+            raise HTTPException(status_code=400, detail="Tip with this id already exists")
+        return tip, {"message": "Tip created successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@app.put("/api/tip/{tip_id}",
+            response_model=api_tips_update,
+            tags=["tips"])
+async def update_tips(tip_id: int, tip: api_tips_update, token: str = Security(get_current_user_token)):
+    """
+    Update an existing tip.
+
+    - **tip_id**: ID of the tip to update
+    - **tip**: Updated tip details
+    - **token**: JWT token for authentication
+    - Returns the updated tip details
+    """
+    try:
+        collection = database.tips
+        result = collection.update_one({"id": tip_id}, {"$set": tip.dict()})
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Tip not found")
+        return tip, {"message": "Tip updated successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@app.delete("/api/tip/{tip_id}", tags=["tips"])
+async def delete_tips(tip_id: int, token: str = Security(get_current_user_token)):
+    """
+    Delete a tip.
+
+    - **tip_id**: ID of the tip to delete
+    - **token**: JWT token for authentication
+    - Returns a success message
+    """
+    try:
+        collection = database.tips
+        result = collection.delete_one({"id": tip_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Tip not found")
+        return {"message": "Tip deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+# ////////////////  EVENTS  ////////////////
+
+
+
+@app.get("/api/events",
+            response_model=List[api_events],
+            tags=["events"])
+async def get_events(token: str = Security(get_current_user_token)):
+    """
+    Retrieve a list of events.
+
+    - **token**: JWT token for authentication
+    - Returns a list of all events
+    """
+    try:
+        collection = database.events
+        events = list(collection.find({}, {"_id": 0}))
+        return events
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@app.get("/api/events/{event_id}",
+            response_model=api_event_id,
+            tags=["events"])
+async def get_event(event_id: int, token: str = Security(get_current_user_token)):
+    """
+    Retrieve details of a specific event.
+
+    - **event_id**: ID of the event to retrieve
+    - **token**: JWT token for authentication
+    - Returns the event details
+    """
+    try:
+        collection = database.events
+        event = collection.find_one({"id": event_id})
+        if event is None:
+            raise HTTPException(status_code=404, detail="Event not found")
+        return event
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@app.post("/api/events", response_model=api_event_id, tags=["events"])
+async def create_event(event: api_event_id, token: str = Security(get_current_user_token)):
+    """
+    Create a new event.
+
+    - **event**: Event details to be created
+    - **token**: JWT token for authentication
+    - Returns the created event details
+    """
+    try:
+        event.id = len(list(database.events.find())) + 1
+        collection = database.events
+        id = collection.find_one({"id": event.id})
+        if id is not None:
+            raise HTTPException(status_code=400, detail="Event with this id already exists")
+        return event, {"message": "Event created successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@app.put("/api/events/{event_id}",
+            response_model=api_event_id,
+            tags=["events"])
+async def update_event(event_id: int, event: api_event_id, token: str = Security(get_current_user_token)):
+    """
+    Update an existing event.
+
+    - **event_id**: ID of the event to update
+    - **event**: Updated event details
+    - **token**: JWT token for authentication
+    - Returns the updated event details
+    """
+    try:
+        collection = database.events
+        result = collection.update_one({"id": event_id}, {"$set": event.dict()})
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Event not found")
+        return event, {"message": "Event updated successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@app.delete("/api/events/{event_id}", tags=["events"])
+async def delete_event(event_id: int, token: str = Security(get_current_user_token)):
+    """
+    Delete an event.
+
+    - **event_id**: ID of the event to delete
+    - **token**: JWT token for authentication
+    - Returns a success message
+    """
+    try:
+        collection = database.events
+        result = collection.delete_one({"id": event_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Event not found")
+        return {"message": "Event deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+# ////////////////  CLOTHES  ////////////////
+
+
+
+@app.get("/api/clothes",
+         response_model=List[clothes_without_img],
+         tags=["clothes"])
+def get_clothes(token: str = Security(get_current_user_token)):
+    try:
+        collection = database.clothes
+        clothes = list(collection.find({}, {"_id": 0, "image": 0}))
+        return clothes
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@app.get("/api/clothes/{clothes_id}",
+         response_model=clothes,
+         tags=["clothes"])
+def get_clothes_id(clothes_id: int, token: str = Security(get_current_user_token)):
+    try:
+        collection = database.clothes
+        clothes = collection.find_one({"id": clothes_id})
+        if clothes is None:
+            raise HTTPException(status_code=404, detail="Clothes not found")
+        clothes["image"] = "data:image/png;base64," + base64.b64encode(clothes["image"]).decode('utf-8')
+        return clothes
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@app.post("/api/clothes",
+         response_model=clothes,
+         tags=["clothes"])
+def create_clothes(clothes: clothes, token: str = Security(get_current_user_token)):
+    try:
+        clothes.id = len(list(database.clothes.find())) + 1
+        collection = database.clothes
+        id = collection.find_one({"id": clothes.id})
+        if id is not None:
+            raise HTTPException(status_code=400, detail="Clothes with this id already exists")
+        return clothes, {"message": "Clothes created successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@app.put("/api/clothes/{clothes_id}",
+         response_model=clothes,
+         tags=["clothes"])
+def update_clothes(clothes_id: int, clothes: clothes, token: str = Security(get_current_user_token)):
+    try:
+        collection = database.clothes
+        result = collection.update_one({"id": clothes_id}, {"$set": clothes.dict()})
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Clothes not found")
+        return clothes, {"message": "Clothes updated successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@app.delete("/api/clothes/{clothes_id}", tags=["clothes"])
+def delete_clothes(clothes_id: int, token: str = Security(get_current_user_token)):
+    try:
+        collection = database.clothes
+        result = collection.delete_one({"id": clothes_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Clothes not found")
+        return {"message": "Clothes deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 def update_encounter(encounter_id: int, encounter: api_encounter_id, token: str = Security(get_current_user_token)):
     try:
         collection = database.encounters
@@ -710,28 +1181,74 @@ def update_encounter(encounter_id: int, encounter: api_encounter_id, token: str 
                     "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
             },
 )
-def delete_encounter(encounter_id: int, token: str = Security(get_current_user_token)):
+async def delete_encounter(encounter_id: int, token: str = Security(get_current_user_token)):
+    """
+    Delete an encounter.
+
+    - **encounter_id**: ID of the encounter to delete
+    - **token**: JWT token for authentication
+    - Returns a success message
+    """
     try:
         collection = database.encounters
         result = collection.delete_one({"id": encounter_id})
         if result.deleted_count == 0:
-            raise HTTPException(status_code=404, detail="encounter not found")
-        return {"message": "encounter deleted successfully"}
+            raise HTTPException(status_code=404, detail="Encounter not found")
+        return {"message": "Encounter deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 
 @app.get("/api/encounter/customer/{customer_id}",
-            response_model=List[api_encounters],
-            tags=["encounters"])
-def get_encounter_customer(customer_id: int, token: str = Security(get_current_user_token)):
+         response_model=List[api_encounters],
+         tags=["encounters"])
+async def get_encounter_customer(customer_id: int, token: str = Security(get_current_user_token)):
+    """
+    Retrieve encounters for a specific customer.
+
+    - **customer_id**: ID of the customer
+    - **token**: JWT token for authentication
+    - Returns a list of encounters for the specified customer
+    """
     try:
-        collection = database.encounters
-        encounters = list(collection.find({"customer_id": customer_id}, {"_id": 0}))
-        return encounters
+        collection_encounters = database.encounters
+        collection_employees = database.employees
+
+        print(f"Requested customer_id: {customer_id}")
+        print(f"User role: {token.role}")
+
+        # If the user is a manager, they can access all encounters
+        if token.role == Role.Manager.value:
+            encounters = list(collection_encounters.find({"customer_id": customer_id}, {"_id": 0}))
+            print(f"Manager access: Found {len(encounters)} encounters")
+            return encounters
+
+        # For coaches, check if they have permission to access this customer's encounters
+        if token.role == Role.Coach.value:
+            employee = collection_employees.find_one({"id": token.id})
+            print(f"Employee data: {employee}")
+
+            if not employee or "customers_ids" not in employee:
+                raise HTTPException(status_code=403, detail="No assigned customers found for this employee")
+
+            print(f"Employee's customer_ids: {employee['customers_ids']}")
+
+            if customer_id in employee["customers_ids"]:
+                encounters = list(collection_encounters.find({"customer_id": customer_id}, {"_id": 0}))
+                print(f"Coach access: Found {len(encounters)} encounters")
+                return encounters
+            else:
+                raise HTTPException(status_code=403, detail="Not authorized to access this customer's encounters")
+
+        # If we reach here, the user doesn't have a recognized role
+        raise HTTPException(status_code=403, detail="Unauthorized access")
+
+    except HTTPException as he:
+        raise he
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 
 
@@ -742,7 +1259,13 @@ def get_encounter_customer(customer_id: int, token: str = Security(get_current_u
 @app.get("/api/tips",
             response_model=List[api_tips],
             tags=["tips"])
-def get_tips(token: str = Security(get_current_user_token)):
+async def get_tips(token: str = Security(get_current_user_token)):
+    """
+    Retrieve a list of tips.
+
+    - **token**: JWT token for authentication
+    - Returns a list of all tips
+    """
     try:
         collection = database.tips
         tips = list(collection.find({}, {"_id": 0}))
@@ -754,7 +1277,14 @@ def get_tips(token: str = Security(get_current_user_token)):
 @app.get("/api/tips/{tip_id}",
             response_model=api_tips,
             tags=["tips"])
-def get_tip(tip_id: int, token: str = Security(get_current_user_token)):
+async def get_tip(tip_id: int, token: str = Security(get_current_user_token)):
+    """
+    Retrieve a specific tip.
+
+    - **tip_id**: ID of the tip to retrieve
+    - **token**: JWT token for authentication
+    - Returns the tip details
+    """
     try:
         collection = database.tips
         tip = collection.find_one({"id": tip_id})
@@ -768,7 +1298,14 @@ def get_tip(tip_id: int, token: str = Security(get_current_user_token)):
 
 
 @app.post("/api/tip", response_model=api_tips, tags=["tips"])
-def create_tip(tip: api_tips, token: str = Security(get_current_user_token)):
+async def create_tip(tip: api_tips, token: str = Security(get_current_user_token)):
+    """
+    Create a new tip.
+
+    - **tip**: Tip details to be created
+    - **token**: JWT token for authentication
+    - Returns the created tip details
+    """
     try:
         tip.id = len(list(database.tips.find())) + 1
         collection = database.tips
@@ -790,7 +1327,15 @@ def create_tip(tip: api_tips, token: str = Security(get_current_user_token)):
                             "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
                             },
 )
-def update_tips(tips_id: int, tips: api_tips_update, token: str = Security(get_current_user_token)):
+async def update_tips(tips_id: int, tips: api_tips_update, token: str = Security(get_current_user_token)):
+    """
+    Update an existing tip.
+
+    - **tips_id**: ID of the tip to update
+    - **tips**: Updated tip details
+    - **token**: JWT token for authentication
+    - Returns the updated tip details
+    """
     try:
         collection = database.tips
         result = collection.update_one({"id": tips_id}, {"$set": tips.dict()})
@@ -802,7 +1347,14 @@ def update_tips(tips_id: int, tips: api_tips_update, token: str = Security(get_c
 
 
 @app.delete("/api/tip/{employee_id}", tags=["tips"])
-def delete_tips(tips_id: int, token: str = Security(get_current_user_token)):
+async def delete_tips(tips_id: int, token: str = Security(get_current_user_token)):
+    """
+    Delete a tip.
+
+    - **tips_id**: ID of the tip to delete
+    - **token**: JWT token for authentication
+    - Returns a success message
+    """
     try:
         collection = database.tips
         result = collection.delete_one({"id": tips_id})
@@ -821,7 +1373,13 @@ def delete_tips(tips_id: int, token: str = Security(get_current_user_token)):
 @app.get("/api/events",
             response_model=List[api_events],
             tags=["events"])
-def get_events(token: str = Security(get_current_user_token)):
+async def get_events(token: str = Security(get_current_user_token)):
+    """
+    Retrieve a list of events.
+
+    - **token**: JWT token for authentication
+    - Returns a list of all events
+    """
     try:
         collection = database.events
         events = list(collection.find({}, {"_id": 0}))
@@ -834,7 +1392,14 @@ def get_events(token: str = Security(get_current_user_token)):
 @app.get("/api/events/{event_id}",
             response_model=api_event_id,
             tags=["events"])
-def get_event(event_id: int, token: str = Security(get_current_user_token)):
+async def get_event(event_id: int, token: str = Security(get_current_user_token)):
+    """
+    Retrieve details of a specific event.
+
+    - **event_id**: ID of the event to retrieve
+    - **token**: JWT token for authentication
+    - Returns the event details
+    """
     try:
         collection = database.events
         event = collection.find_one({"id": event_id})
@@ -847,7 +1412,14 @@ def get_event(event_id: int, token: str = Security(get_current_user_token)):
 
 
 @app.post("/api/events", response_model=api_event_id, tags=["events"])
-def create_event(event: api_event_id, token: str = Security(get_current_user_token)):
+async def create_event(event: api_event_id, token: str = Security(get_current_user_token)):
+    """
+    Create a new event.
+
+    - **event**: Event details to be created
+    - **token**: JWT token for authentication
+    - Returns the created event details
+    """
     try:
         event.id = len(list(database.events.find())) + 1
         collection = database.events
@@ -870,7 +1442,15 @@ def create_event(event: api_event_id, token: str = Security(get_current_user_tok
                       "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
             },
 )
-def update_event(event_id: int, event: api_event_id, token: str = Security(get_current_user_token)):
+async def update_event(event_id: int, event: api_event_id, token: str = Security(get_current_user_token)):
+    """
+    Update an existing event.
+
+    - **event_id**: ID of the event to update
+    - **event**: Updated event details
+    - **token**: JWT token for authentication
+    - Returns the updated event details
+    """
     try:
         collection = database.events
         result = collection.update_one({"id": event_id}, {"$set": event.dict()})
@@ -892,7 +1472,14 @@ def update_event(event_id: int, event: api_event_id, token: str = Security(get_c
                       "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
             },
 )
-def delete_event(event_id: int, token: str = Security(get_current_user_token)):
+async def delete_event(event_id: int, token: str = Security(get_current_user_token)):
+    """
+    Delete an event.
+
+    - **event_id**: ID of the event to delete
+    - **token**: JWT token for authentication
+    - Returns a success message
+    """
     try:
         collection = database.events
         result = collection.delete_one({"id": event_id})
@@ -917,7 +1504,14 @@ class ClothesWithoutImg(BaseModel):
 
 
 @app.get("/api/clothes/{clothes_id}/image", tags=["clothes"])
-def get_clothes_image(clothes_id: int, token: str = Security(get_current_user_token)):
+async def get_clothes_image(clothes_id: int, token: str = Security(get_current_user_token)):
+    """
+    Retrieve the image of a specific piece of clothing.
+
+    - **clothes_id**: ID of the clothing item
+    - **token**: JWT token for authentication
+    - Returns the image of the clothing item
+    """
     try:
         role = token.role
         if role == Role.Coach.value:
@@ -960,19 +1554,56 @@ def get_clothes_image(clothes_id: int, token: str = Security(get_current_user_to
 @app.get("/api/clothes",
          response_model=List[ClothesWithoutImg],
          tags=["clothes"])
-def get_clothes(token: str = Security(get_current_user_token)):
+async def get_clothes(token: str = Security(get_current_user_token)):
+    """
+    Retrieve a list of clothing items.
+
+    - **token**: JWT token for authentication
+    - Returns a list of clothing items
+    """
     try:
-        collection = database.clothes
-        clothes_list = list(collection.find({}, {"_id": 0, "image": 0}))  # Exclude image field
+        collection_employees = database.employees
+        collection_customers = database.customers
+        collection_clothes = database.clothes
+
+        # Get the employee based on the token
+        employee = collection_employees.find_one({"id": token.id})
+        if not employee:
+            raise HTTPException(status_code=404, detail="Employee not found")
+
+        # Get the customer IDs assigned to this employee
+        customer_ids = employee.get("customers_ids", [])
+
+        # Get all customers' clothes IDs
+        customers_clothes_ids = []
+        for customer_id in customer_ids:
+            customer = collection_customers.find_one({"id": customer_id})
+            if customer and "clothes_ids" in customer:
+                customers_clothes_ids.extend(customer["clothes_ids"])
+
+        # Get the clothes details
+        clothes_list = list(collection_clothes.find(
+            {"id": {"$in": customers_clothes_ids}},
+            {"_id": 0, "image": 0}
+        ))
+
         return clothes_list
     except Exception as e:
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/clothes/{clothes_id}",
          response_model=ClothesWithoutImg,
          tags=["clothes"])
-def get_clothes_by_id(clothes_id: int, token: str = Security(get_current_user_token)):
+async def get_clothes_by_id(clothes_id: int, token: str = Security(get_current_user_token)):
+    """
+    Retrieve details of a specific clothing item.
+
+    - **clothes_id**: ID of the clothing item
+    - **token**: JWT token for authentication
+    - Returns the details of the clothing item
+    """
     try:
         collection = database.clothes
         clothes = collection.find_one({"id": clothes_id}, {"_id": 0, "image": 0})
@@ -982,10 +1613,45 @@ def get_clothes_by_id(clothes_id: int, token: str = Security(get_current_user_to
     except Exception as e:
         raise HTTPException(status_code=500, detail="An error occurred while fetching the clothes details.")
 
+@app.get("/api/clothes/{clothes_id}/image",
+         tags=["clothes"],
+         responses={
+             200: {"description": "Returns clothes image.",
+                   "content": {"image/png": {}}},
+             404: {"description": "Clothes requested doesn't exist",
+                   "content": {"application/json": {"example": {"detail": "Clothes requested doesn't exist"}}}},
+             500: {"description": "Internal server error",
+                   "content": {"application/json": {"example": {"detail": "An error occurred while fetching the clothes image."}}}},
+         })
+async def get_clothes_image(clothes_id: int):
+    """
+    Retrieve the image of a specific clothing item.
+
+    - **clothes_id**: ID of the clothing item
+    - Returns the image of the clothing item
+    """
+    try:
+        collection = database.clothes
+        clothes = collection.find_one({"id": clothes_id})
+        if clothes is None:
+            raise HTTPException(status_code=404, detail="Clothes requested doesn't exist")
+
+        image_stream = BytesIO(clothes["image"])
+        return StreamingResponse(image_stream, media_type="image/png")
+    except Exception as e:
+        print(f"Error fetching image: {e}")
+        raise HTTPException(status_code=500, detail="An error occurred while fetching the clothes image.")
+
 @app.post("/api/clothes",
           response_model=Clothes,
           tags=["clothes"])
-def create_clothes(clothes: Clothes):
+async def create_clothes(clothes: Clothes):
+    """
+    Create a new clothing item.
+
+    - **clothes**: Details of the clothing item to be created
+    - Returns the created clothing item
+    """
     try:
         collection = database.clothes
         clothes.id = len(list(collection.find())) + 1
@@ -1007,7 +1673,15 @@ def create_clothes(clothes: Clothes):
              400: {"description": "Invalid request",
                    "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
          })
-def update_clothes(clothes_id: int, clothes: Clothes, token: str = Security(get_current_user_token)):
+async def update_clothes(clothes_id: int, clothes: Clothes, token: str = Security(get_current_user_token)):
+    """
+    Update an existing clothing item.
+
+    - **clothes_id**: ID of the clothing item to update
+    - **clothes**: Updated details of the clothing item
+    - **token**: JWT token for authentication
+    - Returns the updated clothing item
+    """
     try:
         collection = database.clothes
         result = collection.update_one({"id": clothes_id}, {"$set": clothes.dict()})
@@ -1026,7 +1700,14 @@ def update_clothes(clothes_id: int, clothes: Clothes, token: str = Security(get_
                 400: {"description": "Invalid request",
                       "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
             })
-def delete_clothes(clothes_id: int, token: str = Security(get_current_user_token)):
+async def delete_clothes(clothes_id: int, token: str = Security(get_current_user_token)):
+    """
+    Delete a clothing item.
+
+    - **clothes_id**: ID of the clothing item to delete
+    - **token**: JWT token for authentication
+    - Returns a success message
+    """
     try:
         collection = database.clothes
         result = collection.delete_one({"id": clothes_id})
@@ -1149,7 +1830,7 @@ def calculate_compatibility(customer1: api_customer_id, customer2: api_customer_
         raise HTTPException(status_code=400, detail="Invalid astrological signs provided")
 
 @app.post("/api/compatibility", tags=["compatibility"])
-def get_compatibility(customer1_id: int, customer2_id: int, token: str = Security(get_current_user_token)):
+async def get_compatibility(customer1_id: int, customer2_id: int, token: str = Security(get_current_user_token)):
     """Calculates compatibility between two customers."""
     try:
         customer1 = get_customer_by_id(customer1_id)
