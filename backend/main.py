@@ -103,7 +103,6 @@ class api_customer_id(BaseModel):
     astrological_sign: str
     phone_number: str
     address: str
-    image: str
 
 class Payment(BaseModel):
     id: int
@@ -187,9 +186,9 @@ class api_Employee(BaseModel):
 def get_employees(token: str = Security(get_current_user_token)):
     collection = database.employees
     employees = list(collection.find({}, {"_id": 0, "image": 0}))
-    if (token.role == Role.Manager):
+    if (token.role == 2):
         return employees
-    if (token.role == Role.Coach):
+    if (token.role == 1):
         print(traceback.format_exc())
         return list(collection.find({"email": token.email}, {"_id": 0}))
     raise HTTPException(status_code=403, detail="Not authorised to access this")
@@ -461,17 +460,17 @@ def get_employee_stats(employee_id: int, token: str = Security(get_current_user_
         response_model=List[api_customer_id],
         tags=["customers"])
 def get_customers(token: str = Security(get_current_user_token)):
-    collection_emp = database.employees
-    collection_cus = database.customers
+    collection_employees = database.employees
+    collection_customers = database.customers
 
-    customers = list(collection_cus.find({}, {"_id": 0}))
-    employee = collection_emp.find_one({"id": token.id})
+    customers = list(collection_customers.find({}, {"_id": 0, "image": 0}))
+    employee = collection_employees.find_one({"id": token.id})
 
     if (token.role == Role.Coach):
         customers_ids = employee['customers_ids']
         if not customers_ids:
             raise HTTPException(status_code=400, detail="Employee has no customers")
-        return list(collection_cus.find({"id": {"$in": customers_ids}}))
+        return list(collection_customers.find({"id": {"$in": customers_ids}}))
     else:
         return customers
 

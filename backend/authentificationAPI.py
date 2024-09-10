@@ -1,5 +1,4 @@
 import hashlib
-import json
 from fastapi import Depends, HTTPException, Security
 from pydantic import BaseModel
 from pymongo import MongoClient
@@ -81,19 +80,21 @@ def insertDataLogin(email, pwd, id, work):
     collection = db.auth
     data = {'email': email, 'pwd': pwd, 'id': id}
     user = collection.find_one({"email": email})
-    role = 0
     hashed_pwd = hash_password(pwd)
+    role = None
     # if hashed_pwd != user['password']:
     #     raise HTTPException(status_code=400, detail="Email or password incorrect")
     if (work == "Coach"):
         role = Role.Coach
+        print(role)
     else:
         role = Role.Manager
+        print(role)
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     TokenData.email = {"email": email}
     TokenData.id = {"id": id}
     TokenData.role = {"role": role}
-    access_token = create_access_token(data={"email": email, "id": id, "role": role.name}, expires_delta=access_token_expires)
+    access_token = create_access_token(data={"email": email, "id": id, "role": role.value}, expires_delta=access_token_expires)
 
     return {"access_token": access_token}
 
