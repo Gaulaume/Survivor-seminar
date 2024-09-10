@@ -58,7 +58,7 @@ class api_Employee(BaseModel):
     name: str
     surname: str
     work: str
-    last_connection: str = "0"
+    last_connection: Optional[str] = None
 
 class api_Employee_login(BaseModel):
     email: str
@@ -79,7 +79,7 @@ class api_Employee_me(BaseModel):
     gender: str
     work: str
     customers_ids: List[int]
-    last_connection: str = "0"
+    last_connection: Optional[str] = None
 
 class Token(BaseModel):
     access_token: str
@@ -118,7 +118,7 @@ class api_customer_id(BaseModel):
     phone_number: str
     address: str
     image: bytes
-    last_connection: str = "0"
+    last_connection: Optional[str] = None
 
 class Payment(BaseModel):
     id: int
@@ -194,7 +194,7 @@ class api_Employee(BaseModel):
     gender: str
     work: str
     customers_ids: List[int]
-    last_connection: str = "0"
+    last_connection: Optional[str] = None
 
 @app.get("/api/employees",
          response_model=List[api_Employee],
@@ -747,8 +747,6 @@ def get_encounters(token: str = Security(get_current_user_token)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-
-import traceback
 
 @app.get("/api/encounters/{encounter_id}",
          response_model=api_encounter_id,
