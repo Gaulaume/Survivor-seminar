@@ -34,6 +34,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import clsx from 'clsx'
 
 
 type MultiSelectProps = {
@@ -104,7 +106,7 @@ export default function EmployeeManagementPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newImage, setNewImage] = useState<string | null>(null);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
-  const { getToken } = useAuth();
+  const { getToken, getRole } = useAuth();
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -394,7 +396,9 @@ export default function EmployeeManagementPage() {
                   />
                 </TableCell>
                 <TableCell>
-                  {employee.work || 'Not specified'}
+                  <Badge className='text-nowrap flex-nowrap'>
+                    {employee.work || 'Not specified'}
+                  </Badge>
                 </TableCell>
                 <TableCell>{employee.last_connection || 'Never'}</TableCell>
                 <TableCell>
