@@ -16,7 +16,7 @@ import {
 } from '@heroicons/react/20/solid';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '../actions';
-import { getCustomers, getCustomerPayments } from '@/api/Customers';
+import { getCustomers, getCustomerPayments, getCustomerImage, getCustomer } from '@/api/Customers';
 import { toast } from 'sonner';
 import Customer from '@/types/Customer';
 import Payment from '@/types/Payment';
@@ -132,17 +132,20 @@ export default function CustomerProfile() {
   useEffect(() => {
     console.log('selectedCustomer:', selectedCustomer);
     if (selectedCustomer) {
-      const fetchPaymentsAndMeetings = async () => {
+      const fetchCustomerData = async () => {
         try {
           const token = getToken();
           const payments = await getCustomerPayments(token, selectedCustomer.id);
           const meetings = await getCustomerEncounters(token, selectedCustomer.id);
+          const customerImage = await getCustomer(token, selectedCustomer.id);
 
           if (!payments) throw new Error('Failed to fetch payments');
           if (!meetings) throw new Error('Failed to fetch meetings');
-
           setCustomerPayments(payments);
           setCustomerMeetings(meetings);
+
+          if (!customerImage) throw new Error('Failed to fetch customer image');
+          setSelectedCustomer(prev => ({ ...prev!, image: customerImage.image }));
         } catch (error) {
           console.error('Error fetching customer data:', error);
           toast.error('Failed to fetch customer details', {
@@ -150,11 +153,9 @@ export default function CustomerProfile() {
           });
         }
       };
-      fetchPaymentsAndMeetings();
+      fetchCustomerData();
     }
-  }, [selectedCustomer]);
-
-  console.log('role : ', getRole());
+  }, [selectedCustomer?.id]);
 
   return (
     <div className='flex flex-col space-y-4 h-full'>

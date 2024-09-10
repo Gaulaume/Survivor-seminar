@@ -32,55 +32,65 @@ const SiderBarContent = [
     title: 'Home',
     icon: HomeIcon,
     href: '/',
-    disabled: false
+    disabled: false,
+    role: 1
   },
   {
     title: 'Coaches',
     icon: BriefcaseIcon,
     href: '/employees',
-    disabled: false
+    disabled: false,
+    role: 2
   },
   {
     title: 'Customers',
     icon: UserGroupIcon,
     href: '/customers',
-    disabled: false
+    disabled: false,
+    role: 1
   },
   {
     title: 'Statistics',
     icon: PresentationChartLineIcon,
     href: '/statistics',
-    disabled: false
+    disabled: false,
+    role: 2
   },
   {
     title: 'Tips',
     icon: ChatBubbleBottomCenterIcon,
     href: '/tips',
-    disabled: false
+    disabled: false,
+    role: 1
   },
   {
     title: 'Events',
     icon: CalendarIcon,
     href: '/events',
-    disabled: false
+    disabled: false,
+    role: 1
   },
   {
     title: 'Compatibility',
     icon: HeartIcon,
     href: '/compatibility',
-    disabled: false
+    disabled: false,
+    role: 1
   },
   {
     title: 'Wardrobe',
     icon: ShoppingBagIcon,
     href: '/wardrobe',
-    disabled: false
+    disabled: false,
+    role: 1
   }
 ];
 
 const Sidebar = ({ className }: { className?: string }) => {
   const router = useRouter();
   const actualPath = usePathname();
+  const { getRole } = useAuth();
+
   return (
     <aside className={className}>
       <div className={clsx(
@@ -100,6 +110,7 @@ const Sidebar = ({ className }: { className?: string }) => {
               className={clsx(
                 'flex items-center w-full px-3 py-1.5 rounded-md hover:bg-muted transition-colors duration-200 text-base',
                 actualPath === item.href && 'bg-accent-foreground text-white hover:!bg-accent-foreground/90',
+                item.role > getRole() && 'hidden',
                 'disabled:opacity-60 disabled:cursor-not-allowed'
               )}
               onClick={() => {
@@ -126,7 +137,6 @@ export default function Layout({
   const { getToken } = useAuth();
   const router = useRouter();
   const [user, setUser] = useState<Employee | null>(null);
-  const pathname = usePathname();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -184,7 +194,10 @@ export default function Layout({
                   <DropdownMenuContent align='end'>
                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => handleLogout()}>
+                    <DropdownMenuItem
+                      onClick={() => handleLogout()}
+                      className='cursor-pointer'
+                    >
                       <ArrowLeftStartOnRectangleIcon className='mr-2 h-4 w-4' />
                       Log out
                     </DropdownMenuItem>

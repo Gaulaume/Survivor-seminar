@@ -24,7 +24,7 @@ const getCustomers = async (token: string): Promise<Customer[] | null> => {
   }
 }
 
-const getCustomer = async (token: string, id: string): Promise<Customer | null> => {
+const getCustomer = async (token: string, id: number): Promise<Customer | null> => {
   const config = {
     url: `http://localhost:8000/api/customers/${id}`,
     method: 'get',
