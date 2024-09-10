@@ -1512,43 +1512,30 @@ async def get_clothes_image(clothes_id: int, token: str = Security(get_current_u
     - **token**: JWT token for authentication
     - Returns the image of the clothing item
     """
-    try:
-        role = token.role
-        if role == Role.Coach.value:
-            employee = database.employees.find_one({"id": token.id}, {"_id": 0, "image": 0})
-            if employee is None:
-                raise HTTPException(status_code=404, detail="Employee not found")
-
-            customers_ids = employee["customers_ids"]
-            if not customers_ids:
-                raise HTTPException(status_code=400, detail="Employee has no customers")
-            
-            # going to get the list of id of every clothes of every customer of the employee
-
-            clothes_ids = []
-            for customer_id in customers_ids:
-                customer = database.customers.find_one({"id": customer_id})
-                if customer is None:
-                    raise HTTPException(status_code=404, detail="Customer not found")
-                if "clothes_ids" in customer:
-                    clothes_ids.extend(customer["clothes_ids"])
-                                    
-            
-
+    role = token.role
+    if role == Role.Coach.value:
+        employee = database.employees.find_one({"id": token.id}, {"_id": 0, "image": 0})
+        if employee is None:
+            raise HTTPException(status_code=404, detail="Employee not found")
+        customers_ids = employee["customers_ids"]
+        if not customers_ids:
+            raise HTTPException(status_code=400, detail="Employee has no customers")
         
-        collection = database.clothes
-        clothes = collection.find_one({"id": clothes_id})
-        if clothes is None:
-            raise HTTPException(status_code=404, detail="Clothes requested doesn't exist")
+        autorized_clothes_ids = []
+        for customer_id in customers_ids:
+            customer_clothes_ids = database.customers.find_one({"id": customer_id}, {'clothes_ids': 1})['clothes_ids']
+            autorized_clothes_ids.extend(customer_clothes_ids)
+        print(f"Authorized clothes_ids: {autorized_clothes_ids}")
+        if clothes_id not in autorized_clothes_ids:
+            raise HTTPException(status_code=403, detail="Not authorized to access this clothes image")
+    
+    collection = database.clothes
+    clothes = collection.find_one({"id": clothes_id})
+    if clothes is None:
+        raise HTTPException(status_code=404, detail="Clothes requested doesn't exist")
 
-        image_stream = BytesIO(clothes["image"])
-        # image_stream = 
-        no_content = b''        
-         
-        return StreamingResponse(no_content, media_type="image/png")
-    except Exception as e:
-        print(f"Error fetching image: {e}")
-        raise HTTPException(status_code=500, detail="An error occurred while fetching the clothes image.")
+    image_stream = BytesIO(clothes["image"])
+    return StreamingResponse(image_stream, media_type="image/png")
 
 
 @app.get("/api/clothes",
@@ -1613,34 +1600,6 @@ async def get_clothes_by_id(clothes_id: int, token: str = Security(get_current_u
     except Exception as e:
         raise HTTPException(status_code=500, detail="An error occurred while fetching the clothes details.")
 
-@app.get("/api/clothes/{clothes_id}/image",
-         tags=["clothes"],
-         responses={
-             200: {"description": "Returns clothes image.",
-                   "content": {"image/png": {}}},
-             404: {"description": "Clothes requested doesn't exist",
-                   "content": {"application/json": {"example": {"detail": "Clothes requested doesn't exist"}}}},
-             500: {"description": "Internal server error",
-                   "content": {"application/json": {"example": {"detail": "An error occurred while fetching the clothes image."}}}},
-         })
-async def get_clothes_image(clothes_id: int):
-    """
-    Retrieve the image of a specific clothing item.
-
-    - **clothes_id**: ID of the clothing item
-    - Returns the image of the clothing item
-    """
-    try:
-        collection = database.clothes
-        clothes = collection.find_one({"id": clothes_id})
-        if clothes is None:
-            raise HTTPException(status_code=404, detail="Clothes requested doesn't exist")
-
-        image_stream = BytesIO(clothes["image"])
-        return StreamingResponse(image_stream, media_type="image/png")
-    except Exception as e:
-        print(f"Error fetching image: {e}")
-        raise HTTPException(status_code=500, detail="An error occurred while fetching the clothes image.")
 
 @app.post("/api/clothes",
           response_model=Clothes,
