@@ -938,13 +938,39 @@ class ClothesWithoutImg(BaseModel):
 @app.get("/api/clothes/{clothes_id}/image", tags=["clothes"])
 def get_clothes_image(clothes_id: int, token: str = Security(get_current_user_token)):
     try:
+        role = token.role
+        if role == Role.Coach.value:
+            employee = database.employees.find_one({"id": token.id}, {"_id": 0, "image": 0})
+            if employee is None:
+                raise HTTPException(status_code=404, detail="Employee not found")
+
+            customers_ids = employee["customers_ids"]
+            if not customers_ids:
+                raise HTTPException(status_code=400, detail="Employee has no customers")
+            
+            # going to get the list of id of every clothes of every customer of the employee
+
+            clothes_ids = []
+            for customer_id in customers_ids:
+                customer = database.customers.find_one({"id": customer_id})
+                if customer is None:
+                    raise HTTPException(status_code=404, detail="Customer not found")
+                if "clothes_ids" in customer:
+                    clothes_ids.extend(customer["clothes_ids"])
+                                    
+            
+
+        
         collection = database.clothes
         clothes = collection.find_one({"id": clothes_id})
         if clothes is None:
             raise HTTPException(status_code=404, detail="Clothes requested doesn't exist")
 
         image_stream = BytesIO(clothes["image"])
-        return StreamingResponse(image_stream, media_type="image/png")
+        # image_stream = 
+        no_content = b''        
+         
+        return StreamingResponse(no_content, media_type="image/png")
     except Exception as e:
         print(f"Error fetching image: {e}")
         raise HTTPException(status_code=500, detail="An error occurred while fetching the clothes image.")
@@ -974,29 +1000,6 @@ def get_clothes_by_id(clothes_id: int, token: str = Security(get_current_user_to
         return clothes
     except Exception as e:
         raise HTTPException(status_code=500, detail="An error occurred while fetching the clothes details.")
-
-@app.get("/api/clothes/{clothes_id}/image",
-         tags=["clothes"],
-         responses={
-             200: {"description": "Returns clothes image.",
-                   "content": {"image/png": {}}},
-             404: {"description": "Clothes requested doesn't exist",
-                   "content": {"application/json": {"example": {"detail": "Clothes requested doesn't exist"}}}},
-             500: {"description": "Internal server error",
-                   "content": {"application/json": {"example": {"detail": "An error occurred while fetching the clothes image."}}}},
-         })
-def get_clothes_image(clothes_id: int):
-    try:
-        collection = database.clothes
-        clothes = collection.find_one({"id": clothes_id})
-        if clothes is None:
-            raise HTTPException(status_code=404, detail="Clothes requested doesn't exist")
-
-        image_stream = BytesIO(clothes["image"])
-        return StreamingResponse(image_stream, media_type="image/png")
-    except Exception as e:
-        print(f"Error fetching image: {e}")
-        raise HTTPException(status_code=500, detail="An error occurred while fetching the clothes image.")
 
 @app.post("/api/clothes",
           response_model=Clothes,
