@@ -29,7 +29,7 @@ export const handleLoginPin = async (pin: string): Promise<void> => {
   // TODO: implement pin login
   window.location.href = '/';
 }
-export const useAuth = (): { getToken: () => string } => {
+export const useAuth = (): { getToken: () => string, getRole: () => number | null} => {
   const router = useRouter();
 
   const getToken = () => {
@@ -41,7 +41,18 @@ export const useAuth = (): { getToken: () => string } => {
     return token;
   };
 
-  return { getToken };
+  const getRole = () => {
+    const token = getToken();
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.role || null;
+    } catch (error) {
+      console.error('Error decoding token:', error);
+      return null;
+    }
+  };
+
+  return { getToken, getRole };
 };
 
 export const Loading = () => {

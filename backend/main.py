@@ -94,6 +94,18 @@ class api_customer(BaseModel):
     description: str
     astrological_sign: str
 
+class api_customer_without_image(BaseModel):
+    id: int
+    email: str
+    name: str
+    surname: str
+    birth_date: str
+    gender: str
+    description: str
+    astrological_sign: str
+    phone_number: str
+    address: str
+
 class api_customer_id(BaseModel):
     id: int
     email: str
@@ -105,6 +117,7 @@ class api_customer_id(BaseModel):
     astrological_sign: str
     phone_number: str
     address: str
+    image: bytes
     last_connection: str
 
 class Payment(BaseModel):
@@ -462,7 +475,7 @@ def get_employee_stats(employee_id: int, token: str = Security(get_current_user_
 
 
 @app.get("/api/customers",
-        response_model=List[api_customer_id],
+        response_model=List[api_customer_without_image],
         tags=["customers"])
 def get_customers(token: str = Security(get_current_user_token)):
     collection_employees = database.employees
@@ -478,15 +491,6 @@ def get_customers(token: str = Security(get_current_user_token)):
         return list(collection_customers.find({"id": {"$in": customers_ids}}))
     else:
         return customers
-
-        #POUR GET CUSTOMERS
-        #if (token.role == 1):
-        #    customers_ids = employee['customers_ids']
-        #    if not customers_ids:
-        #        raise HTTPException(status_code=400, detail="Employee has no customers")
-        #    for customer_id in customers_ids:
-        #        if employee_id == customer_id:
-        #            return employee
 
 
 @app.get("/api/customers/{customer_id}",
@@ -585,7 +589,8 @@ def get_customer_image(customer_id: int, token: str = Security(get_current_user_
         customer = collection.find_one({"id": customer_id})
         if customer is None:
             raise HTTPException(status_code=404, detail="Customer requested doesn't exist")
-        return FileResponse(customer["image"])
+        customer["image"] = "data:image/png;base64," + base64.b64encode(customer["image"]).decode('utf-8')
+        return customer["image"]
     except Exception as e:
         raise HTTPException(status_code=500, detail="An error occurred while fetching the customer image.")
 

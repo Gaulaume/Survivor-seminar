@@ -173,7 +173,7 @@ export default function Layout({
                   <DropdownMenuTrigger asChild>
                     <Button className='rounded-full' size='icon' variant='outline'>
                       <Avatar className='h-8 w-8'>
-                        <AvatarImage alt='User avatar' src='/placeholder.svg?height=32&width=32' />
+                        {user.image && <AvatarImage alt='User avatar' src={user.image}/>}
                         <AvatarFallback>
                           {user.name[0].toUpperCase()}
                         </AvatarFallback>
