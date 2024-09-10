@@ -203,9 +203,9 @@ class api_Employee(BaseModel):
 def get_employees(token: str = Security(get_current_user_token)):
     collection = database.employees
     employees = list(collection.find({}, {"_id": 0, "image": 0}))
-    if (token.role == 2):
+    if (token.role == Role.Manager):
         return employees
-    if (token.role == 1):
+    if (token.role == Role.Coach):
         print(traceback.format_exc())
         return list(collection.find({"email": token.email}, {"_id": 0}))
     raise HTTPException(status_code=403, detail="Not authorised to access this")
