@@ -79,8 +79,8 @@ const Login = () => {
     try {
       const { email, rememberMe } = values;
       const response = await handleLoginEmail(email, rememberMe);
-      //if (!response)
-      //  throw new Error('Invalid login credentials');
+      if (!response)
+        throw new Error('Invalid login credentials');
       setStep(2);
     } catch (error) {
       if (error instanceof Error)

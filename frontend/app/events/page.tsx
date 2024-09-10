@@ -87,13 +87,13 @@ export default function EventPage() {
   );
 
   return (
-    <div className="w-full mx-auto">
-      <h2 className="text-2xl font-semibold mb-2">Events</h2>
-      <hr className="w-full border-t border-gray-300 mb-4" />
-      <div className="flex flex-col md:flex-row w-full">
+    <div className='w-full mx-auto'>
+      <h2 className='text-2xl font-semibold mb-2'>Events</h2>
+      <hr className='w-full border-t border-gray-300 mb-4' />
+      <div className='flex flex-col md:flex-row w-full'>
         {/* Map and Clear Button */}
-        <div className="w-full md:w-2/3 md:mr-4 flex flex-col">
-          <Card className="h-96 mb-4 overflow-hidden">
+        <div className='w-full md:w-2/3 md:mr-4 flex flex-col'>
+          <Card className='h-96 mb-4 overflow-hidden'>
             <MapContainer
               center={
                 lastSelectedEvent?.location_x && lastSelectedEvent?.location_y
@@ -103,9 +103,9 @@ export default function EventPage() {
               zoom={lastSelectedEvent?.location_y && lastSelectedEvent?.location_x ? 13 : 5}
               style={{ height: '100%', width: '100%' }}
             >
-              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              <TileLayer url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' />
               <AttributionControl
-                position="bottomright"
+                position='bottomright'
                 prefix='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
               />
 
@@ -129,7 +129,7 @@ export default function EventPage() {
           <Button
             onClick={handleClearSelection}
             disabled={selectedEvents.length === 0}
-            className="w-full"
+            className='w-full'
           >
             Clear Selection
           </Button>
@@ -138,11 +138,11 @@ export default function EventPage() {
         {/* Event List */}
         <div className="w-full md:w-1/3 md:sticky top-4 flex flex-col h-screen">
           <Input
-            type="text"
-            placeholder="Search events..."
+            type='text'
+            placeholder='Search events...'
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="mb-4"
+            className='mb-4'
           />
           <div className="overflow-y-auto flex-grow">
             <div className="grid grid-cols-1 gap-4">

@@ -139,9 +139,9 @@ export default function CustomerProfile() {
           const meetings = await getCustomerEncounters(token, selectedCustomer.id);
           const customerImage = await getCustomer(token, selectedCustomer.id);
 
-          if (!payments) throw new Error('Failed to fetch payments');
+          //if (!payments) throw new Error('Failed to fetch payments');
           if (!meetings) throw new Error('Failed to fetch meetings');
-          setCustomerPayments(payments);
+          //setCustomerPayments(payments);
           setCustomerMeetings(meetings);
 
           if (!customerImage) throw new Error('Failed to fetch customer image');
@@ -278,10 +278,10 @@ export default function CustomerProfile() {
                 {customerMeetings.length > 0 ? (
                   customerMeetings.map((meeting, index) => (
                     <TableRow key={index}>
-                      <TableCell className='text-nowrap'>
+                      <TableCell className='md:text-nowrap'>
                         {meeting.date}
                       </TableCell>
-                      <TableCell className='flex space-x-1'>
+                      <TableCell className='flex gap-1 flex-col md:flex-row'>
                         {Array.from({ length: 5 }, (_, i) => (
                           <StarIcon key={i} className={`size-4 ${i < meeting.rating ? 'text-accent-foreground' : 'text-muted'}`} />
                         ))}
