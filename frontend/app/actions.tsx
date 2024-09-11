@@ -1,6 +1,6 @@
 'use client';
 
-import { employeeLogin } from '@/api/Employees';
+import { employeeLogin, employeeVerify } from '@/api/Employees';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 
@@ -16,21 +16,25 @@ export const handleLogout = async (): Promise<void> => {
   window.location.href = '/login';
 };
 
-export const handleLoginEmail = async (email: string, rememberMe: boolean): Promise<boolean> => {
-  const response = await employeeLogin(email, 'password'); // Put rememberMe in the request
+export const handleLoginEmail = async (email: string): Promise<boolean> => {
+  const response = await employeeLogin(email);
 
   if (!response)
     return false;
-  if (rememberMe)
-    Cookies.set('token', response.access_token, { expires: 30 }); // Expire after 30 days
-  else
-    Cookies.set('token', response.access_token); // Expire after browser session
   return true;
 };
 
-export const handleLoginPin = async (pin: string): Promise<void> => {
-  // TODO: implement pin login
+export const handleLoginPin = async (pin: string, rememberMe: boolean): Promise<boolean> => {
+  const response = await employeeVerify(pin);
+  if (!response)
+    return false;
+
+  if (rememberMe)
+    Cookies.set('token', response.access_token, { expires: 30 });
+  else
+    Cookies.set('token', response.access_token);
   window.location.href = '/';
+  return true;
 }
 export const useAuth = (): { getToken: () => string, getRole: () => number} => {
   const router = useRouter();

@@ -47,6 +47,7 @@ const Login = () => {
   const [step, setStep] = useState<number>(1);
   const router = useRouter();
   const [showResendButton, setShowResendButton] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const emailForm = useForm<z.infer<typeof emailSchema>>({
     resolver: zodResolver(emailSchema),
@@ -78,7 +79,8 @@ const Login = () => {
 
     try {
       const { email, rememberMe } = values;
-      const response = await handleLoginEmail(email, rememberMe);
+      setRememberMe(rememberMe);
+      const response = await handleLoginEmail(email);
       if (!response)
         throw new Error('Invalid login credentials');
       setStep(2);
@@ -101,8 +103,9 @@ const Login = () => {
 
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      await handleLoginPin(values.pin);
-
+      const response = await handleLoginPin(values.pin, rememberMe);
+      if (!response)
+        throw new Error('Invalid code');
     } catch (error) {
       toast.error('Login failed');
     } finally {

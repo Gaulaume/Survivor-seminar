@@ -70,7 +70,7 @@ const getEmployeeStats = async (token: string, id: number): Promise<{
   }
 }
 
-const employeeLogin = async (email: string, password: string): Promise<any | null> => {
+const employeeLogin = async (email: string): Promise<any | null> => {
   const config = {
     url: 'http://localhost:8000/api/employees/login',
     method: 'post',
@@ -79,7 +79,6 @@ const employeeLogin = async (email: string, password: string): Promise<any | nul
     },
     data: {
       email,
-      password,
     },
   };
 
@@ -89,6 +88,29 @@ const employeeLogin = async (email: string, password: string): Promise<any | nul
     return response.data;
   } catch (error) {
     console.error('employeeLogin', error);
+
+    return null;
+  }
+}
+
+const employeeVerify = async (code: string): Promise<any | null> => {
+  const config = {
+    url: 'http://localhost:8000/api/employees/verify',
+    method: 'post',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: {
+      code,
+    },
+  };
+
+  try {
+    const response = await axios(config);
+
+    return response.data;
+  } catch (error) {
+    console.error('employeeVerify', error);
 
     return null;
   }
@@ -211,4 +233,5 @@ export {
   putEmployee,
   postEmployee,
   deleteEmployee,
+  employeeVerify,
 };
