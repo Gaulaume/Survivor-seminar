@@ -60,47 +60,40 @@ export default function CoachingTips() {
   return (
     <div className='w-full mx-auto'>
       <div className='flex flex-col items-start'>
-        <h2 className='text-2xl font-semibold mb-2'>Tips</h2>
+        <h2 className='text-5xl font-semibold mb-20'>Tips for Coaches</h2>
         <hr className='w-full border-t border-gray-300 mb-4' />
-        <input
+        {/*<input
           type='text'
           placeholder='Search tips...'
           className='border border-gray-300 px-4 py-2 rounded-md mb-4 focus:outline-none focus:ring-1 focus:ring-blue-500'
           onChange={handleSearchChange}
           value={searchQuery}
-        />
+        />*/}
       </div>
 
       {filteredTips?.length === 0 ? (
-        <div className='text-center w-full col-span-4'>
+        <div className='text-center col-span-4'>
           <p className='text-lg text-gray-500'>No tips found matching your search.</p>
         </div>
       ) : (
-        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'>
+        <div className=''>
           {filteredTips?.map((tip) => (
             <Card
               key={tip.id}
               onClick={() => handleTipToggle(tip.id)}
             >
-              <CardHeader>
+              <CardHeader className={`flex-row items-center justify-between  cursor-pointer ${openTip === tip.id ? 'font-extrabold' : ''}`}>
                 {tip.title}
-              </CardHeader>
-              <CardContent>
-                <Button
-                  onClick={() => handleTipToggle(tip.id)}
-                  variant='outline'
-                  className='w-full mb-2'
-                >
-                  {openTip === tip.id ? 'Close tip' : 'Open tip'}
-                  <ChevronDownIcon
+                <ChevronDownIcon
                     className={clsx(
-                      'w-4 h-4 ml-2',
+                      ' w-4 h-4 ml-2',
                       openTip === tip.id && 'transform rotate-180 transition-all duration-300'
                     )}
                   />
-                </Button>
+              </CardHeader>
+              <CardContent className='p-0 w-full'>
                 {openTip === tip.id && (
-                  <p className='text-muted-foreground mt-2'>
+                  <p className='border-t  text-muted-foreground  p-4'>
                     {tip.tip}
                   </p>
                 )}
