@@ -2,7 +2,7 @@ import hashlib
 from fastapi import Depends, HTTPException, Security
 from pydantic import BaseModel
 from pymongo import MongoClient
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 import jwt
 from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBearer, OAuth2PasswordBearer
@@ -58,6 +58,7 @@ class TokenData(BaseModel):
     email: str
     id: int
     role: int
+    exp: int
 
 def insertDataLogin(email, pwd, id, work):
     collection = db.auth
@@ -86,11 +87,11 @@ def get_current_user_token(credentials: HTTPAuthorizationCredentials = Security(
         email = payload.get("email")
         role = payload.get("role")
         id = payload.get("id")
-
+        exp = payload.get("exp")
         if role is None or email is None or id is None:
             raise HTTPException(status_code=403, detail="Missing fields in token")
         
-        return TokenData(email=email, role=role, id=id)
+        return TokenData(email=email, role=role, id=id, exp=exp)
     except JWTError:
         raise credentials_exception
 
@@ -101,6 +102,22 @@ def get_role_from_token(credentials: HTTPAuthorizationCredentials = Security(sec
     if role is None:
         raise HTTPException(status_code=403, detail="Role not found in token")
     return role
+
+
+
+def verify_token(token: str):
+    email: str = token.email
+    date_now = datetime.now()
+    if email is None:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    expiration = token.exp
+    print("CHIENNNNN")
+    print(int(datetime.now().timestamp()))
+    print("KANGOUROUUUU")
+    print(expiration)
+    if int(datetime.now().timestamp()) > expiration  :
+        raise HTTPException( status_code=401, detail="Token has expired")
+    return
 
 
 def getConnectionDate():

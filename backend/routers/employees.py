@@ -1,8 +1,11 @@
+
+import base64
+import traceback
 from fastapi import APIRouter, Depends, HTTPException, Security
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 from pydantic import BaseModel, EmailStr
 from typing import List, Optional
-from authentificationAPI import Role, get_current_user_token, last_connection_employees
+from authentificationAPI import Role, get_current_user_token, last_connection_employees, insertDataLogin, verify_token
 from pymongo import MongoClient
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -46,6 +49,7 @@ class api_Employee(BaseModel):
     work: str
     customers_ids: List[int]
     last_connection: Optional[str] = None
+    image: Optional[str] = None
 
 class api_Employee_login(BaseModel):
     email: EmailStr
@@ -165,11 +169,14 @@ async def verify_code(request: VerifyCodeRequest):
 
 
 @router.get("/me", response_model=api_Employee, tags=["employees"])
-async def get_employee_me(current_user: TokenData = Security(get_current_user_token)):
+def get_employee_me(token: str = Security(get_current_user_token)):
     collection = database.employees
-    employee = collection.find_one({"email": current_user.email})
+    verify_token(token)
+    employee = collection.find_one({"email": token.email})
     if employee is None:
         raise HTTPException(status_code=404, detail="Employee not found")
+    print(traceback.format_exc())
+    employee["image"] = base64.b64encode(employee["image"]).decode('utf-8')
     return employee
 
 
