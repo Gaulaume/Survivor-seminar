@@ -1,7 +1,9 @@
+import base64
+import traceback
 from fastapi import APIRouter, Security, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
-from authentificationAPI import Role, get_current_user_token, last_connection_employees, insertDataLogin
+from authentificationAPI import Role, get_current_user_token, last_connection_employees, insertDataLogin, verify_token
 from pymongo import MongoClient
 import os
 from io import BytesIO
@@ -23,6 +25,7 @@ class api_Employee(BaseModel):
     work: str
     customers_ids: List[int]
     last_connection: Optional[str] = None
+    image: Optional[str] = None
 
 class api_Employee_login(BaseModel):
     email: str
@@ -64,15 +67,15 @@ def login_employee(employee: api_Employee_login):
 
 
 @router.get("/me", response_model=api_Employee, tags=["employees"])
-def get_employee_me(current_user: TokenData = Security(get_current_user_token)):
-    try:
-        collection = database.employees
-        employee = collection.find_one({"email": current_user.email})
-        if employee is None:
-            raise HTTPException(status_code=404, detail="Employee not found")
-        return employee
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="An error occurred while fetching the employee details.")
+def get_employee_me(token: str = Security(get_current_user_token)):
+    collection = database.employees
+    verify_token(token)
+    employee = collection.find_one({"email": token.email})
+    if employee is None:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    print(traceback.format_exc())
+    employee["image"] = base64.b64encode(employee["image"]).decode('utf-8')
+    return employee
 
 
 
