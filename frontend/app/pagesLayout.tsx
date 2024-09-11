@@ -31,6 +31,8 @@ import { toast } from 'sonner';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getMe } from '@/api/Employees';
+import confetti from 'canvas-confetti';
+import Cookies from 'js-cookie';
 
 const SiderBarContent = [
   {
@@ -102,6 +104,11 @@ const Sidebar = ({ className }: { className?: string }) => {
   const router = useRouter();
   const actualPath = usePathname();
   const { getRole } = useAuth();
+  const [userRole, setUserRole] = useState<number>(0);
+
+  useEffect(() => {
+    setUserRole(getRole() as number);
+  }, [getRole]);
 
   return (
     <aside className={className}>
@@ -117,13 +124,13 @@ const Sidebar = ({ className }: { className?: string }) => {
         <nav className='space-y-2 px-2'>
           {SiderBarContent.map((item, index) => (
             <button
-              disabled={item.disabled}
+              disabled={item.disabled || userRole < item.role}
               key={index}
               className={clsx(
                 'flex items-center w-full px-3 py-1.5 rounded-md hover:bg-muted transition-colors duration-200 text-base',
                 actualPath === item.href && 'bg-accent-foreground text-white hover:!bg-accent-foreground/90',
-                item.role > getRole() && 'hidden',
-                'disabled:opacity-60 disabled:cursor-not-allowed'
+                'disabled:opacity-60 disabled:cursor-not-allowed',
+                userRole < item.role && 'hidden'
               )}
               onClick={() => {
                 if (actualPath !== item.href)
@@ -212,9 +219,20 @@ export default function Layout({
       try {
         const token = getToken();
         const user = await getMe(token);
-        console.log("userrrrrrrrrrrr ", user);
         if (!user) throw new Error('User not found');
         setUser(user);
+
+        const today = new Date().toISOString().slice(0, 10);
+        const confettiPlayedToday = Cookies.get('confettiPlayed') === today;
+
+        if (!confettiPlayedToday && today.slice(5) === user.birth_date?.slice(5, 10)) {
+          confetti({
+            particleCount: 1000,
+            spread: 100,
+            origin: { y: 0.6 }
+          });
+          Cookies.set('confettiPlayed', today, { expires: 1 });
+        }
       } catch (error) {
         toast.error('Failed to fetch user');
       }
@@ -222,7 +240,6 @@ export default function Layout({
 
     fetchUser();
   }, []);
-
 
   return (
     <>

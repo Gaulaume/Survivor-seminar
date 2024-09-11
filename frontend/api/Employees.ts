@@ -1,3 +1,4 @@
+import { handleLogout } from '@/app/actions';
 import Employee from '@/types/Employee';
 import axios from 'axios';
 
@@ -103,15 +104,15 @@ const getMe = async (token: string): Promise<Employee | null> => {
     },
   };
 
-  try {
-    const response = await axios(config);
-    return response.data;
-  } catch (error) {
-    console.error('getMe', error);
-    if (axios.isAxiosError(error) && error.response)
-      return error.response.data;
-    return null;
-  }
+  const data = await axios(config)
+    .then((response) => {
+      return response.data;
+    })
+    .catch((error) => {
+      handleLogout();
+      return null;
+    });
+  return data;
 }
 
 const getEmployeeImage = async (token: string, id: number): Promise<Blob | null> => {

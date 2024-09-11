@@ -2,17 +2,17 @@
 
 import { employeeLogin } from '@/api/Employees';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import Cookies from 'js-cookie';
 
 export const handleApiError = (error: any) => {
   if (!error.response || error.response.status !== 403)
     return;
-  localStorage.removeItem('token');
+  Cookies.remove('token');
   window.location.href = '/login';
 }
 
 export const handleLogout = async (): Promise<void> => {
-  localStorage.removeItem('token');
+  Cookies.remove('token');
   window.location.href = '/login';
 };
 
@@ -21,7 +21,10 @@ export const handleLoginEmail = async (email: string, rememberMe: boolean): Prom
 
   if (!response)
     return false;
-  localStorage.setItem('token', response.access_token); // TODO: remove this
+  if (rememberMe)
+    Cookies.set('token', response.access_token, { expires: 30 }); // Expire after 30 days
+  else
+    Cookies.set('token', response.access_token); // Expire after browser session
   return true;
 };
 
@@ -33,7 +36,7 @@ export const useAuth = (): { getToken: () => string, getRole: () => number} => {
   const router = useRouter();
 
   const getToken = () => {
-    const token = localStorage.getItem('token');
+    const token = Cookies.get('token');
     if (!token) {
       router.push('/login');
       return '';
