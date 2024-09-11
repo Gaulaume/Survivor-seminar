@@ -30,6 +30,18 @@ class api_customer_without_image(BaseModel):
 class api_customer_id(api_customer_without_image):
     image: Optional[bytes] = None
 
+class api_create_customer(BaseModel):
+    email: str
+    name: str
+    surname: str
+    birth_date: str
+    gender: str
+    description: str
+    astrological_sign: str
+    address: str
+    phone_number: str
+    image: Optional[bytes] = None
+
 class Payment(BaseModel):
     date: str
     amount: float
@@ -77,17 +89,30 @@ async def get_customer(customer_id: int, token: str = Security(get_current_user_
     raise HTTPException(status_code=403, detail="Authorization denied")
 
 
-@router.post("/", response_model=api_customer_id, tags=["customers"])
-async def create_customer(customer: api_customer_id, token: str = Security(get_current_user_token)):
+@router.post("/", response_model=api_create_customer, tags=["customers"])
+async def create_customer(customer: api_create_customer, token: str = Security(get_current_user_token)):
     try:
-        customer.id = len(list(database.customers.find())) + 1
         collection = database.customers
-        existing_customer = collection.find_one({"id": customer.id})
+        new_id = collection.count_documents({}) + 1
 
-        if existing_customer is not None:
-            raise HTTPException(status_code=400, detail="Customer with this ID already exists")
+        customer_dict = customer.dict()
+        customer_dict['id'] = new_id
 
-        return customer, {"message": "Customer created successfully"}
+        if customer_dict['image']:
+            if isinstance(customer_dict['image'], str):
+                if ',' in customer_dict['image']:
+                    customer_dict['image'] = base64.b64decode(customer_dict['image'].split(',')[1])
+                else:
+                    customer_dict['image'] = base64.b64decode(customer_dict['image'])
+        else:
+            customer_dict['image'] = None
+
+        result = collection.insert_one(customer_dict)
+
+        if result.inserted_id:
+            return api_create_customer(**customer_dict)
+        else:
+            raise HTTPException(status_code=500, detail="Failed to create customer")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -106,7 +131,7 @@ async def update_customer(customer_id: int, customer: api_customer_id, token: st
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/{customer_id}", response_model=api_customer_id, tags=["customers"])
+@router.delete("/{customer_id}", tags=["customers"])
 async def delete_customer(customer_id: int, token: str = Security(get_current_user_token)):
     try:
         collection = database.customers

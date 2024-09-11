@@ -19,16 +19,16 @@ class api_encounters(BaseModel):
     comment: str
     source: str
 
-class api_encounter_id(BaseModel):
-    id: int
+class api_create_encounters(BaseModel):
     customer_id: int
     date: str
     rating: int
     comment: str
     source: str
 
+
 @router.get("/",
-         response_model=List[api_encounter_id],
+         response_model=List[api_encounters],
          tags=["encounters"])
 def get_encounters(token: str = Security(get_current_user_token)):
     try:
@@ -53,7 +53,7 @@ def get_encounters(token: str = Security(get_current_user_token)):
 
 
 @router.get("/{encounter_id}",
-         response_model=api_encounter_id,
+         response_model=api_encounters,
          tags=["encounters"])
 def get_encounter(encounter_id: int, token: str = Security(get_current_user_token)):
     try:
@@ -92,13 +92,13 @@ def get_encounter(encounter_id: int, token: str = Security(get_current_user_toke
             response_model=api_encounters,
             tags=["encounters"],
             responses={
-                200: {"description": "Encounter created successfully",
-                    "content": {"routerlication/json": {"example": {"id": 1, "customer_id": 1, "date": "string", "rating": 1, "comment": "string", "source": "string"}}}},
+                201: {"description": "Encounter created successfully",
+                    "content": {"application/json": {"example": {"id": 1, "customer_id": 1, "date": "string", "rating": 1, "comment": "string", "source": "string"}}}},
                 400: {"description": "Invalid request",
-                    "content": {"routerlication/json": {"example": {"detail": "Invalid request"}}}},
+                    "content": {"application/json": {"example": {"detail": "Invalid request"}}}},
             },
 )
-async def create_encounter(encounter: api_encounters, token: str = Security(get_current_user_token)):
+async def create_encounter(encounter: api_create_encounters, token: str = Security(get_current_user_token)):
     """
     Create a new encounter.
 
@@ -107,18 +107,20 @@ async def create_encounter(encounter: api_encounters, token: str = Security(get_
     - Returns the created encounter details
     """
     try:
-        encounter.id = len(list(database.encounters.find())) + 1
         collection = database.encounters
-        id = collection.find_one({"id": encounter.id})
-        if id is not None:
-            raise HTTPException(status_code=400, detail="encounter with this id already exists")
-        return encounter, {"message": "encounter created successfully"}
+        new_id = collection.count_documents({}) + 1
+        new_encounter = api_encounters(id=new_id, **encounter.dict())
+        result = collection.insert_one(new_encounter.dict())
+        if result.inserted_id:
+            return new_encounter
+        else:
+            raise HTTPException(status_code=400, detail="Failed to create encounter")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.put("/{encounter_id}",
-            response_model=api_encounter_id,
+            response_model=api_encounters,
             tags=["encounters"],
             responses={
                 200: {"description": "Encounter updated successfully",
@@ -127,7 +129,7 @@ async def create_encounter(encounter: api_encounters, token: str = Security(get_
                     "content": {"routerlication/json": {"example": {"detail": "Invalid request"}}}},
             },
 )
-async def update_encounter(encounter_id: int, encounter: api_encounter_id, token: str = Security(get_current_user_token)):
+async def update_encounter(encounter_id: int, encounter: api_encounters, token: str = Security(get_current_user_token)):
     """
     Update an existing encounter.
 

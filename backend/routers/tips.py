@@ -38,15 +38,15 @@ def get_tip(tip_id: int, token: str = Security(get_current_user_token)):
         return tip
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
+
 @router.post("/", response_model=api_tips, tags=["tips"])
 def post_tip(tip: api_tips_update, token: str = Security(get_current_user_token)):
     try:
         collection_tips = database.tips
         tip_id = collection_tips.count_documents({}) + 1
-        tip.id = tip_id
-        collection_tips.insert_one(tip.dict())
-        return tip
+        new_tip = api_tips(id=tip_id, **tip.dict())
+        collection_tips.insert_one(new_tip.dict())
+        return new_tip
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

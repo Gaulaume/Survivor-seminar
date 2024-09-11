@@ -28,6 +28,16 @@ class api_event_id(BaseModel):
     employee_id: int
     location_name: str
 
+class api_create_event_id(BaseModel):
+    name: str
+    date: str
+    max_participants: int
+    location_x: str
+    location_y: str
+    type: str
+    employee_id: int
+    location_name: str
+
 @router.get("/", response_model=List[api_event_id], tags=["events"])
 def get_events(token: str = Security(get_current_user_token)):
     try:
@@ -47,13 +57,16 @@ def get_event(event_id: int, token: str = Security(get_current_user_token)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/", response_model=api_event_id, tags=["events"])
-def post_event(event: api_event_id, token: str = Security(get_current_user_token)):
+def post_event(event: api_create_event_id, token: str = Security(get_current_user_token)):
     try:
         collection_events = database.events
-        event_id = collection_events.count_documents({}) + 1
-        event.id = event_id
-        collection_events.insert_one(event.dict())
-        return event
+        max_id = collection_events.find_one(sort=[("id", -1)])
+        new_id = 1 if max_id is None else max_id["id"] + 1
+
+        new_event = api_event_id(id=new_id, **event.dict())
+
+        collection_events.insert_one(new_event.dict())
+        return new_event
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
