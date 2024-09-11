@@ -265,7 +265,7 @@ const Login = () => {
                 className='w-full relative'
                 type='submit'
                 shiny
-                disabled={isLoading}
+                disabled={isLoading || !codeForm.formState.isValid}
               >
                 {isLoading ? (
                   <ArrowPathIcon className='mr-2 h-4 w-4 animate-spin' />
@@ -278,17 +278,17 @@ const Login = () => {
               </Button>
               <motion.div
                 variants={fadeIn}
-                transition={{ delay: 0.6, duration: 0.5 }}
+                transition={{ duration: 0.5 }}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: showResendButton ? 1 : 0, y: showResendButton ? 0 : 10 }}
               >
                 <Button
                   className={clsx(
                     'w-full relative',
-                    !showResendButton && 'pointer-events-none'
+                    !showResendButton && 'pointer-events-none opacity-0',
                   )}
                   type='button'
-                  variant='outline'
+                  variant='link'
                   disabled={isLoading}
                   onClick={() => {
                     setShowResendButton(false);
