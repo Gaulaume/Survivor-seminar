@@ -12,9 +12,7 @@ export default function RootLayout({
   return (
     <html lang='en'>
       <body className='bg-background'>
-        <UserProvider>
-          {children}
-        </UserProvider>
+        {children}
         <Toaster />
       </body>
     </html>
