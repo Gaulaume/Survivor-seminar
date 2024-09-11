@@ -11,7 +11,6 @@ import traceback
 from fastapi.responses import StreamingResponse, FileResponse
 from io import BytesIO
 import base64
-import data_fetcher
 import os
 from typing import List, Dict
 from typing import Optional
