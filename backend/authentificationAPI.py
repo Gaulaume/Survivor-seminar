@@ -35,14 +35,9 @@ class Role(Enum):
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+def create_access_token(data: dict):
     to_encode = data.copy()
-    now = datetime.now(timezone.utc)
-    if expires_delta:
-        expire = now + expires_delta
-    else:
-        expire = now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -93,7 +88,6 @@ def get_current_user_token(credentials: HTTPAuthorizationCredentials = Security(
         role = payload.get("role")
         id = payload.get("id")
         exp = payload.get("exp")
-        
         if role is None or email is None or id is None:
             raise HTTPException(status_code=403, detail="Missing fields in token")
         

@@ -16,7 +16,7 @@ import {
 } from '@heroicons/react/20/solid';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '../actions';
-import { getCustomers, getCustomerPayments } from '@/api/Customers';
+import { getCustomers, getCustomerPayments, getCustomerImage, getCustomer } from '@/api/Customers';
 import { toast } from 'sonner';
 import Customer from '@/types/Customer';
 import Payment from '@/types/Payment';
@@ -132,17 +132,20 @@ export default function CustomerProfile() {
   useEffect(() => {
     console.log('selectedCustomer:', selectedCustomer);
     if (selectedCustomer) {
-      const fetchPaymentsAndMeetings = async () => {
+      const fetchCustomerData = async () => {
         try {
           const token = getToken();
           const payments = await getCustomerPayments(token, selectedCustomer.id);
           const meetings = await getCustomerEncounters(token, selectedCustomer.id);
+          const customerImage = await getCustomer(token, selectedCustomer.id);
 
           if (!payments) throw new Error('Failed to fetch payments');
           if (!meetings) throw new Error('Failed to fetch meetings');
-
           setCustomerPayments(payments);
           setCustomerMeetings(meetings);
+
+          if (!customerImage) throw new Error('Failed to fetch customer image');
+          setSelectedCustomer(prev => ({ ...prev!, image: customerImage.image }));
         } catch (error) {
           console.error('Error fetching customer data:', error);
           toast.error('Failed to fetch customer details', {
@@ -150,11 +153,9 @@ export default function CustomerProfile() {
           });
         }
       };
-      fetchPaymentsAndMeetings();
+      fetchCustomerData();
     }
-  }, [selectedCustomer]);
-
-  console.log('role : ', getRole());
+  }, [selectedCustomer?.id]);
 
   return (
     <div className='flex flex-col space-y-4 h-full'>
@@ -262,7 +263,7 @@ export default function CustomerProfile() {
           </Card>
         </div>
         <div className='flex flex-col space-y-4 w-full'>
-          <h6 className='text-lg font-bold'>Meetings</h6>
+          <h6 className='text-lg font-bold'>Encounters</h6>
           <Card className='rounded-md border overflow-y-auto'>
             <Table>
               <TableHeader>
@@ -277,10 +278,10 @@ export default function CustomerProfile() {
                 {customerMeetings.length > 0 ? (
                   customerMeetings.map((meeting, index) => (
                     <TableRow key={index}>
-                      <TableCell className='text-nowrap'>
+                      <TableCell className='md:text-nowrap'>
                         {meeting.date}
                       </TableCell>
-                      <TableCell className='flex space-x-1'>
+                      <TableCell className='flex gap-1 flex-col md:flex-row'>
                         {Array.from({ length: 5 }, (_, i) => (
                           <StarIcon key={i} className={`size-4 ${i < meeting.rating ? 'text-accent-foreground' : 'text-muted'}`} />
                         ))}

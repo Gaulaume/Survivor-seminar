@@ -6,6 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MapContainer, TileLayer, Marker, Popup, AttributionControl, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import clsx from 'clsx';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useAuth } from '../actions';
 
 interface Event {
   id: number;
@@ -39,12 +43,15 @@ export default function EventPage() {
   const [events, setEvents] = useState<Event[] | null>(null);
   const [selectedEvents, setSelectedEvents] = useState<Event[]>([]);
   const [lastSelectedEvent, setLastSelectedEvent] = useState<Event | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const { getToken, getRole } = useAuth();
 
   useEffect(() => {
     // Fetch events on component mount
     const fetchEvents = async () => {
       try {
-        const data = await getEvents();
+        const token = getToken();
+        const data = await getEvents(token);
         // If no data, throw an error
         if (!data) throw new Error('Failed to fetch events');
         setEvents(data);
@@ -69,35 +76,43 @@ export default function EventPage() {
     }
   };
 
+  const handleClearSelection = () => {
+    setSelectedEvents([]);
+    setLastSelectedEvent(null);
+  };
+
+  // Add this function to filter events
+  const filteredEvents = events?.filter(event =>
+    event.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <div className="w-full mx-auto">
-      <h2 className="text-2xl font-semibold mb-2">Events</h2>
-      <hr className="w-full border-t border-gray-300 mb-4" />
-      <div className="flex flex-col md:flex-row">
-        {/* Right side: Map and Event Details */}
-        <div className="w-full md:w-2/3 mt-8 md:mt-0">
-          <div className="h-96 mt-4">
+    <div className='w-full mx-auto'>
+      <h2 className='text-2xl font-semibold mb-2'>Events</h2>
+      <hr className='w-full border-t border-gray-300 mb-4' />
+      <div className='flex flex-col lg:flex-row w-full'>
+        {/* Map and Clear Button */}
+        <div className='w-full lg:w-2/3 lg:mr-4 flex flex-col mb-4'>
+          <Card className='h-96 mb-4 overflow-hidden'>
             <MapContainer
               center={
                 lastSelectedEvent?.location_x && lastSelectedEvent?.location_y
                   ? [lastSelectedEvent.location_x, lastSelectedEvent.location_y]
-                  : [48.8566, 2.3522] // Default to Paris if no coordinates
+                  : [48.8566, 2.3522]
               }
               zoom={lastSelectedEvent?.location_y && lastSelectedEvent?.location_x ? 13 : 5}
-              style={{ height: '100%', width: '100%', zIndex: 1 }} // Ensure map fills the container
+              style={{ height: '100%', width: '100%', zIndex: 1 }}
             >
-              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              <TileLayer url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' />
               <AttributionControl
-                position="bottomright"
+                position='bottomright'
                 prefix='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
               />
 
-              {/* Update map center whenever lastSelectedEvent changes */}
               {lastSelectedEvent && lastSelectedEvent.location_x && lastSelectedEvent.location_y && (
                 <MapUpdater center={[lastSelectedEvent.location_x, lastSelectedEvent.location_y]} />
               )}
 
-              {/* Place markers for all selected events */}
               {selectedEvents.map((event) => (
                 event.location_x && event.location_y && (
                   <Marker
@@ -110,30 +125,47 @@ export default function EventPage() {
                 )
               ))}
             </MapContainer>
-          </div>
+          </Card>
+          <Button
+            onClick={handleClearSelection}
+            disabled={selectedEvents.length === 0}
+            className='w-full'
+          >
+            Clear Selection
+          </Button>
         </div>
 
-        {/* Left side: Event List - Make it sticky */}
-        <div className="w-full md:w-1/3 md:sticky top-4 h-screen overflow-y-auto"> {/* sticky with top and auto-scroll */}
-          <div className="grid grid-cols-1 gap-4">
-            {events?.map((event) => (
-              <Card
-                key={event.id}
-                className={`cursor-pointer border ${
-                  selectedEvents.find((e) => e.id === event.id) ? 'border-blue-500' : 'border-gray-300'
-                }`}
-                onClick={() => handleEventSelect(event)}
-              >
-                <CardHeader>
-                  <CardTitle>{event.name}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p>Date: {new Date(event.date).toLocaleDateString()}</p>
-                  <p>Max participants: {event.max_participants}</p>
-                  {event.location_name && <p>📍{event.location_name}</p>}
-                </CardContent>
-              </Card>
-            ))}
+        {/* Event List */}
+        <div className="w-full lg:w-1/3 lg:sticky top-4 flex flex-col h-screen">
+          <Input
+            type='text'
+            placeholder='Search events...'
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className='mb-4'
+          />
+          <div className="overflow-y-auto flex-grow">
+            <div className="grid grid-cols-1 gap-4">
+              {filteredEvents?.map((event) => (
+                <Card
+                  key={event.id}
+                  className={clsx(
+                    'cursor-pointer',
+                    selectedEvents.find((e) => e.id === event.id) && 'bg-accent-foreground text-white'
+                  )}
+                  onClick={() => handleEventSelect(event)}
+                >
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-lg">{event.name}</CardTitle>
+                    <p className="text-sm text-gray-500">{new Date(event.date).toLocaleDateString()}</p>
+                  </CardHeader>
+                  <CardContent>
+                    <p>Max participants: {event.max_participants}</p>
+                    {event.location_name && <p>📍{event.location_name}</p>}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         </div>
       </div>

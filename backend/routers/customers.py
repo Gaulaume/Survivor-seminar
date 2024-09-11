@@ -24,6 +24,8 @@ class api_customer_without_image(BaseModel):
     gender: str
     description: str
     astrological_sign: str
+    address: str
+    phone_number: str
 
 class api_customer_id(api_customer_without_image):
     image: Optional[bytes] = None

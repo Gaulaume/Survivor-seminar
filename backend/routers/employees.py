@@ -1,20 +1,44 @@
+
 import base64
 import traceback
-from fastapi import APIRouter, Security, HTTPException
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, Security
+from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
+from pydantic import BaseModel, EmailStr
 from typing import List, Optional
 from authentificationAPI import Role, get_current_user_token, last_connection_employees, insertDataLogin, verify_token
 from pymongo import MongoClient
-import os
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from io import BytesIO
 from fastapi.responses import StreamingResponse
+import os
+from authentificationAPI import create_access_token
+import random
+import string
+from jose import JWTError, jwt
+from datetime import datetime, timedelta
+from fastapi.security import OAuth2PasswordBearer
+import secrets
 
 router = APIRouter()
 
+conf = ConnectionConfig(
+    MAIL_USERNAME=os.getenv("MAIL_USERNAME"),
+    MAIL_PASSWORD=os.getenv("MAIL_PASSWORD"),
+    MAIL_FROM=os.getenv("MAIL_FROM"),
+    MAIL_PORT=587,
+    MAIL_SERVER="smtp.gmail.com",
+    MAIL_STARTTLS=True,
+    MAIL_SSL_TLS=False,
+    USE_CREDENTIALS=True,
+)
+
+# Configuration MongoDB
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://mongod:27017/")
 client = MongoClient(MONGO_URL)
 database = client[os.getenv("MONGO_INITDB_DATABASE", "soul-connection")]
 
+# Modèles Pydantic
 class api_Employee(BaseModel):
     id: int
     email: str
@@ -28,42 +52,120 @@ class api_Employee(BaseModel):
     image: Optional[str] = None
 
 class api_Employee_login(BaseModel):
-    email: str
-    password: str
+    email: EmailStr
 
 class api_Employee_login_cred(BaseModel):
+    message: str
     access_token: str
 
 class TokenData(BaseModel):
     email: str
+    id: int
+    role: int
+
+class VerificationResponse(BaseModel):
+    message: str
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+
+class VerifyCodeRequest(BaseModel):
+    code: str
+
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str
+
+def generate_verification_code():
+    return ''.join(random.choices(string.digits, k=6))
+
 
 @router.get("/", response_model=List[api_Employee], tags=["employees"])
-async def get_employees(token: str = Security(get_current_user_token)):
-    """
-    Retrieve a list of employees.
-
-    - **token**: JWT token for authentication
-    - Returns a list of employees (Managers see all, Coaches see only themselves)
-    """
-    collection = database.employees
-    employees = list(collection.find({}, {"_id": 0, "image": 0}))
-    if (token.role == Role.Manager.value):
-        return employees
+async def get_employees(current_user: TokenData = Security(get_current_user_token)):
+    if current_user.role == Role.Manager.value:
+        collection = database.employees
+        employees = list(collection.find({}, {"_id": 0, "image": 0}))
     else:
         raise HTTPException(status_code=403, detail="Authorization denied")
+    return employees
 
-
-
-@router.post("/login", response_model=api_Employee_login_cred, tags=["employees"])
-def login_employee(employee: api_Employee_login):
+@router.post("/login", response_model=VerificationResponse, tags=["employees"])
+async def login_employee(request: LoginRequest):
     collection = database.employees
-    user = collection.find_one({"email": employee.email})
+    user = collection.find_one({"email": request.email})
     if user is None:
         raise HTTPException(status_code=401, detail="Employee not found")
-    last_connection_employees(user['id'])
-    login_cred = insertDataLogin(employee.email, employee.password, user['id'], user['work'])
-    return api_Employee_login_cred(**login_cred)
 
+    verification_code = generate_verification_code()
+    expiration_time = datetime.utcnow() + timedelta(minutes=10)
+
+    collection.update_one(
+        {"email": request.email},
+        {
+            "$set": {
+                "verification_code": verification_code,
+                "verification_code_expires": expiration_time,
+                "verification_email": request.email,
+                "id": user['id']
+            }
+        }
+    )
+
+    message = MessageSchema(
+        subject="Your Verification Code",
+        recipients=[request.email],
+        body=f"Your verification code is: {verification_code}",
+        subtype="plain"
+    )
+
+    fm = FastMail(conf)
+    await fm.send_message(message)
+
+    return VerificationResponse(message="Verification code sent to your email.")
+
+@router.post("/verify", response_model=LoginResponse, tags=["employees"])
+async def verify_code(request: VerifyCodeRequest):
+    collection = database.employees
+    user = collection.find_one({"verification_code": request.code})
+    if user is None:
+        raise HTTPException(status_code=401, detail="Invalid verification code")
+
+    if datetime.utcnow() > user.get("verification_code_expires", datetime.min):
+        raise HTTPException(status_code=401, detail="Verification code has expired")
+
+    email = user.get("verification_email")
+    if email is None:
+        raise HTTPException(status_code=401, detail="Email not found for verification")
+
+    collection.update_one(
+        {"email": email},
+        {"$unset": {"verification_code": "", "verification_code_expires": "", "verification_email": ""}}
+    )
+
+    role = Role.Coach if user['work'] == "Coach" else Role.Manager
+
+    last_connection_employees(user['id'])
+    access_token = create_access_token(data={"email": email, "id": user['id'], "role": role.value})
+    return LoginResponse(
+        access_token=access_token,
+        token_type="bearer"
+    )
+
+
+
+# @router.get('/confirm_email/{token}')
+# async def confirm_email(token: str):
+#     try:
+#         email = serializer.loads(token, salt="email-confirm")
+#         user = database.employees.find_one({"email": email})
+#         if user:
+#             return {"message": "Email vérifié avec succès"}
+#         else:
+#             return {"message": "Email non trouvé"}
+#     except SignatureExpired:
+#         raise HTTPException(status_code=400, detail="Le lien a expiré")
+#     except BadSignature:
+#         raise HTTPException(status_code=400, detail="Le lien n'est pas valide")
 
 
 @router.get("/me", response_model=api_Employee, tags=["employees"])
@@ -76,44 +178,6 @@ def get_employee_me(token: str = Security(get_current_user_token)):
     print(traceback.format_exc())
     employee["image"] = base64.b64encode(employee["image"]).decode('utf-8')
     return employee
-
-
-
-@router.get("/{employee_id}", response_model=api_Employee, tags=["employees"])
-def get_employee(employee_id: int, token: str = Security(get_current_user_token)):
-    collection = database.employees
-    employee = collection.find_one({"id": employee_id})
-    if employee is None:
-        raise HTTPException(status_code=404, detail="Employee requested doesn't exist")
-    if (token.role == Role.Manager.value):
-        return employee
-    if (token.role == Role.Coach.value):
-        if token.id == employee_id:
-            return employee
-    raise HTTPException(status_code=403, detail="Authorization Denied")
-
-
-
-@router.get("/{employee_id}/image", tags=["employees"])
-async def get_employee_image(employee_id: int, token: str = Security(get_current_user_token)):
-    """
-    Retrieve the image of an employee.
-
-    - **employee_id**: ID of the employee
-    - **token**: JWT token for authentication
-    - Returns the image of the employee
-    """
-    employee = database.employees.find_one({"id": employee_id})
-
-    if employee is None:
-        raise HTTPException(status_code=404, detail="Employee not found")
-
-    if "image" in employee:
-        image_stream = BytesIO(employee["image"])
-        return StreamingResponse(image_stream, media_type="image/png")
-
-    raise HTTPException(status_code=404, detail="Image not found")
-
 
 
 @router.get("/{employee_id}/stats", tags=["employees"])
@@ -181,6 +245,8 @@ async def create_employee(employee: api_Employee, token: str = Security(get_curr
     - Returns the created employee details
     """
     try:
+        if token.role != Role.Manager.value:
+            raise HTTPException(status_code=403, detail="Authorization denied")
         employee.id = len(list(database.employees.find())) + 1
         collection = database.employees
         id = collection.find_one({"id": employee.id})
@@ -204,6 +270,8 @@ async def update_employee(employee_id: int, employee: api_Employee, token: str =
     - Returns the updated employee details
     """
     try:
+        if token.role != Role.Manager.value:
+            raise HTTPException(status_code=403, detail="Authorization denied")
         collection = database.employees
         result = collection.update_one({"id": employee_id}, {"$set": employee.dict()})
         if result.matched_count == 0:
@@ -224,6 +292,8 @@ async def delete_employee(employee_id: int, token: str = Security(get_current_us
     - Returns a success message
     """
     try:
+        if token.role != Role.Manager.value:
+            raise HTTPException(status_code=403, detail="Authorization denied")
         collection = database.employees
         result = collection.delete_one({"id": employee_id})
         if result.deleted_count == 0:

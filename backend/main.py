@@ -166,6 +166,11 @@ class api_events(BaseModel):
     name: str
     date: str
     max_participants: int
+    location_x: str
+    location_y: str
+    type: str
+    employee_id: int
+    location_name: str
 
 class api_event_id(BaseModel):
     id: int
@@ -326,10 +331,26 @@ async def update_employee(employee_id: int, employee: api_Employee_me, token: st
     """
     try:
         collection = database.employees
+
+        # Check permissions
+        if token.role == Role.Manager.value:
+            # Managers can update any employee
+            pass
+        elif token.role == Role.Coach.value:
+            # Coaches can only update their own profile
+            if token.id != employee_id:
+                raise HTTPException(status_code=403, detail="Authorization denied. Coaches can only update their own profile.")
+        else:
+            raise HTTPException(status_code=403, detail="Authorization denied")
+
+        # Perform the update
         result = collection.update_one({"id": employee_id}, {"$set": employee.dict()})
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="Employee not found")
+
         return employee, {"message": "Employee updated successfully"}
+    except HTTPException as he:
+        raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -423,16 +444,16 @@ def get_employee_stats(employee_id: int, token: str = Security(get_current_user_
 
         if employee is None:
             raise HTTPException(status_code=404, detail="Employee requested doesn't exist")
-        
+
         print("employee", employee)
-        
+
         if employee['work'] != 'Coach':
             raise HTTPException(status_code=403, detail="Employee is not a coach")
-        
+
         customers_ids = employee['customers_ids']
         if not customers_ids:
             raise HTTPException(status_code=400, detail="Employee has no customers")
-        
+
         clients_length = len(customers_ids)
         clients_length_female = 0
         clients_length_male = 0
