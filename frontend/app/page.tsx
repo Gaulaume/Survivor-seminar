@@ -3,16 +3,19 @@
 import { getCustomers } from '@/api/Customers';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import Customer from '@/types/Customer';
-import { CalendarIcon, UsersIcon } from '@heroicons/react/20/solid';
+import { CalendarIcon, UsersIcon, ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/20/solid';
 import React, { useEffect, useState } from 'react';
-import { BarChart, Bar, XAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, LineChart, Line, YAxis, AreaChart, Area } from 'recharts';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import Encounter from '@/types/Encounter';
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { AuthCheck, useAuth } from './actions';
+import { useAuth } from './actions';
 import { getEncounters } from '@/api/Encounters';
 import Layout from './pagesLayout';
+import { getEvents } from '@/api/Events';
+import Event from '@/types/Event';
+import { format } from 'date-fns';
 
 const getAge = (birthDate: string) => {
   const today = new Date();
@@ -42,6 +45,7 @@ const chartConfig = {
 export default function HomePage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [encounters, setEncounters] = useState<Encounter[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { getToken } = useAuth();
 
@@ -75,9 +79,24 @@ export default function HomePage() {
       setIsLoading(false);
     }
 
+    const fetchEvents = async () => {
+      try {
+        const token = getToken();
+        const data = await getEvents(token);
+        if (!data) throw new Error('Failed to fetch events');
+        setEvents(data);
+      } catch (error) {
+        console.error('Error fetching events:', error);
+        toast.error('Failed to fetch events', {
+          duration: 5000,
+        });
+      }
+    }
+
     if (isLoading) {
       fetchCustomers();
       fetchEncounters();
+      fetchEvents();
     }
   }, []);
 
@@ -129,7 +148,68 @@ export default function HomePage() {
     return processedData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   };
 
+  const processedEventData = () => {
+    const dateCounts: Record<string, number> = {};
+    let monthlyCount = 0;
+    let weeklyCount = 0;
+    let dailyCount = 0;
+    let previousMonthCount = 0;
+    let previousWeekCount = 0;
+    let previousDayCount = 0;
+
+    const todayactual = new Date();
+    const today = new Date(todayactual.getFullYear(), todayactual.getMonth() - 2, todayactual.getDate());
+    const oneWeekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const oneMonthAgo = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+    const twoMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 2, today.getDate());
+    const twoWeeksAgo = new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000);
+    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+
+    events.forEach(event => {
+      const eventDate = new Date(event.date);
+      const date = format(eventDate, 'yyyy-MM-dd');
+      dateCounts[date] = (dateCounts[date] || 0) + 1;
+
+      if (eventDate >= oneMonthAgo) {
+        monthlyCount++;
+      } else if (eventDate >= twoMonthsAgo) {
+        previousMonthCount++;
+      }
+
+      if (eventDate >= oneWeekAgo) {
+        weeklyCount++;
+      } else if (eventDate >= twoWeeksAgo) {
+        previousWeekCount++;
+      }
+
+      if (format(eventDate, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')) {
+        dailyCount++;
+      } else if (format(eventDate, 'yyyy-MM-dd') === format(yesterday, 'yyyy-MM-dd')) {
+        previousDayCount++;
+      }
+    });
+
+    const calculatePercentageChange = (current: number, previous: number) => {
+      if (previous === 0) return current > 0 ? 100 : 0;
+      return ((current - previous) / previous) * 100;
+    };
+
+    return {
+      chartData: Object.entries(dateCounts)
+        .map(([date, count]) => ({ date, count }))
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
+      monthlyCount,
+      weeklyCount,
+      dailyCount,
+      monthlyChange: calculatePercentageChange(monthlyCount, previousMonthCount),
+      weeklyChange: calculatePercentageChange(weeklyCount, previousWeekCount),
+      dailyChange: calculatePercentageChange(dailyCount, previousDayCount)
+    };
+  };
+
   const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))', 'hsl(var(--chart-6))'];
+
+  const ageGroupOrder = ['18-24', '25-34', '35-44', '45-54', '55+'];
 
   return (
     <Layout>
@@ -141,46 +221,120 @@ export default function HomePage() {
           Welcome!
         </p>
       </div>
-      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+      <div className='grid grid-cols-1 md:grid-cols-2 gap-8 mb-8'>
         <Card className='flex flex-col'>
           <CardHeader>
-            <CardTitle>Overview</CardTitle>
-            <CardDescription>Key statistics about our customer base</CardDescription>
+            <CardTitle>Encounter Trends</CardTitle>
+            <CardDescription>Trends of encounters and ratings over time</CardDescription>
           </CardHeader>
-          <CardContent className='grid gap-4 grid-cols-1 lg:grid-cols-2'>
-            <div className='flex items-center space-x-4'>
-              <UsersIcon className='h-6 w-6 text-muted-foreground' />
-              <div>
-                <p className='text-sm font-medium'>Total Customers</p>
-                {isLoading ?
-                  <Skeleton className='h-8 w-20' />
-                : (
-                  <p className='text-2xl font-bold'>
-                    {customers.length}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className='flex items-center space-x-4'>
-              <CalendarIcon className='h-6 w-6 text-muted-foreground' />
-              <div>
-                <p className='text-sm font-medium'>Average Age</p>
-                {isLoading ? (
-                  <Skeleton className='h-8 w-20' />
-                ) : customers.length > 0 ? (
-                  <p className='text-2xl font-bold'>
-                    {Math.round(customers.reduce((acc, customer) => acc + getAge(customer.birth_date as string), 0) / customers.length)}
-                  </p>
-                ) : (
-                  <p className='text-2xl font-bold'>
-                    'N/A'
-                  </p>
-                )}
-              </div>
-            </div>
+          <CardContent className='flex-1 pb-0'>
+            {isLoading ? (
+              <Skeleton className='h-60' />
+            ) : (
+              <ChartContainer
+                config={chartConfig}
+                className='h-72 w-full'
+              >
+                <AreaChart
+                  data={processedEncounterData().slice(-30)}
+                  margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey='date'
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    tickFormatter={(value) => format(new Date(value), 'MMM dd')}
+                  />
+                  <ChartTooltip
+                    content={<ChartTooltipContent hideLabel />}
+                  />
+                  <Area
+                    type='monotone'
+                    dataKey='count'
+                    stroke='hsl(var(--chart-1))'
+                    fillOpacity={0.8}
+                    fill='hsl(var(--chart-1))'
+                    yAxisId='left'
+                    name='Number of Encounters'
+                  />
+                  <Area
+                    type='monotone'
+                    dataKey='avgRating'
+                    stroke='hsl(var(--chart-2))'
+                    fillOpacity={0.8}
+                    fill='hsl(var(--chart-2))'
+                    yAxisId='right'
+                    name='Average Rating'
+                  />
+                </AreaChart>
+              </ChartContainer>
+            )}
           </CardContent>
           <CardFooter/>
         </Card>
+        <Card className='flex flex-col'>
+          <CardHeader>
+            <CardTitle>Event</CardTitle>
+            <CardDescription>Our events and their status.</CardDescription>
+          </CardHeader>
+          <CardContent className='flex-1 pb-0'>
+            {isLoading ? (
+              <Skeleton className='h-60' />
+            ) : (
+              <>
+                <div className='grid grid-cols-3 gap-4 mb-4'>
+                  {[
+                    { label: 'Monthly', count: processedEventData().monthlyCount, change: processedEventData().monthlyChange },
+                    { label: 'Weekly', count: processedEventData().weeklyCount, change: processedEventData().weeklyChange },
+                    { label: 'Daily', count: processedEventData().dailyCount, change: processedEventData().dailyChange }
+                  ].map((item, index) => (
+                    <div key={index} className='text-center'>
+                      <p className='text-sm font-medium text-muted-foreground'>{item.label}</p>
+                      <p className='text-2xl font-bold'>{item.count}</p>
+                      <div className={`flex items-center justify-center ${item.change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                        {item.change >= 0 ? (
+                          <ArrowUpIcon className='h-4 w-4 mr-1' />
+                        ) : (
+                          <ArrowDownIcon className='h-4 w-4 mr-1' />
+                        )}
+                        <span className='text-sm'>{Math.abs(item.change).toFixed(1)}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <ChartContainer config={chartConfig} className='h-56 w-full'>
+                  <BarChart
+                    data={processedEventData().chartData.slice(-30)}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="date"
+                      tickFormatter={(value) => format(new Date(value), 'MMM dd')}
+                      angle={-45}
+                      textAnchor="end"
+                      height={70}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      hide={true}
+                    />
+                    <Tooltip
+                      labelFormatter={(value) => format(new Date(value), 'MMMM dd, yyyy')}
+                    />
+                    <Bar dataKey="count" fill="hsl(var(--chart-1))" />
+                  </BarChart>
+                </ChartContainer>
+              </>
+            )}
+          </CardContent>
+          <CardFooter />
+        </Card>
+      </div>
+      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8'>
         <Card className='flex flex-col'>
           <CardHeader>
             <CardTitle>Gender Distribution</CardTitle>
@@ -196,6 +350,7 @@ export default function HomePage() {
               >
                 <PieChart>
                   <Pie
+                    innerRadius={40}
                     data={Object.entries(genderData).map(([name, value]) => ({ name, value }))}
                     cx='50%'
                     cy='50%'
@@ -222,39 +377,6 @@ export default function HomePage() {
         </Card>
         <Card className='flex flex-col'>
           <CardHeader>
-            <CardTitle>Age Distribution</CardTitle>
-            <CardDescription>Breakdown of customers by age group</CardDescription>
-          </CardHeader>
-          <CardContent className='flex-1 pb-0'>
-            {isLoading ? (
-              <Skeleton className='h-60' />
-            ) : (
-              <ChartContainer config={chartConfig}>
-                <BarChart
-                  data={Object.entries(ageGroupData).map(([name, value]) => ({ name, value }))}
-                >
-                  <CartesianGrid vertical={false} />
-                  <XAxis
-                    dataKey='name'
-                    tickLine={false}
-                    tickMargin={10}
-                    axisLine={false}
-                    tickFormatter={(value) => value.slice(0, 3)}
-                  />
-                  <ChartTooltip
-                    cursor={false}
-                    content={<ChartTooltipContent indicator='dashed' />}
-                  />
-                  <Tooltip />
-                  <Bar dataKey='value' fill='hsl(var(--chart-1))' radius={[5, 5, 0, 0]} />
-                </BarChart>
-              </ChartContainer>
-            )}
-          </CardContent>
-          <CardFooter/>
-        </Card>
-        <Card className='flex flex-col'>
-          <CardHeader>
             <CardTitle>Astrological Sign Distribution</CardTitle>
             <CardDescription>Breakdown of customers by astrological sign</CardDescription>
           </CardHeader>
@@ -268,6 +390,7 @@ export default function HomePage() {
               >
                 <PieChart>
                   <Pie
+                    innerRadius={40}
                     data={Object.entries(astroSignData).map(([name, value]) => ({ name, value }))}
                     cx='50%'
                     cy='50%'
@@ -292,90 +415,10 @@ export default function HomePage() {
           </CardContent>
           <CardFooter/>
         </Card>
-      </div>
-      <div className='flex flex-col space-y-3'>
-        <h1 className='text-lg md:text-2xl font-bold mt-24'>Encounters Statistics</h1>
-        <hr className='w-full' />
-      </div>
-      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-        <Card className='flex flex-col'>
-          <CardHeader>
-            <CardTitle>Overview</CardTitle>
-            <CardDescription>Key statistics about customer encounters</CardDescription>
-          </CardHeader>
-          <CardContent className='grid gap-4 grid-cols-1 lg:grid-cols-2'>
-            <div className='flex items-center space-x-4'>
-              <UsersIcon className='h-6 w-6 text-muted-foreground' />
-              <div>
-                <p className='text-sm font-medium'>Total Encounters</p>
-                {isLoading ?
-                  <Skeleton className='h-8 w-20' />
-                : (
-                  <p className='text-2xl font-bold'>
-                    {encounters.length}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className='flex items-center space-x-4'>
-              <CalendarIcon className='h-6 w-6 text-muted-foreground' />
-              <div>
-                <p className='text-sm font-medium'>Average Rating</p>
-                {isLoading ? (
-                  <Skeleton className='h-8 w-20' />
-                ) : encounters.length > 0 ? (
-                  <p className='text-2xl font-bold'>
-                    {Math.round(encounters.reduce((acc, encounter) => acc + encounter.rating, 0) / encounters.length * 10) / 10}
-                  </p>
-                ) : (
-                  <p className='text-2xl font-bold'>
-                    'N/A'
-                  </p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-          <CardFooter/>
-        </Card>
-        <Card className='flex flex-col'>
-          <CardHeader>
-            <CardTitle>Rating Distribution</CardTitle>
-            <CardDescription>Breakdown of encounters by rating</CardDescription>
-          </CardHeader>
-          <CardContent className='flex-1 pb-0'>
-            {isLoading ? (
-              <Skeleton className='h-60' />
-            ) : (
-              <ChartContainer config={chartConfig}>
-                <BarChart data={
-                  Array.from({ length: 5 }, (_, i) => i + 1).map((rating) => ({
-                    id: rating,
-                    rating: encounters.filter((encounter) => Math.floor(encounter.rating) === rating).length
-                  }))
-                }>
-                  <CartesianGrid vertical={false} />
-                  <XAxis
-                    dataKey='id'
-                    tickLine={false}
-                    tickMargin={10}
-                    axisLine={false}
-                  />
-                  <ChartTooltip
-                    cursor={false}
-                    content={<ChartTooltipContent indicator='dashed' />}
-                  />
-                  <Tooltip />
-                  <Bar dataKey='rating' fill='hsl(var(--chart-1))' radius={[5, 5, 0, 0]} />
-                </BarChart>
-              </ChartContainer>
-            )}
-          </CardContent>
-          <CardFooter/>
-        </Card>
         <Card className='flex flex-col'>
           <CardHeader>
             <CardTitle>Source Distribution</CardTitle>
-            <CardDescription>Breakdown of encounters by source</CardDescription>
+            <CardDescription>Top 5 sources of encounters</CardDescription>
           </CardHeader>
           <CardContent className='flex-1 pb-0'>
             {isLoading ? (
@@ -383,72 +426,36 @@ export default function HomePage() {
             ) : (
               <ChartContainer
                 config={chartConfig}
+                className='mx-auto aspect-square max-h-[250px]'
               >
-                <BarChart
-                  data={Object.entries(sourceData).map(([name, value]) => ({ name, value }))}
-                >
-                  <CartesianGrid vertical={false} />
-                  <XAxis
-                    dataKey='name'
-                    tickLine={false}
-                    tickMargin={10}
-                    axisLine={false}
-                  />
+                <PieChart>
+                  <Pie
+                    innerRadius={40}
+                    data={Object.entries(sourceData)
+                      .sort((a, b) => b[1] - a[1])
+                      .slice(0, 4)
+                      .map(([name, value], index) => ({ name, value }))}
+                    cx='50%'
+                    cy='50%'
+                    labelLine={false}
+                    outerRadius={80}
+                    fill='#8884d8'
+                    dataKey='value'
+                  >
+                    {Object.entries(sourceData)
+                      .sort((a, b) => b[1] - a[1])
+                      .slice(0, 5)
+                      .map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                  </Pie>
                   <ChartTooltip
                     cursor={false}
-                    content={<ChartTooltipContent indicator='dashed' />}
-                  />
-                  <Tooltip />
-                  <Bar dataKey='value' fill='hsl(var(--chart-1))' radius={[5, 5, 0, 0]} />
-                </BarChart>
-              </ChartContainer>
-            )}
-          </CardContent>
-          <CardFooter/>
-        </Card>
-        <Card className='flex flex-col'>
-          <CardHeader>
-            <CardTitle>Encounter Trends</CardTitle>
-            <CardDescription>Trends of encounters and ratings over time</CardDescription>
-          </CardHeader>
-          <CardContent className='flex-1 pb-0'>
-            {isLoading ? (
-              <Skeleton className='h-60' />
-            ) : (
-              <ChartContainer
-                config={chartConfig}
-              >
-                <LineChart
-                  data={processedEncounterData().slice(-50)}
-                >
-                  <CartesianGrid vertical={false} />
-                  <XAxis
-                    dataKey='date'
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    tickFormatter={(value) => value}
-                  />
-                  <ChartTooltip
-                    cursor={true}
                     content={<ChartTooltipContent hideLabel />}
                   />
+                  <Tooltip />
                   <Legend />
-                  <Line
-                    type='natural'
-                    dataKey='count'
-                    stroke='hsl(var(--chart-1))'
-                    yAxisId='left'
-                    name='Number of Encounters'
-                  />
-                  <Line
-                    type='natural'
-                    dataKey='avgRating'
-                    stroke='hsl(var(--chart-2))'
-                    yAxisId='right'
-                    name='Average Rating'
-                  />
-                </LineChart>
+                </PieChart>
               </ChartContainer>
             )}
           </CardContent>
