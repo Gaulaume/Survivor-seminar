@@ -1,7 +1,20 @@
 from fastapi import FastAPI
 from routers import employees, customers, encounters, tips, events, clothes, compatibility
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+origins = [
+    "*"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(employees.router, prefix="/api/employees", tags=["employees"])
 app.include_router(customers.router, prefix="/api/customers", tags=["customers"])
