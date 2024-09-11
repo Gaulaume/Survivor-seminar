@@ -81,7 +81,7 @@ export default function CoachingTips() {
           <p className='text-lg text-gray-500'>No tips found matching your search.</p>
         </div>
       ) : (
-        <div className=''>
+        <div className='max-h-[500px] overflow-y-auto'>
           {filteredTips?.map((tip, index) => (
             <Card
               key={tip.id}
@@ -93,7 +93,7 @@ export default function CoachingTips() {
               )}
             >
               <CardHeader
-                className='flex-row items-center justify-between font-medium'
+                className='flex-row items-center justify-between font-medium p-4'
               >
                 {tip.title}
                 <ChevronDownIcon
@@ -108,7 +108,7 @@ export default function CoachingTips() {
                 animate={{ height: openTip === tip.id ? 'auto' : 0, opacity: openTip === tip.id ? 1 : 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <CardContent className='pt-6 border-t w-full'>
+                <CardContent className='p-4 border-t w-full'>
                   <p className='text-muted-foreground text-sm'>
                   {tip.tip}
                   </p>
