@@ -50,6 +50,7 @@ export default function EventPage() {
   const [lastSelectedEvent, setLastSelectedEvent] = useState<Event | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [selectedEventIds, setSelectedEventIds] = useState<string[]>([]);
   const { getToken } = useAuth();
 
   useEffect(() => {
@@ -72,10 +73,24 @@ export default function EventPage() {
   };
 
   const handleEventClick = (clickInfo: any) => {
-    setSelectedEventId(clickInfo.event.id);
-    const event = events?.find(e => e.id.toString() === clickInfo.event.id);
+    const eventId = clickInfo.event.id;
+    setSelectedEventIds(prevIds => {
+      if (prevIds.includes(eventId)) {
+        return prevIds.filter(id => id !== eventId);
+      } else {
+        return [...prevIds, eventId];
+      }
+    });
+
+    const event = events?.find(e => e.id.toString() === eventId);
     if (event) {
-      setSelectedEvents([event]);
+      setSelectedEvents(prevEvents => {
+        if (prevEvents.some(e => e.id === event.id)) {
+          return prevEvents.filter(e => e.id !== event.id);
+        } else {
+          return [...prevEvents, event];
+        }
+      });
       setLastSelectedEvent(event);
     }
   };
@@ -83,7 +98,7 @@ export default function EventPage() {
   const handleClearSelection = () => {
     setSelectedEvents([]);
     setLastSelectedEvent(null);
-    setSelectedEventId(null);
+    setSelectedEventIds([]);
   };
 
   return (
@@ -112,8 +127,8 @@ export default function EventPage() {
             title: event.name,
             start: event.date,
             allDay: true,
-            backgroundColor: event.id.toString() === selectedEventId ? '#1a56db' : '#3788d8',
-            textColor: event.id.toString() === selectedEventId ? 'white' : 'inherit',
+            backgroundColor: selectedEventIds.includes(event.id.toString()) ? '#1a56db' : '#3788d8',
+            textColor: selectedEventIds.includes(event.id.toString()) ? 'white' : 'inherit',
           }))}
           eventClick={handleEventClick}
           dayMaxEvents={3}
@@ -168,7 +183,7 @@ export default function EventPage() {
           disabled={selectedEvents.length === 0}
           className='w-full'
         >
-          Clear Selection
+          Clear Selection ({selectedEvents.length} selected)
         </Button>
       </div>
     </div>
