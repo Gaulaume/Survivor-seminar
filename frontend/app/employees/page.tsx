@@ -7,7 +7,19 @@ import { toast } from 'sonner'
 import Employee from '@/types/Employee'
 import Customer from '@/types/Customer'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { ArrowLeftEndOnRectangleIcon, CheckIcon, ChevronDoubleLeftIcon, ChevronDoubleRightIcon, ChevronLeftIcon, ChevronRightIcon, ChevronUpDownIcon, EllipsisHorizontalIcon, FunnelIcon, PencilIcon, PlusIcon, TrashIcon } from '@heroicons/react/20/solid'
+import {
+  ArrowLeftEndOnRectangleIcon,
+  ChevronDoubleLeftIcon,
+  ChevronDoubleRightIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronUpDownIcon,
+  EllipsisHorizontalIcon,
+  FunnelIcon,
+  PencilIcon,
+  PlusIcon,
+  TrashIcon
+} from '@heroicons/react/20/solid'
 import { useAuth } from '../actions';
 import { deleteEmployee, getEmployees, postEmployee, putEmployee } from '@/api/Employees';
 import {
@@ -54,6 +66,14 @@ import { format } from 'date-fns';
 import { CalendarIcon } from "@heroicons/react/20/solid";
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
 
 
 type MultiSelectProps = {
@@ -63,45 +83,59 @@ type MultiSelectProps = {
 };
 
 function MultiSelect({ items, selectedItems, setSelectedItems }: MultiSelectProps) {
-  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
   return (
-    <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant='outline'
-          onClick={() => setIsPopoverOpen(!isPopoverOpen)}
+          className='h-8 w-full md:w-auto'
+          onClick={() => setOpen(!open)}
         >
           Update clients
           <ChevronUpDownIcon className='h-4 w-4 ml-2' />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className='w-60'>
-        <div className='space-y-2 overflow-y-scroll max-h-52'>
-          {items
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .sort((a, b) => selectedItems.includes(b.id) ? 1 : -1)
-            .map((item) => (
-            <button
-              key={item.id}
-              className={clsx(
-                'flex gap-2 text-nowrap truncate items-center w-full px-3 py-1.5 rounded-md hover:bg-muted transition-colors duration-200',
-                selectedItems.includes(item.id) ? 'bg-muted' : ''
-              )}
-              onClick={() => {
-                if (selectedItems.includes(item.id))
-                  setSelectedItems(selectedItems.filter((id) => id !== item.id));
-                else
-                  setSelectedItems([...selectedItems, item.id]);
-              }}
-            >
-              <div className='size-4 flex-shrink-0'>
-                {selectedItems.includes(item.id) && <CheckIcon className='h-4 w-4' />}
-              </div>
-              <span>{item.name}</span>
-            </button>
-          ))}
-        </div>
+      <PopoverContent className='w-60 p-0'>
+        <Command>
+          <CommandInput placeholder="Search clients..." />
+          <CommandList>
+            <CommandEmpty>No clients found.</CommandEmpty>
+            <CommandGroup>
+              {items
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .sort((a, b) => selectedItems.includes(b.id) ? 1 : -1)
+                .map((item) => (
+                  <CommandItem
+                    key={item.id}
+                    className='cursor-pointer'
+                    onSelect={() => {
+                      if (selectedItems.includes(item.id))
+                        setSelectedItems(selectedItems.filter((id) => id !== item.id));
+                      else
+                        setSelectedItems([...selectedItems, item.id]);
+                    }}
+                  >
+                    <div className='flex items-center'>
+                      <div className='size-4 flex-shrink-0 mr-2'>
+                        <Checkbox
+                          checked={selectedItems.includes(item.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked)
+                              setSelectedItems([...selectedItems, item.id]);
+                            else
+                              setSelectedItems(selectedItems.filter((id) => id !== item.id));
+                          }}
+                        />
+                      </div>
+                      <span>{item.name}</span>
+                    </div>
+                  </CommandItem>
+                ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
       </PopoverContent>
     </Popover>
   );
@@ -122,8 +156,8 @@ function MultiSelectCheckbox({ items, selectedItems, setSelectedItems }: MultiSe
           <FunnelIcon className='h-4 w-4 ml-2' />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className='w-60'>
-        <div className='space-y-2 max-h-52'>
+      <PopoverContent className='w-60 space-y-2'>
+        <div className='space-y-2 max-h-52 overflow-y-auto'>
           {items.map((item) => (
             <div key={item.id} className='flex flex-row items-center space-x-3 space-y-0'>
               <Checkbox
@@ -137,22 +171,22 @@ function MultiSelectCheckbox({ items, selectedItems, setSelectedItems }: MultiSe
               <Label htmlFor={item.id.toString()}>{item.name}</Label>
             </div>
           ))}
-          <hr className='my-2' />
-          <div className='flex flex-row items-center space-x-3 space-y-0'>
-              <Checkbox
-                checked={selectedItems.length > 0}
-                onCheckedChange={() => {
-                  if (selectedItems.length > 0)
-                    setSelectedItems([]);
-                  else
-                    setSelectedItems(items.map(item => item.id));
-                }}
-              />
-              <Label htmlFor='clear-checkbox'>
-                {selectedItems.length > 0 ? 'Unselect All' : 'Select All'}
-              </Label>
-            </div>
         </div>
+        <hr className='my-2' />
+        <div className='flex flex-row items-center space-x-3 space-y-0'>
+            <Checkbox
+              checked={selectedItems.length > 0}
+              onCheckedChange={() => {
+                if (selectedItems.length > 0)
+                  setSelectedItems([]);
+                else
+                  setSelectedItems(items.map(item => item.id));
+              }}
+            />
+            <Label htmlFor='clear-checkbox'>
+              {selectedItems.length > 0 ? 'Unselect All' : 'Select All'}
+            </Label>
+          </div>
       </PopoverContent>
     </Popover>
   );
@@ -161,11 +195,11 @@ function MultiSelectCheckbox({ items, selectedItems, setSelectedItems }: MultiSe
 const FormSchema = z.object({
   name: z.string().min(2).max(50),
   surname: z.string().min(2).max(50),
-  email: z.string().email(),
-  birth_date: z.string().optional(),
-  gender: z.string().optional(),
-  work: z.string().optional(),
-  image: z.string().optional(),
+  email: z.string().email().min(1),
+  birth_date: z.string(),
+  gender: z.string(),
+  work: z.string(),
+  image: z.string().optional()
 })
 
 const TablePagination = ({
@@ -194,7 +228,6 @@ const TablePagination = ({
             <SelectValue placeholder={rowsPerPage.toString()} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value='5'>5</SelectItem>
             <SelectItem value='10'>10</SelectItem>
             <SelectItem value='20'>20</SelectItem>
             <SelectItem value='30'>30</SelectItem>
@@ -335,131 +368,133 @@ const TableModal = ({
         </DialogDescription>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-3 mt-3'>
-            <FormField
-              control={form.control}
-              name='name'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder='Name' />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name='surname'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Surname</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder='Surname' />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name='email'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder='Email' type='email' />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name='birth_date'
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Birth Date</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={clsx(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(new Date(field.value), "PPP")
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value ? new Date(field.value) : undefined}
-                        onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : undefined)}
-                        disabled={(date) =>
-                          date > new Date() || date < new Date("1900-01-01")
-                        }
-                        initialFocus
+            <div className='max-h-[600px] overflow-y-auto px-2'>
+              <FormField
+                control={form.control}
+                name='name'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder='Name' />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='surname'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Surname</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder='Surname' />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='email'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder='Email' type='email' />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='birth_date'
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Birth Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={clsx(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(new Date(field.value), "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value ? new Date(field.value) : undefined}
+                          onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : undefined)}
+                          disabled={(date) =>
+                            date > new Date() || date < new Date("1900-01-01")
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='gender'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Gender</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder='Gender' />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='work'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Work</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder='Work' />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='image'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Image</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder='Image'
+                        type='file'
+                        accept='image/*'
+                        onChange={(e) => handleImageChange(e)}
                       />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name='gender'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Gender</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder='Gender' />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name='work'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Work</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder='Work' />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name='image'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Image</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      placeholder='Image'
-                      type='file'
-                      accept='image/*'
-                      onChange={(e) => handleImageChange(e)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <div className='flex flex-col md:flex-row gap-2'>
               <Button
                 type='submit'
@@ -529,36 +564,13 @@ const TableSettings = ({
 }
 
 export default function EmployeeManagementPage() {
-  const [employees, setEmployees] = useState<Employee[] | null>([
-    {
-      id: 1,
-      name: 'John',
-      surname: 'Doe',
-      email: 'john.doe@example.com',
-      birth_date: '1990-01-01',
-      gender: 'Male',
-      work: 'Coach',
-      customers_ids: [1, 2, 3],
-      last_connection: 1714857600
-    },
-    {
-      id: 2,
-      name: 'Jane',
-      surname: 'Doe',
-      email: 'jane.doe@example.com',
-      birth_date: '1990-01-01',
-      gender: 'Female',
-      work: 'Trainer',
-      customers_ids: [4, 5],
-      last_connection: 1714857600
-    }
-  ]);
+  const [employees, setEmployees] = useState<Employee[] | null>(null);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const { getToken } = useAuth();
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [rowsPerPage, setRowsPerPage] = useState<number>(5);
+  const [rowsPerPage, setRowsPerPage] = useState<number>(10);
   const [workFilter, setWorkFilter] = useState<number[]>([]);
   const [nameFilter, setNameFilter] = useState<string>('');
 
@@ -591,8 +603,9 @@ export default function EmployeeManagementPage() {
   }, []);
 
   const handleUpdateEmployee = async (employeeId: number, employee: Employee) => {
-    const token = getToken();
+    console.log(employee);
     try {
+      const token = getToken();
       const data = await putEmployee(token, employeeId, employee);
       if (data) {
         toast.success('Employee updated successfully');
@@ -620,9 +633,10 @@ export default function EmployeeManagementPage() {
   };
 
   const setEmployeesCustomers = (employeeId: number, customerIds: number[]) => {
+    console.log(customerIds);
     const updatedEmployees = employees?.map((employee) => {
       if (employee.id === employeeId)
-        return { ...employee, customers: customerIds };
+        return { ...employee, customers_ids: customerIds };
       return employee;
     });
     if (!updatedEmployees) return;
@@ -637,17 +651,15 @@ export default function EmployeeManagementPage() {
   };
 
   const uniqueWorkTypes = [
-    { id: 0, name: 'All' },
     ...Array.from(new Set(employees?.map(e => e.work || 'Not specified')))
       .map((work, index) => ({ id: index + 1, name: work }))
   ];
 
   const filteredEmployees = employees?.filter(employee => {
-    const worksObjects = uniqueWorkTypes.filter(work => work.name === employee.work);
-    const workMatch = worksObjects.length > 0 && worksObjects.some(work => work.name === employee.work);
+    const workMatch = workFilter.length === 0 || workFilter.includes(uniqueWorkTypes.find(w => w.name === (employee.work || 'Not specified'))?.id || 0);
     const nameMatch = employee.name.toLowerCase().includes(nameFilter.toLowerCase()) ||
                       employee.surname.toLowerCase().includes(nameFilter.toLowerCase());
-    return nameMatch && workMatch;
+    return workMatch && nameMatch;
   });
 
   const paginatedEmployees = filteredEmployees
@@ -718,12 +730,14 @@ export default function EmployeeManagementPage() {
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant='ghost' size='icon'>
+                      <Button variant='outline' size='icon' className='size-8'>
                         <EllipsisHorizontalIcon className='size-5' />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className='w-56'>
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuLabel>
+                        Actions on {employee.name} {employee.surname}
+                      </DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <DropdownMenuGroup>
                         <DropdownMenuItem
