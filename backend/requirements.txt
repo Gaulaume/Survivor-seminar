@@ -6,3 +6,4 @@ aiohttp
 asyncio
 Pyjwt
 python-jose
+python-multipart
