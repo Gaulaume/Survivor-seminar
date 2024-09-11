@@ -105,11 +105,11 @@ const getMe = async (token: string): Promise<Employee | null> => {
 
   try {
     const response = await axios(config);
-
     return response.data;
   } catch (error) {
     console.error('getMe', error);
-
+    if (axios.isAxiosError(error) && error.response)
+      return error.response.data;
     return null;
   }
 }

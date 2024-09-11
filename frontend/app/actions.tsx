@@ -36,7 +36,7 @@ export const useAuth = (): { getToken: () => string, getRole: () => number} => {
     const token = localStorage.getItem('token');
     if (!token) {
       router.push('/login');
-      throw new Error('No token found');
+      return '';
     }
     return token;
   };

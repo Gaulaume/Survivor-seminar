@@ -212,6 +212,7 @@ export default function Layout({
       try {
         const token = getToken();
         const user = await getMe(token);
+        console.log("userrrrrrrrrrrr ", user);
         if (!user) throw new Error('User not found');
         setUser(user);
       } catch (error) {
