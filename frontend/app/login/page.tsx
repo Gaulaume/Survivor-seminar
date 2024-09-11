@@ -45,7 +45,6 @@ const fadeIn = {
 const Login = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [step, setStep] = useState<number>(1);
-  const router = useRouter();
   const [showResendButton, setShowResendButton] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
@@ -114,9 +113,9 @@ const Login = () => {
   }
 
   return (
-    <div className='container flex flex-col items-center justify-center w-full mx-auto h-96'>
+    <div className='container flex flex-col items-center justify-between w-full mx-auto h-80 mt-5'>
       <motion.div
-        className='mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]'
+        className='mx-auto flex w-full flex-col justify-between h-full space-y-6 sm:w-[350px]'
         initial='hidden'
         animate='visible'
         variants={fadeIn}
