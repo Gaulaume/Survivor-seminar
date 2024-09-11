@@ -64,7 +64,7 @@ async def get_customers(token: str = Security(get_current_user_token)):
     if token.role == Role.Coach.value:
         customers_ids = employee['customers_ids']
         if not customers_ids:
-            raise HTTPException(status_code=400, detail="Employee has no customers")
+            return []
         return list(collection_customers.find({"id": {"$in": customers_ids}}))
     else:
         return customers
