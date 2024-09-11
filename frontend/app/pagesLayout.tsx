@@ -208,6 +208,7 @@ const Header = () => {
   const { getRole } = useAuth();
   const [userRole, setUserRole] = useState<number>(0);
   const { user } = useUser();
+  const [language, setLanguage] = useState('en');
 
   useEffect(() => {
     setUserRole(getRole() as number);
@@ -254,7 +255,35 @@ const Header = () => {
             )
           ))}
         </nav>
-        <div className='flex flex-row w-40 justify-end'>
+        <div className='flex flex-row w-40 justify-end items-center space-x-2'>
+          <Button variant="ghost" size="icon" className="p-0 h-8 w-8 rounded-full">
+            <img
+              src="https://img.icons8.com/?size=48&id=ep9KlHIMmfBW&format=png"
+              alt="Chat"
+              className="h-full w-full object-cover"
+            />
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="p-0 h-8 w-8 rounded-full">
+                <span className="flex items-center justify-center h-full w-full rounded-full overflow-hidden border border-gray-200">
+                  <img
+                    src={language === 'en' ? 'https://flagicons.lipis.dev/flags/4x3/um.svg' : 'https://flagicons.lipis.dev/flags/4x3/fr.svg'} 
+                    alt={language === 'en' ? 'English' : 'Français'}
+                    className="h-full w-full object-cover"
+                  />
+                </span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => setLanguage('en')}>
+                <img src="https://flagicons.lipis.dev/flags/4x3/um.svg" alt="English" className="w-5 h-5 mr-2" /> English
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLanguage('fr')}>
+                <img src="https://flagicons.lipis.dev/flags/4x3/fr.svg" alt="Français" className="w-5 h-5 mr-2" /> Français
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           {user ? (
             <UserDropdown user={user} />
           ) : (
