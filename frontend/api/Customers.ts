@@ -24,9 +24,9 @@ const getCustomers = async (token: string): Promise<Customer[] | null> => {
   }
 }
 
-const getCustomer = async (token: string, id: string): Promise<Customer | null> => {
+const getCustomer = async (token: string, id: number): Promise<Customer | null> => {
   const config = {
-    url: `https://soul-connection.fr/api/customers/${id}`,
+    url: `http://localhost:8000/api/customers/${id}`,
     method: 'get',
     headers: {
       'Content-Type': 'application/json',
@@ -45,9 +45,9 @@ const getCustomer = async (token: string, id: string): Promise<Customer | null> 
   }
 }
 
-const customerImage = async (token: string, id: string): Promise<any | null> => {
+const getCustomerImage = async (token: string, id: number): Promise<any | null> => {
   const config = {
-    url: `https://soul-connection.fr/api/customers/${id}/image`,
+    url: `http://localhost:8000/api/customers/${id}/image`,
     method: 'get',
     headers: {
       'Content-Type': 'application/json',
@@ -66,9 +66,9 @@ const customerImage = async (token: string, id: string): Promise<any | null> => 
   }
 }
 
-const getCustomerPayments = async (token: string, id: string): Promise<Payment[] | null> => {
+const getCustomerPayments = async (token: string, id: number): Promise<Payment[] | null> => {
   const config = {
-    url: `https://soul-connection.fr/api/customers/${id}/payments_history`,
+    url: `http://localhost:8000/api/customers/${id}/payments_history`,
     method: 'get',
     headers: {
       'Content-Type': 'application/json',
@@ -87,9 +87,9 @@ const getCustomerPayments = async (token: string, id: string): Promise<Payment[]
   }
 }
 
-const getCustomerClothes = async (token: string, id: string): Promise<Clothe[] | null> => {
+const getCustomerClothes = async (token: string, id: number): Promise<Clothe[] | null> => {
   const config = {
-    url: `https://soul-connection.fr/api/customers/${id}/clothes`,
+    url: `http://localhost:8000/api/customers/${id}/clothes`,
     method: 'get',
     headers: {
       'Content-Type': 'application/json',
@@ -111,7 +111,7 @@ const getCustomerClothes = async (token: string, id: string): Promise<Clothe[] |
 export {
   getCustomers,
   getCustomer,
-  customerImage,
+  getCustomerImage,
   getCustomerPayments,
   getCustomerClothes,
 };

@@ -1,46 +1,58 @@
+'use client';
+
 import { employeeLogin } from '@/api/Employees';
 import { useRouter } from 'next/navigation';
-import { ComponentType, JSX, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
-export const handleLogin = async (formData: FormData): Promise<void> => {
-  const email = formData.get('email') as string;
-  const password = formData.get('password') as string;
-  const router = useRouter();
+export const handleApiError = (error: any) => {
+  if (!error.response || error.response.status !== 403)
+    return;
+  localStorage.removeItem('token');
+  window.location.href = '/login';
+}
 
-  const response = await employeeLogin(email, password);
-
-  console.log('response ', response);
-
-  if (response && response.token) {
-    console.log('response.token ', response.token);
-    localStorage.setItem('token', response.token);
-    router.back();
-  } else {
-    throw new Error('Invalid login credentials');
-  }
+export const handleLogout = async (): Promise<void> => {
+  localStorage.removeItem('token');
+  window.location.href = '/login';
 };
 
-export const useAuth = (): { getToken: () => string } => {
+export const handleLoginEmail = async (email: string, rememberMe: boolean): Promise<boolean> => {
+  const response = await employeeLogin(email, 'password'); // Put rememberMe in the request
+
+  if (!response)
+    return false;
+  localStorage.setItem('token', response.access_token); // TODO: remove this
+  return true;
+};
+
+export const handleLoginPin = async (pin: string): Promise<void> => {
+  // TODO: implement pin login
+  window.location.href = '/';
+}
+export const useAuth = (): { getToken: () => string, getRole: () => number} => {
   const router = useRouter();
 
-  useEffect(() => {
+  const getToken = () => {
     const token = localStorage.getItem('token');
-
-    if (!token)
-      router.push('/login');
-  }, [router]);
-
-  const getToken = (): string => {
-    const token = localStorage.getItem('token');
-
     if (!token) {
       router.push('/login');
       return '';
     }
     return token;
-  }
+  };
 
-  return { getToken };
+  const getRole = () => {
+    const token = getToken();
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.role;
+    } catch (error) {
+      console.error('Error decoding token:', error);
+      return null;
+    }
+  };
+
+  return { getToken, getRole };
 };
 
 export const Loading = () => {
@@ -59,16 +71,5 @@ export const Loading = () => {
 }
 
 export const AuthCheck = (props: any) => {
-  const { getToken } = useAuth();
-  const router = useRouter();
-
-  if (typeof window !== 'undefined' && !getToken()) {
-    router.push('/login');
-  }
-
-  if (!getToken()) {
-    return <Loading />;
-  }
-
   return props.children;
 }

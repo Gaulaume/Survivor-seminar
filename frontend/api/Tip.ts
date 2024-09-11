@@ -1,12 +1,13 @@
 import Tip from '@/types/Tip';
 import axios from 'axios';
 
-const getTips = async (): Promise<Tip[] | null> => {
+const getTips = async (token: string): Promise<Tip[] | null> => {
   const config = {
-    url: 'https://soul-connection.fr/api/tips',
+    url: 'http://localhost:8000/api/tips',
     method: 'get',
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
     },
   };
 
