@@ -206,238 +206,237 @@ export default function StatisticsPage() {
 
   return (
     <AuthCheck>
-      <div className='container mx-auto space-y-6'>
-        <div className='flex flex-col space-y-3'>
-          <h1 className='text-lg md:text-2xl font-bold'>Encounters Statistics</h1>
-          <hr className='w-full' />
-        </div>
-        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-          <Card className='flex flex-col'>
-            <CardHeader>
-              <CardTitle>Overview</CardTitle>
-              <CardDescription>Key statistics about customer encounters</CardDescription>
-            </CardHeader>
-            <CardContent className='grid gap-4 grid-cols-1 lg:grid-cols-2'>
-              <div className='flex items-center space-x-4'>
-                <UsersIcon className='h-6 w-6 text-muted-foreground' />
-                <div>
-                  <p className='text-sm font-medium'>Total Encounters</p>
-                  {isLoading ?
-                    <Skeleton className='h-8 w-20' />
-                  : (
-                    <p className='text-2xl font-bold'>
-                      {encounters.length}
-                    </p>
-                  )}
-                </div>
+      <div className='mb-5'>
+        <h1 className='text-lg md:text-2xl font-bold mb-1'>
+          Encounters Statistics
+        </h1>
+        <p className='text-muted-foreground'>
+          View the statistics of the encounters
+        </p>
+      </div>
+      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+        <Card className='flex flex-col'>
+          <CardHeader>
+            <CardTitle>Overview</CardTitle>
+            <CardDescription>Key statistics about customer encounters</CardDescription>
+          </CardHeader>
+          <CardContent className='grid gap-4 grid-cols-1 lg:grid-cols-2'>
+            <div className='flex items-center space-x-4'>
+              <UsersIcon className='h-6 w-6 text-muted-foreground' />
+              <div>
+                <p className='text-sm font-medium'>Total Encounters</p>
+                {isLoading ?
+                  <Skeleton className='h-8 w-20' />
+                : (
+                  <p className='text-2xl font-bold'>
+                    {encounters.length}
+                  </p>
+                )}
               </div>
-              <div className='flex items-center space-x-4'>
-                <CalendarIcon className='h-6 w-6 text-muted-foreground' />
-                <div>
-                  <p className='text-sm font-medium'>Average Rating</p>
-                  {isLoading ? (
-                    <Skeleton className='h-8 w-20' />
-                  ) : encounters.length > 0 ? (
-                    <p className='text-2xl font-bold'>
-                      {Math.round(encounters.reduce((acc, encounter) => acc + encounter.rating, 0) / encounters.length * 10) / 10}
-                    </p>
-                  ) : (
-                    <p className='text-2xl font-bold'>
-                      'N/A'
-                    </p>
-                  )}
-                </div>
+            </div>
+            <div className='flex items-center space-x-4'>
+              <CalendarIcon className='h-6 w-6 text-muted-foreground' />
+              <div>
+                <p className='text-sm font-medium'>Average Rating</p>
+                {isLoading ? (
+                  <Skeleton className='h-8 w-20' />
+                ) : encounters.length > 0 ? (
+                  <p className='text-2xl font-bold'>
+                    {Math.round(encounters.reduce((acc, encounter) => acc + encounter.rating, 0) / encounters.length * 10) / 10}
+                  </p>
+                ) : (
+                  <p className='text-2xl font-bold'>
+                    'N/A'
+                  </p>
+                )}
               </div>
-            </CardContent>
-            <CardFooter/>
-          </Card>
-          <Card className='flex flex-col'>
-            <CardHeader>
-              <CardTitle>Rating Distribution</CardTitle>
-              <CardDescription>Breakdown of encounters by rating</CardDescription>
-            </CardHeader>
-            <CardContent className='flex-1 pb-0'>
-              {isLoading ? (
-                <Skeleton className='h-60' />
-              ) : (
-                <ChartContainer config={chartConfig}>
-                  <BarChart data={
-                    Array.from({ length: 5 }, (_, i) => i + 1).map((rating) => ({
-                      id: rating,
-                      rating: encounters.filter((encounter) => Math.floor(encounter.rating) === rating).length
-                    }))
-                  }>
-                    <CartesianGrid vertical={false} />
-                    <XAxis
-                      dataKey='id'
-                      tickLine={false}
-                      tickMargin={10}
-                      axisLine={false}
-                    />
-                    <ChartTooltip
-                      cursor={false}
-                      content={<ChartTooltipContent indicator='dashed' />}
-                    />
-                    <Tooltip />
-                    <Bar dataKey='rating' fill='hsl(var(--chart-1))' radius={[5, 5, 0, 0]} />
-                  </BarChart>
-                </ChartContainer>
-              )}
-            </CardContent>
-            <CardFooter/>
-          </Card>
-          <Card className='flex flex-col'>
-            <CardHeader>
-              <CardTitle>Source Distribution</CardTitle>
-              <CardDescription>Breakdown of encounters by source</CardDescription>
-            </CardHeader>
-            <CardContent className='flex-1 pb-0'>
-              {isLoading ? (
-                <Skeleton className='h-60' />
-              ) : (
-                <ChartContainer
-                  config={chartConfig}
-                >
-                  <BarChart
-                    data={Object.entries(sourceData).map(([name, value]) => ({ name, value }))}
-                  >
-                    <CartesianGrid vertical={false} />
-                    <XAxis
-                      dataKey='name'
-                      tickLine={false}
-                      tickMargin={10}
-                      axisLine={false}
-                    />
-                    <ChartTooltip
-                      cursor={false}
-                      content={<ChartTooltipContent indicator='dashed' />}
-                    />
-                    <Tooltip />
-                    <Bar dataKey='value' fill='hsl(var(--chart-1))' radius={[5, 5, 0, 0]} />
-                  </BarChart>
-                </ChartContainer>
-              )}
-            </CardContent>
-            <CardFooter/>
-          </Card>
-          <Card className='flex flex-col'>
-            <CardHeader>
-              <CardTitle>Encounter Trends</CardTitle>
-              <CardDescription>Trends of encounters and ratings over time</CardDescription>
-            </CardHeader>
-            <CardContent className='flex-1 pb-0'>
-              {isLoading ? (
-                <Skeleton className='h-60' />
-              ) : (
-                <ChartContainer
-                  config={chartConfig}
-                >
-                  <LineChart
-                    data={processedEncounterData().slice(-50)}
-                  >
-                    <CartesianGrid vertical={false} />
-                    <XAxis
-                      dataKey='date'
-                      tickLine={false}
-                      axisLine={false}
-                      tickMargin={8}
-                      tickFormatter={(value) => value}
-                    />
-                    <ChartTooltip
-                      cursor={true}
-                      content={<ChartTooltipContent hideLabel />}
-                    />
-                    <Legend />
-                    <Line
-                      type='natural'
-                      dataKey='count'
-                      stroke='hsl(var(--chart-1))'
-                      yAxisId='left'
-                      name='Number of Encounters'
-                    />
-                    <Line
-                      type='natural'
-                      dataKey='avgRating'
-                      stroke='hsl(var(--chart-2))'
-                      yAxisId='right'
-                      name='Average Rating'
-                    />
-                  </LineChart>
-                </ChartContainer>
-              )}
-            </CardContent>
-            <CardFooter/>
-          </Card>
-        </div>
-        <div className='flex flex-col space-y-3'>
-          <h1 className='text-lg md:text-2xl font-bold'>Employee Statistics</h1>
-          <hr className='w-full' />
-
-          <p className='text-sm md:text-base'>
-            Compare the performance of two employees based on their average rating and client demographics. Select two employees to compare.
-          </p>
-
-          <div className='flex flex-col md:flex-row gap-4 w-full max-w-3xl'>
-            <div>
-              <Combobox
-                value={firstEmployee}
-                setValue={setFirstEmployee}
-                employees={employees.filter((employee) => employee.id !== secondEmployee)}
-              />
             </div>
-            <Button
-              disabled={!firstEmployee || !secondEmployee || comparing}
-              onClick={() => {
-                if (firstEmployee && secondEmployee)
-                  launchComparison(firstEmployee, secondEmployee);
-              }}
-            >
-              Lauch Comparison
-              {comparing ? (
-                <ArrowPathIcon className='h-4 w-4 ml-2 animate-spin' />
-              ) : (
-                <SparklesIcon className='h-4 w-4 ml-2' />
-              )}
-            </Button>
-            <div>
-              <Combobox
-                value={secondEmployee}
-                setValue={setSecondEmployee}
-                employees={employees.filter((employee) => employee.id !== firstEmployee)}
-              />
-            </div>
-          </div>
-
-          <Card className='flex flex-col'>
-            <CardHeader>
-              <CardTitle>Comparison</CardTitle>
-              <CardDescription>Comparison of two employees based on their average rating and client demographics</CardDescription>
-            </CardHeader>
-            <CardContent className='flex-1 pb-0'>
-            {!employeesStats ? (
+          </CardContent>
+          <CardFooter/>
+        </Card>
+        <Card className='flex flex-col'>
+          <CardHeader>
+            <CardTitle>Rating Distribution</CardTitle>
+            <CardDescription>Breakdown of encounters by rating</CardDescription>
+          </CardHeader>
+          <CardContent className='flex-1 pb-0'>
+            {isLoading ? (
               <Skeleton className='h-60' />
             ) : (
-              <ChartContainer config={chartConfig} className='max-h-[400px] w-full'>
-                <BarChart data={employeesStats} layout='vertical'>
-                  <CartesianGrid horizontal={false} />
-                  <XAxis type='number' />
-                  <YAxis type='category' dataKey='name' />
+              <ChartContainer config={chartConfig}>
+                <BarChart data={
+                  Array.from({ length: 5 }, (_, i) => i + 1).map((rating) => ({
+                    id: rating,
+                    rating: encounters.filter((encounter) => Math.floor(encounter.rating) === rating).length
+                  }))
+                }>
+                  <CartesianGrid vertical={false} />
+                  <XAxis
+                    dataKey='id'
+                    tickLine={false}
+                    tickMargin={10}
+                    axisLine={false}
+                  />
                   <ChartTooltip
                     cursor={false}
                     content={<ChartTooltipContent indicator='dashed' />}
                   />
                   <Tooltip />
-                  <Bar dataKey='average_rating' fill='hsl(var(--chart-1))' radius={[0, 5, 5, 0]} />
-                  <Bar dataKey='clients_length' fill='hsl(var(--chart-2))' radius={[0, 5, 5, 0]} />
-                  <Bar dataKey='clients_length_male' fill='hsl(var(--chart-3))' radius={[0, 5, 5, 0]} />
-                  <Bar dataKey='clients_length_female' fill='hsl(var(--chart-4))' radius={[0, 5, 5, 0]} />
+                  <Bar dataKey='rating' fill='hsl(var(--chart-1))' radius={[5, 5, 0, 0]} />
                 </BarChart>
               </ChartContainer>
             )}
-            </CardContent>
-            <CardFooter/>
-          </Card>
+          </CardContent>
+          <CardFooter/>
+        </Card>
+        <Card className='flex flex-col'>
+          <CardHeader>
+            <CardTitle>Source Distribution</CardTitle>
+            <CardDescription>Breakdown of encounters by source</CardDescription>
+          </CardHeader>
+          <CardContent className='flex-1 pb-0'>
+            {isLoading ? (
+              <Skeleton className='h-60' />
+            ) : (
+              <ChartContainer
+                config={chartConfig}
+              >
+                <BarChart
+                  data={Object.entries(sourceData).map(([name, value]) => ({ name, value }))}
+                >
+                  <CartesianGrid vertical={false} />
+                  <XAxis
+                    dataKey='name'
+                    tickLine={false}
+                    tickMargin={10}
+                    axisLine={false}
+                  />
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent indicator='dashed' />}
+                  />
+                  <Tooltip />
+                  <Bar dataKey='value' fill='hsl(var(--chart-1))' radius={[5, 5, 0, 0]} />
+                </BarChart>
+              </ChartContainer>
+            )}
+          </CardContent>
+          <CardFooter/>
+        </Card>
+        <Card className='flex flex-col'>
+          <CardHeader>
+            <CardTitle>Encounter Trends</CardTitle>
+            <CardDescription>Trends of encounters and ratings over time</CardDescription>
+          </CardHeader>
+          <CardContent className='flex-1 pb-0'>
+            {isLoading ? (
+              <Skeleton className='h-60' />
+            ) : (
+              <ChartContainer
+                config={chartConfig}
+              >
+                <LineChart
+                  data={processedEncounterData().slice(-50)}
+                >
+                  <CartesianGrid vertical={false} />
+                  <XAxis
+                    dataKey='date'
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    tickFormatter={(value) => value}
+                  />
+                  <ChartTooltip
+                    cursor={true}
+                    content={<ChartTooltipContent hideLabel />}
+                  />
+                  <Legend />
+                  <Line
+                    type='natural'
+                    dataKey='count'
+                    stroke='hsl(var(--chart-1))'
+                    yAxisId='left'
+                    name='Number of Encounters'
+                  />
+                  <Line
+                    type='natural'
+                    dataKey='avgRating'
+                    stroke='hsl(var(--chart-2))'
+                    yAxisId='right'
+                    name='Average Rating'
+                  />
+                </LineChart>
+              </ChartContainer>
+            )}
+          </CardContent>
+          <CardFooter/>
+        </Card>
+      </div>
+      <div className='flex flex-col space-y-3'>
+        <h1 className='text-lg md:text-2xl font-bold'>Employee Statistics</h1>
+        <hr className='w-full' />
+        <p className='text-sm md:text-base'>
+          Compare the performance of two employees based on their average rating and client demographics. Select two employees to compare.
+        </p>
+        <div className='flex flex-col md:flex-row gap-4 w-full max-w-3xl'>
+          <div>
+            <Combobox
+              value={firstEmployee}
+              setValue={setFirstEmployee}
+              employees={employees.filter((employee) => employee.id !== secondEmployee)}
+            />
+          </div>
+          <Button
+            disabled={!firstEmployee || !secondEmployee || comparing}
+            onClick={() => {
+              if (firstEmployee && secondEmployee)
+                launchComparison(firstEmployee, secondEmployee);
+            }}
+          >
+            Lauch Comparison
+            {comparing ? (
+              <ArrowPathIcon className='h-4 w-4 ml-2 animate-spin' />
+            ) : (
+              <SparklesIcon className='h-4 w-4 ml-2' />
+            )}
+          </Button>
+          <div>
+            <Combobox
+              value={secondEmployee}
+              setValue={setSecondEmployee}
+              employees={employees.filter((employee) => employee.id !== firstEmployee)}
+            />
+          </div>
         </div>
+        <Card className='flex flex-col'>
+          <CardHeader>
+            <CardTitle>Comparison</CardTitle>
+            <CardDescription>Comparison of two employees based on their average rating and client demographics</CardDescription>
+          </CardHeader>
+          <CardContent className='flex-1 pb-0'>
+          {!employeesStats ? (
+            <Skeleton className='h-60' />
+          ) : (
+            <ChartContainer config={chartConfig} className='max-h-[400px] w-full'>
+              <BarChart data={employeesStats} layout='vertical'>
+                <CartesianGrid horizontal={false} />
+                <XAxis type='number' />
+                <YAxis type='category' dataKey='name' />
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent indicator='dashed' />}
+                />
+                <Tooltip />
+                <Bar dataKey='average_rating' fill='hsl(var(--chart-1))' radius={[0, 5, 5, 0]} />
+                <Bar dataKey='clients_length' fill='hsl(var(--chart-2))' radius={[0, 5, 5, 0]} />
+                <Bar dataKey='clients_length_male' fill='hsl(var(--chart-3))' radius={[0, 5, 5, 0]} />
+                <Bar dataKey='clients_length_female' fill='hsl(var(--chart-4))' radius={[0, 5, 5, 0]} />
+              </BarChart>
+            </ChartContainer>
+          )}
+          </CardContent>
+          <CardFooter/>
+        </Card>
       </div>
     </AuthCheck>
   );

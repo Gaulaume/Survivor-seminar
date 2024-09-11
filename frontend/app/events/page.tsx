@@ -88,14 +88,19 @@ export default function EventPage() {
 
   return (
     <div className='w-full mx-auto'>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className='text-2xl font-semibold'>Events</h2>
-        <Button onClick={handleAddEvent} className="bg-blue-600 hover:bg-blue-700 text-white">
-          + Add Event
-        </Button>
+      <div className='mb-5'>
+        <div className='flex justify-between items-center'>
+          <h1 className='text-lg md:text-2xl font-bold mb-1'>
+            Events
+          </h1>
+          <Button onClick={handleAddEvent} className="bg-blue-600 hover:bg-blue-700 text-white">
+            + Add Event
+          </Button>
+        </div>
+        <p className='text-muted-foreground'>
+          View the events of the company
+        </p>
       </div>
-      <hr className='w-full border-t border-gray-300 mb-4' />
-
       {/* Event Calendar */}
       <div className="w-full mb-8">
         <FullCalendar

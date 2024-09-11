@@ -18,7 +18,8 @@ import {
   IdentificationIcon,
   CakeIcon,
   ClockIcon,
-  SparklesIcon
+  SparklesIcon,
+  UserIcon
 } from '@heroicons/react/20/solid';
 import { useEffect, useState } from 'react';
 import clsx from 'clsx';
@@ -33,10 +34,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getMe } from '@/api/Employees';
 import confetti from 'canvas-confetti';
 import Cookies from 'js-cookie';
+import { UserProvider, useUser } from './UserContext';
 
 const SiderBarContent = [
   {
-    title: 'Home',
+    title: 'Dashboard',
     icon: HomeIcon,
     href: '/',
     disabled: false,
@@ -57,13 +59,6 @@ const SiderBarContent = [
     role: 1
   },
   {
-    title: 'Statistics',
-    icon: PresentationChartLineIcon,
-    href: '/statistics',
-    disabled: false,
-    role: 2
-  },
-  {
     title: 'Tips',
     icon: ChatBubbleBottomCenterIcon,
     href: '/tips',
@@ -76,6 +71,13 @@ const SiderBarContent = [
     href: '/events',
     disabled: false,
     role: 1
+  },
+  {
+    title: 'Statistics',
+    icon: PresentationChartLineIcon,
+    href: '/statistics',
+    disabled: false,
+    role: 2
   },
   {
     title: 'Compatibility',
@@ -151,19 +153,15 @@ const UserDropdown = ({ user }: { user: Employee }) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          size='icon'
-          variant='outline'
-          className='rounded-full'
-        >
-          <Avatar className='h-8 w-8'>
+        <button className='rounded-full p-0 outline-none'>
+          <Avatar className='size-9'>
             {user.image && <AvatarImage alt='User avatar' src={user.image}/>}
-            <AvatarFallback>
-              {user.name[0].toUpperCase()}
+            <AvatarFallback className='bg-primary'>
+              <UserIcon className='size-4 fill-white' />
             </AvatarFallback>
           </Avatar>
           <span className='sr-only'>Toggle user menu</span>
-        </Button>
+        </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end'>
         <DropdownMenuLabel className='flex flex-col'>
@@ -204,81 +202,93 @@ const UserDropdown = ({ user }: { user: Employee }) => {
   );
 };
 
+const Header = () => {
+  const router = useRouter();
+  const actualPath = usePathname();
+  const { getRole } = useAuth();
+  const [userRole, setUserRole] = useState<number>(0);
+  const { user } = useUser();
+
+  useEffect(() => {
+    setUserRole(getRole() as number);
+  }, [getRole]);
+
+  return (
+    <header className='flex h-14 items-center border-b px-4 lg:px-6 sticky top-0 bg-white z-30'>
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button variant='ghost' size='icon' className='xl:hidden mr-2'>
+            <Bars3Icon className='size-5' />
+            <span className='sr-only'>Toggle sidebar</span>
+          </Button>
+        </SheetTrigger>
+        <SheetContent side='left' className='w-64 p-0'>
+          <Sidebar />
+        </SheetContent>
+      </Sheet>
+      <div className='flex flex-row justify-between w-full h-full items-center'>
+        <div className='flex items-center gap-2 w-40'>
+          <HeartIcon className='size-5 md:hidden' />
+          <span className='text-lg font-bold'>
+            Soul Connection
+          </span>
+        </div>
+        <nav className='hidden xl:flex space-x-1 h-full truncate'>
+          {SiderBarContent.map((item, index) => (
+            userRole >= item.role && (
+              <Link
+                key={index}
+                href={item.href}
+                className={clsx(
+                  'text-nowrap px-3 h-full pt-5 text-xs transition-colors duration-200 font-semibold relative',
+                  actualPath === item.href ? 'text-primary' : 'text-foreground hover:text-accent-foreground'
+                )}
+              >
+                {item.title}
+                {actualPath === item.href && (
+                  <div
+                    className='absolute rounded-t-md bottom-0 left-0 w-full h-1 bg-primary transition-transform duration-300 ease-in-out transform'
+                  />
+                )}
+              </Link>
+            )
+          ))}
+        </nav>
+        <div className='flex flex-row w-40 justify-end'>
+          {user ? (
+            <UserDropdown user={user} />
+          ) : (
+            <Button
+              variant='default'
+              size='sm'
+              onClick={() => router.push('/login')}
+            >
+              Sign In <ArrowLeftEndOnRectangleIcon className='size-4 ml-1' />
+            </Button>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+};
+
 export default function Layout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
-  const { getToken } = useAuth();
-  const router = useRouter();
-  const [user, setUser] = useState<Employee | null>(null);
+  return (
+    <UserProvider>
+      <LayoutContent>{children}</LayoutContent>
+    </UserProvider>
+  );
+}
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const token = getToken();
-        const user = await getMe(token);
-        if (!user) throw new Error('User not found');
-        setUser(user);
-
-        const today = new Date().toISOString().slice(0, 10);
-        const confettiPlayedToday = Cookies.get('confettiPlayed') === today;
-
-        if (!confettiPlayedToday && today.slice(5) === user.birth_date?.slice(5, 10)) {
-          confetti({
-            particleCount: 1000,
-            spread: 100,
-            origin: { y: 0.6 }
-          });
-          Cookies.set('confettiPlayed', today, { expires: 1 });
-        }
-      } catch (error) {
-        toast.error('Failed to fetch user');
-      }
-    }
-
-    fetchUser();
-  }, []);
-
+function LayoutContent({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <>
-      <Sidebar className='h-screen hidden md:flex sticky top-0' />
       <div className='flex flex-1 flex-col'>
-        <header className='flex h-14 items-center border-b px-4 lg:px-6 sticky top-0 bg-white z-30'>
-          <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-            <SheetTrigger asChild>
-              <Button variant='ghost' size='icon' className='md:hidden'>
-                <Bars3Icon className='size-5' />
-                <span className='sr-only'>Toggle sidebar</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side='left' className='w-64 p-0'>
-              <Sidebar />
-            </SheetContent>
-          </Sheet>
-          <div className='flex flex-row justify-between w-full'>
-            <div className='flex items-center gap-2'>
-              <HeartIcon className='size-5 md:hidden' />
-              <span className='text-lg font-bold md:hidden'>
-                Soul Connection
-              </span>
-            </div>
-            <div className='flex flex-row'>
-              {user ? (
-                <UserDropdown user={user} />
-              ) : (
-                <Button
-                  variant='default'
-                  size='sm'
-                  onClick={() => router.push('/login')}
-                >
-                  Sign In <ArrowLeftEndOnRectangleIcon className='size-4 ml-1' />
-                </Button>
-              )}
-            </div>
-          </div>
-        </header>
+        <Header />
         <main className='flex-1 overflow-y-auto p-4 lg:p-6'>
           {children}
         </main>

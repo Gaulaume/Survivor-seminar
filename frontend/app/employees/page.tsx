@@ -74,6 +74,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
+import TablePagination from '@/components/tablePagination'
 
 
 type MultiSelectProps = {
@@ -93,7 +94,7 @@ function MultiSelect({ items, selectedItems, setSelectedItems }: MultiSelectProp
           className='h-8 w-full md:w-auto'
           onClick={() => setOpen(!open)}
         >
-          Update clients
+          Update
           <ChevronUpDownIcon className='h-4 w-4 ml-2' />
         </Button>
       </PopoverTrigger>
@@ -199,91 +200,9 @@ const FormSchema = z.object({
   birth_date: z.string(),
   gender: z.string(),
   work: z.string(),
-  image: z.string().optional()
+  image: z.string().optional(),
+  customers_ids: z.array(z.number()).optional()
 })
-
-const TablePagination = ({
-  currentPage,
-  totalPages,
-  setCurrentPage,
-  setRowsPerPage,
-  rowsPerPage
-}: {
-  currentPage: number,
-  totalPages: number,
-  setCurrentPage: React.Dispatch<React.SetStateAction<number>>,
-  setRowsPerPage: React.Dispatch<React.SetStateAction<number>>,
-  rowsPerPage: number
-}) => {
-  return (
-    <div className='flex items-center gap-4'>
-      <div className='hidden md:flex items-center gap-2 text-nowrap flex-nowrap text-sm font-medium'>
-        Rows per page
-        <Select
-          value={rowsPerPage.toString()}
-          defaultValue={rowsPerPage.toString()}
-          onValueChange={(value) => setRowsPerPage(parseInt(value))}
-        >
-          <SelectTrigger className='h-8'>
-            <SelectValue placeholder={rowsPerPage.toString()} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value='10'>10</SelectItem>
-            <SelectItem value='20'>20</SelectItem>
-            <SelectItem value='30'>30</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <span className='text-sm text-muted-foreground text-nowrap font-medium'>
-        Page {currentPage} of {totalPages}
-      </span>
-      <Pagination>
-        <PaginationContent>
-          <PaginationItem className='cursor-pointer'>
-            <PaginationLink
-              className='size-8'
-              disabled={currentPage === 1}
-              isActive={true}
-              onClick={() => setCurrentPage(1)}
-            >
-              <ChevronDoubleLeftIcon className='h-4 w-4' />
-            </PaginationLink>
-          </PaginationItem>
-          <PaginationItem className='cursor-pointer'>
-            <PaginationLink
-              className='size-8'
-              disabled={currentPage === 1}
-              isActive={true}
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            >
-              <ChevronLeftIcon className='h-4 w-4' />
-            </PaginationLink>
-          </PaginationItem>
-          <PaginationItem className='cursor-pointer'>
-            <PaginationLink
-              className='size-8'
-              disabled={currentPage === totalPages}
-              isActive={true}
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-            >
-              <ChevronRightIcon className='h-4 w-4' />
-            </PaginationLink>
-          </PaginationItem>
-          <PaginationItem className='cursor-pointer'>
-            <PaginationLink
-              className='size-8'
-              disabled={currentPage === totalPages}
-              isActive={true}
-              onClick={() => setCurrentPage(totalPages)}
-            >
-              <ChevronDoubleRightIcon className='h-4 w-4' />
-            </PaginationLink>
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
-    </div>
-  )
-}
 
 const TableModal = ({
   isDialogOpen,
@@ -323,6 +242,7 @@ const TableModal = ({
 
     setIsDialogOpen(false);
     try {
+      data.customers_ids = [];
       if (newImage)
         data.image = newImage;
       if (editingEmployee) {
@@ -368,7 +288,7 @@ const TableModal = ({
         </DialogDescription>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-3 mt-3'>
-            <div className='max-h-[600px] overflow-y-auto px-2'>
+            <div className='max-h-[600px] overflow-y-auto px-2 space-y-3'>
               <FormField
                 control={form.control}
                 name='name'
@@ -495,7 +415,7 @@ const TableModal = ({
                 )}
               />
             </div>
-            <div className='flex flex-col md:flex-row gap-2'>
+            <div className='flex flex-col md:flex-row gap-2 px-2'>
               <Button
                 type='submit'
                 variant='default'
@@ -675,8 +595,14 @@ export default function EmployeeManagementPage() {
 
   return (
     <div className='flex flex-col space-y-4 h-full'>
-      <h1 className='text-lg md:text-2xl font-bold'>Employee Management</h1>
-      <hr className='w-full' />
+      <div>
+        <h1 className='text-lg md:text-2xl font-bold mb-1'>
+          Coaches List
+        </h1>
+        <p className='text-muted-foreground'>
+          You have total {employees?.filter(e => e.work === 'Coach').length} coaches.
+        </p>
+      </div>
       <div className='flex justify-between md:items-center flex-col md:flex-row'>
         <TableModal
           isDialogOpen={isDialogOpen}
@@ -699,18 +625,20 @@ export default function EmployeeManagementPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Birthday</TableHead>
-              <TableHead>Assigned Clients</TableHead>
-              <TableHead>Work</TableHead>
-              <TableHead>Last Connection</TableHead>
-              <TableHead></TableHead>
+              <TableHead className='text-nowrap'>Name</TableHead>
+              <TableHead className='text-nowrap'>Email</TableHead>
+              <TableHead className='text-nowrap'>Birthday</TableHead>
+              <TableHead className='text-nowrap'>Assigned Clients</TableHead>
+              <TableHead className='text-nowrap'>Work</TableHead>
+              <TableHead className='text-nowrap'>Last Connection</TableHead>
+              <TableHead className='text-nowrap'>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedEmployees?.map((employee: Employee) => (
               <TableRow key={employee.id}>
-                <TableCell>{employee.name} {employee.surname}</TableCell>
+                <TableCell className='text-nowrap font-medium'>{employee.name} {employee.surname}</TableCell>
+                <TableCell className='text-nowrap'>{employee.email}</TableCell>
                 <TableCell>{employee.birth_date}</TableCell>
                 <TableCell>
                   <MultiSelect
@@ -730,7 +658,7 @@ export default function EmployeeManagementPage() {
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant='outline' size='icon' className='size-8'>
+                      <Button variant='ghost' size='icon' className='size-8'>
                         <EllipsisHorizontalIcon className='size-5' />
                       </Button>
                     </DropdownMenuTrigger>
