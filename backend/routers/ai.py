@@ -6,14 +6,20 @@ from pymongo import MongoClient
 import os
 import requests
 from fastapi.responses import JSONResponse
-import datetime
 import traceback
+from gradio_client import file, Client
+from io import BytesIO
+from tempfile import NamedTemporaryFile
+
+
+# gradio_client = Client("https://b3ee-34-238-252-102.ngrok-free.app/")
 
 router = APIRouter()
 
-MONGO_URL = os.getenv("MONGO_URL", "mongodb://mongod:27017/")
-client = MongoClient(MONGO_URL)
-database = client[os.getenv("MONGO_INITDB_DATABASE", "soul-connection")]
+# MONGO_URL = os.getenv("MONGO_URL", "mongodb://mongod:27017/")
+# client = MongoClient(MONGO_URL)
+# database = client[os.getenv("MONGO_INITDB_DATABASE", "soul-connection")]
+
 
 class AnalyzeVideoRequest(BaseModel):
     video_url: str
@@ -34,6 +40,42 @@ async def analyze_video(file: UploadFile = File(...), token: str = Security(get_
         return JSONResponse(content=result)
 
     except Exception as e:
-        print(e)
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+
+@router.post("/VTON", tags=["ai"])
+async def VTON(person: UploadFile = File(...), clothe: UploadFile = File(...), token: str = Security(get_current_user_token)):
+    try:
+        # Save uploaded files to temporary files
+            # with NamedTemporaryFile(delete=False) as temp_person:
+            #     person_path = temp_person.name
+            #     person_bytes = await person.read()
+            #     temp_person.write(person_bytes)
+
+            # with NamedTemporaryFile(delete=False) as temp_clothe:
+            #     clothe_path = temp_clothe.name
+            #     clothe_bytes = await clothe.read()
+            #     temp_clothe.write(clothe_bytes)
+
+        # Send file paths to the Gradio client
+        # result = gradio_client.predict(
+        #     dict={"background": file(person_path), "layers": [], "composite": None},
+        #     garm_img=file(clothe_path),
+        #     garment_des="Hello!!",
+        #     is_checked=True,
+        #     is_checked_crop=False,
+        #     denoise_steps=40,
+        #     seed=42,
+        #     api_name="/tryon"
+        # )
+
+        # Clean up temporary files
+        # os.remove(person_path)
+        # os.remove(clothe_path)
+        result = {"success": True}
+
+        return JSONResponse(content=result)
+
+    except Exception as e:
         print(traceback.format_exc())
         return JSONResponse(content={"error": str(e)}, status_code=500)

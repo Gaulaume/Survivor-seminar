@@ -1,9 +1,9 @@
 from gradio_client import Client, file
 
-people = "valentin.png"
-clothe = "tshirt.png"
+people = "people.png"
+clothe = "clothe.jpeg"
 
-client = Client("https://b25b-52-90-122-161.ngrok-free.app/")
+client = Client("https://neat-spies-smile.loca.lt/")
 result = client.predict(
     dict={"background": file(people), "layers": [], "composite": None},
     garm_img=file(clothe),

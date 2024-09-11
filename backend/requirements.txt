@@ -7,3 +7,4 @@ asyncio
 Pyjwt
 python-jose
 python-multipart
+gradio_client
