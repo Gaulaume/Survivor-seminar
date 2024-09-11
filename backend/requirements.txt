@@ -6,4 +6,7 @@ aiohttp
 asyncio
 Pyjwt
 python-jose
+fastapi-mail
+itsdangerous
+passlib
 python-multipart
