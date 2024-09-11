@@ -214,7 +214,7 @@ export default function CustomerProfile() {
         </Avatar>
       </div>
       <hr className='w-full' />
-      <div className='flex flex-col lg:flex-row space-y-4 lg:space-x-4 lg:space-y-0 w-full'>
+      <div className='flex flex-col xl:flex-row space-y-4 xl:space-x-4 xl:space-y-0 w-full'>
         <div
           className={clsx(
             'flex flex-col space-y-4 w-full',
@@ -235,19 +235,29 @@ export default function CustomerProfile() {
               </TableHeader>
               <TableBody>
                 {customerPayments.length > 0 ? (
-                  customerPayments.map((payment, index) => (
-                    <TableRow key={index}>
-                      <TableCell>{payment.date}</TableCell>
-                      <TableCell>{payment.amount}€</TableCell>
-                      <TableCell>{payment.comment}</TableCell>
+                  <>
+                    {customerPayments.map((payment, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{payment.date}</TableCell>
+                        <TableCell>{payment.amount}€</TableCell>
+                        <TableCell>{payment.comment}</TableCell>
+                        <TableCell>
+                          <Badge className='text-nowrap flex-nowrap'>
+                            {getPaymentMethodIcon(payment.payment_method)}
+                            {payment.payment_method}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow className='font-bold bg-muted'>
+                      <TableCell>Total</TableCell>
                       <TableCell>
-                        <Badge className='text-nowrap flex-nowrap'>
-                          {getPaymentMethodIcon(payment.payment_method)}
-                          {payment.payment_method}
-                        </Badge>
+                        {customerPayments.reduce((total, payment) => total + payment.amount, 0).toFixed(2)}€
                       </TableCell>
+                      <TableCell></TableCell>
+                      <TableCell></TableCell>
                     </TableRow>
-                  ))
+                  </>
                 ) : (
                   <>
                     <TableRow>
@@ -276,20 +286,51 @@ export default function CustomerProfile() {
               </TableHeader>
               <TableBody>
                 {customerMeetings.length > 0 ? (
-                  customerMeetings.map((meeting, index) => (
-                    <TableRow key={index}>
-                      <TableCell className='md:text-nowrap'>
-                        {meeting.date}
+                  <>
+                    {customerMeetings.map((meeting, index) => (
+                      <TableRow key={index}>
+                        <TableCell className='md:text-nowrap'>
+                          {meeting.date}
+                        </TableCell>
+                        <TableCell className='flex gap-1 flex-col md:flex-row'>
+                          {Array.from({ length: 5 }, (_, i) => (
+                            <StarIcon key={i} className={`size-4 ${i < meeting.rating ? 'text-accent-foreground' : 'text-muted'}`} />
+                          ))}
+                        </TableCell>
+                        <TableCell>{meeting.comment}</TableCell>
+                        <TableCell>{meeting.source}</TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow className='font-bold bg-muted'>
+                      <TableCell>Average</TableCell>
+                      <TableCell>
+                      {(() => {
+                        const averageRating = customerMeetings.reduce((sum, meeting) => sum + meeting.rating, 0) / customerMeetings.length;
+                        const roundedAverage = Math.round(averageRating * 2) / 2;
+                        return (
+                          <div className='flex gap-1'>
+                            {Array.from({ length: 5 }, (_, i) => (
+                              <StarIcon
+                                key={i}
+                                className={`size-4 ${
+                                  i < Math.floor(roundedAverage)
+                                    ? 'text-accent-foreground'
+                                    : 'text-background'
+                                }`}
+                              />
+                            ))}
+                            <span className='ml-2 text-sm'>
+                              ({averageRating.toFixed(1)})
+                            </span>
+                          </div>
+                        );
+                      })()}
                       </TableCell>
-                      <TableCell className='flex gap-1 flex-col md:flex-row'>
-                        {Array.from({ length: 5 }, (_, i) => (
-                          <StarIcon key={i} className={`size-4 ${i < meeting.rating ? 'text-accent-foreground' : 'text-muted'}`} />
-                        ))}
-                      </TableCell>
-                      <TableCell>{meeting.comment}</TableCell>
-                      <TableCell>{meeting.source}</TableCell>
+                      <TableCell></TableCell>
+                      <TableCell></TableCell>
+                      <TableCell></TableCell>
                     </TableRow>
-                  ))
+                  </>
                 ) : (
                   <>
                     <TableRow>
