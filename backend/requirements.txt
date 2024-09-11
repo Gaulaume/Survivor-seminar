@@ -9,3 +9,4 @@ python-jose
 fastapi-mail
 itsdangerous
 passlib
+python-multipart
