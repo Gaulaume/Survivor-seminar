@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Security, HTTPException
 from typing import List
 from pydantic import BaseModel
-from authentificationAPI import Role, get_current_user_token
+from authentificationAPI import get_current_user_token
 from pymongo import MongoClient
 import os
 from .customers import api_customer_id
@@ -122,7 +122,7 @@ def calculate_compatibility(customer1: api_customer_id, customer2: api_customer_
     except KeyError:
         raise HTTPException(status_code=400, detail="Invalid astrological signs provided")
 
-@router.post("/api/compatibility", tags=["compatibility"])
+@router.post("", tags=["compatibility"])
 async def get_compatibility(customer1_id: int, customer2_id: int, token: str = Security(get_current_user_token)):
     """Calculates compatibility between two customers."""
     try:
