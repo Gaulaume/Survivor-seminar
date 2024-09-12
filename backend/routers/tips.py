@@ -50,13 +50,15 @@ def post_tip(tip: api_tips_update, token: str = Security(get_current_user_token)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.put("/{tip_id}", response_model=api_tips_update, tags=["tips"])
+@router.put("/{tip_id}", response_model=api_tips, tags=["tips"])
 def put_tip(tip_id: int, tip: api_tips_update, token: str = Security(get_current_user_token)):
     try:
         collection_tips = database.tips
-        tip.id = tip_id
-        collection_tips.replace_one({"id": tip_id}, tip.dict())
-        return tip
+        updated_tip = api_tips(id=tip_id, **tip.dict())
+        result = collection_tips.replace_one({"id": tip_id}, updated_tip.dict())
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Tip not found")
+        return updated_tip
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
