@@ -1,5 +1,4 @@
 import base64
-import traceback
 from fastapi import APIRouter, Depends, HTTPException, Security
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 from pydantic import BaseModel, EmailStr
