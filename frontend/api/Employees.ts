@@ -49,6 +49,7 @@ const getEmployeeStats = async (token: string, id: number): Promise<{
   clients_length: number;
   clients_length_female: number;
   clients_length_male: number;
+  total_amount_per_employee: number;
 } | null> => {
   const config = {
     url: `http://localhost:8000/api/employees/${id}/stats`,

@@ -111,6 +111,7 @@ export default function StatisticsPage() {
     clients_length: number;
     clients_length_female: number;
     clients_length_male: number;
+    total_amount_per_employee: number;
   }[] | null>(null);
   const { getToken } = useAuth();
 
@@ -411,7 +412,7 @@ export default function StatisticsPage() {
         <Card className='flex flex-col'>
           <CardHeader>
             <CardTitle>Comparison</CardTitle>
-            <CardDescription>Comparison of two employees based on their average rating and client demographics</CardDescription>
+            <CardDescription>Comparison of two employees based on their average rating, client demographics, and total amount</CardDescription>
           </CardHeader>
           <CardContent className='flex-1 pb-0'>
           {!employeesStats ? (
@@ -427,10 +428,12 @@ export default function StatisticsPage() {
                   content={<ChartTooltipContent indicator='dashed' />}
                 />
                 <Tooltip />
-                <Bar dataKey='average_rating' fill='hsl(var(--chart-1))' radius={[0, 5, 5, 0]} />
-                <Bar dataKey='clients_length' fill='hsl(var(--chart-2))' radius={[0, 5, 5, 0]} />
-                <Bar dataKey='clients_length_male' fill='hsl(var(--chart-3))' radius={[0, 5, 5, 0]} />
-                <Bar dataKey='clients_length_female' fill='hsl(var(--chart-4))' radius={[0, 5, 5, 0]} />
+                <Legend />
+                <Bar name="Average Rating" dataKey='average_rating' fill='hsl(var(--chart-1))' radius={[0, 5, 5, 0]} />
+                <Bar name="Total Clients" dataKey='clients_length' fill='hsl(var(--chart-2))' radius={[0, 5, 5, 0]} />
+                <Bar name="Male Clients" dataKey='clients_length_male' fill='hsl(var(--chart-3))' radius={[0, 5, 5, 0]} />
+                <Bar name="Female Clients" dataKey='clients_length_female' fill='hsl(var(--chart-4))' radius={[0, 5, 5, 0]} />
+                <Bar name="Total Amount" dataKey='total_amount_per_employee' fill='hsl(var(--chart-5))' radius={[0, 5, 5, 0]} />
               </BarChart>
             </ChartContainer>
           )}

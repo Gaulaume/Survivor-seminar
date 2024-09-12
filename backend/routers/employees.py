@@ -203,6 +203,7 @@ def get_employee_stats(employee_id: int, token: str = Security(get_current_user_
         clients_length = len(customers_ids)
         clients_length_female = 0
         clients_length_male = 0
+        total_amount = 0
 
         for customer_id in customers_ids:
             customer = database.customers.find_one({"id": customer_id})
@@ -211,8 +212,12 @@ def get_employee_stats(employee_id: int, token: str = Security(get_current_user_
             else:
                 clients_length_male += 1
 
+            payment_history = customer.get('payment_history', [])
+            total_amount += sum(payment['amount'] for payment in payment_history)
+
         if clients_length == 0:
             average_rating = 0
+            total_amount_scaled = 0
         else:
             count_encounters = 0
             sum_ratings = 0
@@ -222,21 +227,25 @@ def get_employee_stats(employee_id: int, token: str = Security(get_current_user_
                     count_encounters += 1
                     sum_ratings += encounter['rating']
 
-            average_rating = sum_ratings / count_encounters
+            average_rating = sum_ratings / count_encounters if count_encounters > 0 else 0
             average_rating = round(average_rating, 2)
+
+            scaling_factor = 10000
+            total_amount_scaled = min(5, (total_amount / scaling_factor) * 5)
+            total_amount_scaled = round(total_amount_scaled, 2)
 
         return {
             "average_rating": average_rating,
             "clients_length": clients_length,
             "clients_length_female": clients_length_female,
             "clients_length_male": clients_length_male,
+            "total_amount_per_employee": total_amount_scaled
         }
 
     except HTTPException as http_err:
         raise http_err
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An internal error occurred: {str(e)}")
-
 
 
 @router.post("/", response_model=api_Employee, tags=["employees"])
