@@ -50,7 +50,7 @@ def post_tip(tip: api_tips_update, token: str = Security(get_current_user_token)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.put("/{tip_id}", response_model=api_tips, tags=["tips"])
+@router.put("/{tip_id}", response_model=api_tips_update, tags=["tips"])
 def put_tip(tip_id: int, tip: api_tips_update, token: str = Security(get_current_user_token)):
     try:
         collection_tips = database.tips

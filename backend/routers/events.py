@@ -28,6 +28,16 @@ class api_event_id(BaseModel):
     employee_id: int
     location_name: str
 
+class api_update_event_id(BaseModel):
+    name: str
+    date: str
+    max_participants: int
+    location_x: str
+    location_y: str
+    type: str
+    employee_id: int
+    location_name: str
+
 class api_create_event_id(BaseModel):
     name: str
     date: str
@@ -70,8 +80,8 @@ def post_event(event: api_create_event_id, token: str = Security(get_current_use
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.put("/{event_id}", response_model=api_event_id, tags=["events"])
-def put_event(event_id: int, event: api_event_id, token: str = Security(get_current_user_token)):
+@router.put("/{event_id}", response_model=api_update_event_id, tags=["events"])
+def put_event(event_id: int, event: api_update_event_id, token: str = Security(get_current_user_token)):
     try:
         collection_events = database.events
         event.id = event_id

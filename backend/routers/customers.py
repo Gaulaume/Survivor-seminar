@@ -30,6 +30,21 @@ class api_customer_without_image(BaseModel):
 class api_customer_id(api_customer_without_image):
     image: Optional[bytes] = None
 
+
+class api_uptade_customer_without_image(BaseModel):
+    email: str
+    name: str
+    surname: str
+    birth_date: str
+    gender: str
+    description: str
+    astrological_sign: str
+    address: str
+    phone_number: str
+
+class api_update_customer_id(api_uptade_customer_without_image):
+    image: Optional[bytes] = None
+
 class api_create_customer(BaseModel):
     email: str
     name: str
@@ -117,8 +132,8 @@ async def create_customer(customer: api_create_customer, token: str = Security(g
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/{customer_id}", response_model=api_customer_id, tags=["customers"])
-async def update_customer(customer_id: int, customer: api_customer_id, token: str = Security(get_current_user_token)):
+@router.put("/{customer_id}", response_model=api_update_customer_id, tags=["customers"])
+async def update_customer(customer_id: int, customer: api_update_customer_id, token: str = Security(get_current_user_token)):
     try:
         collection = database.customers
         result = collection.update_one({"id": customer_id}, {"$set": customer.dict()})

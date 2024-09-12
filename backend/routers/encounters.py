@@ -19,6 +19,13 @@ class api_encounters(BaseModel):
     comment: str
     source: str
 
+class api_update_encounters(BaseModel):
+    customer_id: int
+    date: str
+    rating: int
+    comment: str
+    source: str
+
 class api_create_encounters(BaseModel):
     customer_id: int
     date: str
@@ -120,7 +127,7 @@ async def create_encounter(encounter: api_create_encounters, token: str = Securi
 
 
 @router.put("/{encounter_id}",
-            response_model=api_encounters,
+            response_model=api_update_encounters,
             tags=["encounters"],
             responses={
                 200: {"description": "Encounter updated successfully",
@@ -129,7 +136,7 @@ async def create_encounter(encounter: api_create_encounters, token: str = Securi
                     "content": {"routerlication/json": {"example": {"detail": "Invalid request"}}}},
             },
 )
-async def update_encounter(encounter_id: int, encounter: api_encounters, token: str = Security(get_current_user_token)):
+async def update_encounter(encounter_id: int, encounter: api_update_encounters, token: str = Security(get_current_user_token)):
     """
     Update an existing encounter.
 

@@ -45,6 +45,17 @@ class api_Employee(BaseModel):
     last_connection: Optional[str] = None
     image: Optional[str] = None
 
+class api_update_Employee(BaseModel):
+    email: str
+    name: str
+    surname: str
+    birth_date: str
+    gender: str
+    work: str
+    customers_ids: List[int]
+    last_connection: Optional[str] = None
+    image: Optional[str] = None
+
 class create_employee(BaseModel):
     email: str
     name: str
@@ -280,8 +291,8 @@ async def create_employee(employee: create_employee, token: str = Security(get_c
 
 
 
-@router.put("/{employee_id}", response_model=api_Employee, tags=["employees"])
-async def update_employee(employee_id: int, employee: api_Employee, token: str = Security(get_current_user_token)):
+@router.put("/{employee_id}", response_model=api_update_Employee, tags=["employees"])
+async def update_employee(employee_id: int, employee: api_update_Employee, token: str = Security(get_current_user_token)):
     """
     Update an existing employee.
 
