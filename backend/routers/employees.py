@@ -301,13 +301,32 @@ async def update_employee(employee_id: int, employee: api_update_Employee, token
     - Returns the updated employee details
     """
     try:
-        if token.role != Role.Manager.value:
-            raise HTTPException(status_code=403, detail="Authorization denied")
         collection = database.employees
-        result = collection.update_one({"id": employee_id}, {"$set": employee.dict()})
-        if result.matched_count == 0:
+        existing_employee = collection.find_one({"id": employee_id})
+
+        if not existing_employee:
             raise HTTPException(status_code=404, detail="Employee not found")
-        return employee, {"message": "Employee updated successfully"}
+
+        if token.role != Role.Manager.value:
+            if token.id != employee_id:
+                raise HTTPException(status_code=403, detail="You can only update your own profile")
+
+            if set(employee.customers_ids) != set(existing_employee['customers_ids']):
+                raise HTTPException(status_code=403, detail="Coaches cannot modify their customer list")
+
+            update_data = employee.dict(exclude={'work', 'customers_ids'})
+        else:
+            update_data = employee.dict()
+
+        result = collection.update_one({"id": employee_id}, {"$set": update_data})
+
+        if result.modified_count == 0:
+            return api_update_Employee(**existing_employee), {"message": "No changes were made"}
+
+        updated_employee = collection.find_one({"id": employee_id})
+        return api_update_Employee(**updated_employee), {"message": "Employee updated successfully"}
+    except HTTPException as http_err:
+        raise http_err
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
