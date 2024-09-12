@@ -2,7 +2,6 @@
 
 import './globals.css';
 import { Toaster } from '@/components/ui/sonner';
-import { UserProvider } from './UserContext';
 
 export default function RootLayout({
   children,
