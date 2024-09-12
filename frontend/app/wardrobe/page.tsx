@@ -213,89 +213,90 @@ export default function WardrobePage() {
   const clothingOrder: ClothingType[] = ['hat/cap', 'top', 'bottom', 'shoes'];
 
   return (
-    <AuthCheck>
-      <div className='container mx-auto p-4 space-y-6'>
-        <h1 className='text-3xl font-bold tracking-tight'>Wardrobe</h1>
-
-        <Combobox value={selectedCustomer} setValue={setSelectedCustomer} customers={customers || []} setClothes={setClothes} />
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Outfit Preview</CardTitle>
-            <CardDescription>Click on an item to select it for your outfit</CardDescription>
-          </CardHeader>
-          <CardContent className='flex flex-wrap gap-4 justify-center'>
-            {(Object.keys(selectedOutfit) as ClothingType[]).sort((a, b) => clothingOrder.indexOf(a) - clothingOrder.indexOf(b)).map((type) => (
-              <Card key={type} className='w-40'>
-                <CardHeader className='p-4'>
-                  <CardTitle className='text-sm flex items-center gap-2'>
-                    {getIconForType(type)}
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className='p-4 flex justify-center items-center h-40'>
-                  {selectedOutfit[type] ? (
-                    <motion.img
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ duration: 0.2 }}
-                      src={selectedOutfit[type]!.image}
-                      alt='image preview'
-                      className='max-w-full max-h-full object-contain rounded-sm'
-                    />
-                  ) : (
-                    <p className='text-sm text-muted-foreground'>No {type} selected</p>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-            <div className='flex flex-col md:flex-row gap-2 w-full mt-5'>
-              <Button
-                variant='destructive'
-                disabled={Object.values(selectedOutfit).every((item) => item === null)}
-                onClick={() => setSelectedOutfit({ top: null, bottom: null, shoes: null, 'hat/cap': null })}
-              >
-                Clear outfit
-                <TrashIcon className='h-4 w-4 ml-2' />
-              </Button>
-              <Button
-                variant='outline'
-                onClick={() => randomOutfit()}
-                disabled={!clothes || clothes.length <= 0 || randomLoading}
-              >
-                Random outfit
-                {randomLoading ? (
-                  <ArrowPathIcon className='h-4 w-4 ml-2 animate-spin' />
-                ) : (
-                  <SparklesIcon className='h-4 w-4 ml-2' />
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Tabs defaultValue='hat/cap' className='space-y-4'>
-          <TabsList className='!mb-4'>
-            <TabsTrigger value='hat/cap'>Hat/Cap</TabsTrigger>
-            <TabsTrigger value='top'>Top</TabsTrigger>
-            <TabsTrigger value='bottom'>Bottom</TabsTrigger>
-            <TabsTrigger value='shoes'>Shoes</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value='hat/cap' className='flex flex-row flex-wrap gap-2 !mt-0'>
-            {renderClothingItems('hat/cap')}
-          </TabsContent>
-          <TabsContent value='top' className='flex flex-row flex-wrap gap-2 !mt-0'>
-            {renderClothingItems('top')}
-          </TabsContent>
-          <TabsContent value='bottom' className='flex flex-row flex-wrap gap-2 !mt-0'>
-            {renderClothingItems('bottom')}
-          </TabsContent>
-          <TabsContent value='shoes' className='flex flex-row flex-wrap gap-2 !mt-0'>
-            {renderClothingItems('shoes')}
-          </TabsContent>
-        </Tabs>
+    <div className='flex flex-col space-y-4 h-full'>
+      <div>
+        <h1 className='text-lg md:text-2xl font-bold mb-1'>
+          Compatibility Checker
+        </h1>
+        <p className='text-muted-foreground'>
+          Check the compatibility between two customers
+        </p>
       </div>
-    </AuthCheck>
+      <Combobox value={selectedCustomer} setValue={setSelectedCustomer} customers={customers || []} setClothes={setClothes} />
+      <Card>
+        <CardHeader>
+          <CardTitle>Outfit Preview</CardTitle>
+          <CardDescription>Click on an item to select it for your outfit</CardDescription>
+        </CardHeader>
+        <CardContent className='flex flex-wrap gap-4 justify-center'>
+          {(Object.keys(selectedOutfit) as ClothingType[]).sort((a, b) => clothingOrder.indexOf(a) - clothingOrder.indexOf(b)).map((type) => (
+            <Card key={type} className='w-40'>
+              <CardHeader className='p-4'>
+                <CardTitle className='text-sm flex items-center gap-2'>
+                  {getIconForType(type)}
+                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className='p-4 flex justify-center items-center h-40'>
+                {selectedOutfit[type] ? (
+                  <motion.img
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ duration: 0.2 }}
+                    src={selectedOutfit[type]!.image}
+                    alt='image preview'
+                    className='max-w-full max-h-full object-contain rounded-sm'
+                  />
+                ) : (
+                  <p className='text-sm text-muted-foreground'>No {type} selected</p>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+          <div className='flex flex-col md:flex-row gap-2 w-full mt-5'>
+            <Button
+              variant='destructive'
+              disabled={Object.values(selectedOutfit).every((item) => item === null)}
+              onClick={() => setSelectedOutfit({ top: null, bottom: null, shoes: null, 'hat/cap': null })}
+            >
+              Clear outfit
+              <TrashIcon className='h-4 w-4 ml-2' />
+            </Button>
+            <Button
+              variant='outline'
+              onClick={() => randomOutfit()}
+              disabled={!clothes || clothes.length <= 0 || randomLoading}
+            >
+              Random outfit
+              {randomLoading ? (
+                <ArrowPathIcon className='h-4 w-4 ml-2 animate-spin' />
+              ) : (
+                <SparklesIcon className='h-4 w-4 ml-2' />
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+      <Tabs defaultValue='hat/cap' className='space-y-4'>
+        <TabsList className='!mb-4'>
+          <TabsTrigger value='hat/cap'>Hat/Cap</TabsTrigger>
+          <TabsTrigger value='top'>Top</TabsTrigger>
+          <TabsTrigger value='bottom'>Bottom</TabsTrigger>
+          <TabsTrigger value='shoes'>Shoes</TabsTrigger>
+        </TabsList>
+        <TabsContent value='hat/cap' className='flex flex-row flex-wrap gap-2 !mt-0'>
+          {renderClothingItems('hat/cap')}
+        </TabsContent>
+        <TabsContent value='top' className='flex flex-row flex-wrap gap-2 !mt-0'>
+          {renderClothingItems('top')}
+        </TabsContent>
+        <TabsContent value='bottom' className='flex flex-row flex-wrap gap-2 !mt-0'>
+          {renderClothingItems('bottom')}
+        </TabsContent>
+        <TabsContent value='shoes' className='flex flex-row flex-wrap gap-2 !mt-0'>
+          {renderClothingItems('shoes')}
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }

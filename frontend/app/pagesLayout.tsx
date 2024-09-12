@@ -14,13 +14,13 @@ import {
   PresentationChartLineIcon,
   ShoppingBagIcon,
   UserGroupIcon,
-  ChevronDownIcon,
-  IdentificationIcon,
   CakeIcon,
-  ClockIcon,
   SparklesIcon,
   UserIcon
 } from '@heroicons/react/20/solid';
+import {
+  ChatBubbleBottomCenterTextIcon,
+} from '@heroicons/react/24/outline';
 import { useEffect, useState } from 'react';
 import clsx from 'clsx';
 import { usePathname, useRouter } from 'next/navigation';
@@ -28,12 +28,15 @@ import { handleLogout, useAuth } from './actions';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import Employee from '@/types/Employee';
-import { toast } from 'sonner';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getMe } from '@/api/Employees';
-import confetti from 'canvas-confetti';
-import Cookies from 'js-cookie';
 import { UserProvider, useUser } from './UserContext';
 
 const SiderBarContent = [
@@ -185,7 +188,7 @@ const UserDropdown = ({ user }: { user: Employee }) => {
             <CakeIcon className='size-4 mr-1' />
             {user.birth_date}
             {new Date().toISOString().slice(5, 10) === user.birth_date?.slice(5, 10) && (
-              <span className="ml-2 text-green-500 font-bold">Happy Birthday!</span>
+              <span className='ml-2 text-green-500 font-bold'>Happy Birthday!</span>
             )}
           </span>
         </DropdownMenuLabel>
@@ -256,31 +259,27 @@ const Header = () => {
           ))}
         </nav>
         <div className='flex flex-row w-40 justify-end items-center space-x-2'>
-          <Button variant="ghost" size="icon" className="p-0 h-8 w-8 rounded-full">
-            <img
-              src="https://img.icons8.com/?size=48&id=ep9KlHIMmfBW&format=png"
-              alt="Chat"
-              className="h-full w-full object-cover"
-            />
+          <Button variant='ghost' size='icon' className='p-0 h-8 w-8 rounded-full'>
+            <ChatBubbleBottomCenterTextIcon className='size-8'/>
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="p-0 h-8 w-8 rounded-full">
-                <span className="flex items-center justify-center h-full w-full rounded-full overflow-hidden border border-gray-200">
+              <Button variant='ghost' size='icon' className='p-0 h-8 w-8 rounded-full'>
+                <span className='flex items-center justify-center h-full w-full rounded-full overflow-hidden border border-gray-200'>
                   <img
                     src={language === 'en' ? 'https://flagicons.lipis.dev/flags/4x3/um.svg' : 'https://flagicons.lipis.dev/flags/4x3/fr.svg'} 
                     alt={language === 'en' ? 'English' : 'Français'}
-                    className="h-full w-full object-cover"
+                    className='h-full w-full object-cover'
                   />
                 </span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <DropdownMenuItem onClick={() => setLanguage('en')}>
-                <img src="https://flagicons.lipis.dev/flags/4x3/um.svg" alt="English" className="w-5 h-5 mr-2" /> English
+                <img src='https://flagicons.lipis.dev/flags/4x3/um.svg' alt='English' className='w-5 h-5 mr-2' /> English
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setLanguage('fr')}>
-                <img src="https://flagicons.lipis.dev/flags/4x3/fr.svg" alt="Français" className="w-5 h-5 mr-2" /> Français
+                <img src='https://flagicons.lipis.dev/flags/4x3/fr.svg' alt='Français' className='w-5 h-5 mr-2' /> Français
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
