@@ -1,69 +1,188 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import { Loader2 } from "lucide-react"
+import { Loader2 } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import ReactMarkdown from 'react-markdown'
 
-export default function VideoPage() {
-  const [file, setFile] = useState<File | null>(null)
-  const [analysis, setAnalysis] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+interface AnalysisResult {
+  facialExpressions: string;
+  posture: string;
+  interactionDynamics: string;
+  tips: string;
+}
+
+export default function VideoAnalysis() {
+  const [videoSrc, setVideoSrc] = useState<string | null>(null)
+  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files) {
-      setFile(event.target.files[0])
+    const file = event.target.files?.[0]
+    if (file) {
+      const url = URL.createObjectURL(file)
+      setVideoSrc(url)
+      setAnalysis(null)
     }
   }
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault()
-    if (!file) return
+  const handleAnalyze = async () => {
+    if (!videoSrc || !fileInputRef.current?.files?.[0]) return
 
-    setLoading(true)
+    setIsAnalyzing(true)
     setAnalysis(null)
 
-    // Simuler l'analyse de l'IA (remplacer par l'appel API réel)
-    await new Promise(resolve => setTimeout(resolve, 3000))
+    const formData = new FormData()
+    formData.append('file', fileInputRef.current.files[0])
 
-    setAnalysis("Analyse de la vidéo de rencard : Le client montre une bonne posture et maintient un contact visuel constant. Cependant, il pourrait améliorer son écoute active et poser plus de questions à son interlocuteur. Le langage corporel est ouvert, mais il y a des signes de nervosité occasionnels. Recommandations : Travailler sur la respiration pour réduire le stress, pratiquer des techniques d'écoute active, et préparer quelques questions ouvertes à l'avance pour stimuler la conversation.")
-    setLoading(false)
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        throw new Error('Authorization token is missing')
+      }
+
+      const response = await fetch('http://127.0.0.1:8000/api/ai/analyze_video', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Network response was not ok: ${errorText}`)
+      }
+
+      const result = await response.json()
+      setAnalysis({
+        facialExpressions: result.facial_expressions || 'No facial expression analysis available.',
+        posture: result.posture || 'No posture analysis available.',
+        interactionDynamics: result.interaction_dynamics || 'No interaction dynamics analysis available.',
+        tips: result.tips || 'No tips available.'
+      })
+    } catch (error) {
+      console.error('There was a problem with the fetch operation:', error)
+      setAnalysis({
+        facialExpressions: `Analysis failed: ${error.message}`,
+        posture: `Analysis failed: ${error.message}`,
+        interactionDynamics: `Analysis failed: ${error.message}`,
+        tips: `Analysis failed: ${error.message}`
+      })
+    } finally {
+      setIsAnalyzing(false)
+    }
+  }
+
+  const renderMarkdown = (content: string) => {
+    return (
+      <ReactMarkdown
+        components={{
+          p: ({ children }) => <p className="mb-4 last:mb-0">{children}</p>,
+          h1: ({ children }) => <h1 className="text-2xl font-bold mb-2">{children}</h1>,
+          h2: ({ children }) => <h2 className="text-xl font-semibold mb-2">{children}</h2>,
+          h3: ({ children }) => <h3 className="text-lg font-semibold mb-2">{children}</h3>,
+          ul: ({ children }) => <ul className="list-disc pl-5 mb-4">{children}</ul>,
+          ol: ({ children }) => <ol className="list-decimal pl-5 mb-4">{children}</ol>,
+          li: ({ children }) => <li className="mb-1">{children}</li>,
+          strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+          em: ({ children }) => <em className="italic">{children}</em>,
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    )
   }
 
   return (
-    <Card className="w-full max-w-3xl mx-auto">
-      <CardHeader>
-        <CardTitle>Analyse de Vidéo de Rencard</CardTitle>
-        <CardDescription>Téléchargez une vidéo pour obtenir une analyse IA et des conseils pour votre client.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid w-full max-w-sm items-center gap-1.5">
-            <Label htmlFor="video">Vidéo</Label>
-            <Input id="video" type="file" accept="video/*" onChange={handleFileChange} />
-          </div>
-          <Button type="submit" disabled={!file || loading}>
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Analyse en cours...
-              </>
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Video Analysis</h1>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Upload Video</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="grid w-full max-w-sm items-center gap-1.5">
+                <Label htmlFor="video">Video</Label>
+                <Input 
+                  id="video" 
+                  type="file" 
+                  accept="video/*"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                />
+              </div>
+              {videoSrc && (
+                <video 
+                  src={videoSrc} 
+                  controls 
+                  className="w-full rounded-lg shadow-lg"
+                >
+                  Your browser does not support the video tag.
+                </video>
+              )}
+              <Button 
+                onClick={handleAnalyze} 
+                disabled={!videoSrc || isAnalyzing}
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : 'Start Analysis'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Analysis Results</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isAnalyzing ? (
+              <div className="flex items-center justify-center h-32">
+                <Loader2 className="h-8 w-8 animate-spin" />
+              </div>
+            ) : analysis ? (
+              <Tabs defaultValue="facialExpressions" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4">
+                  <TabsTrigger value="facialExpressions" className="text-xs sm:text-sm">Facial Expressions</TabsTrigger>
+                  <TabsTrigger value="posture" className="text-xs sm:text-sm">Posture</TabsTrigger>
+                  <TabsTrigger value="interactionDynamics" className="text-xs sm:text-sm">Interaction Dynamics</TabsTrigger>
+                  <TabsTrigger value="tips" className="text-xs sm:text-sm">Tips</TabsTrigger>
+                </TabsList>
+                <TabsContent value="facialExpressions">
+                  <h3 className="text-lg font-semibold mb-2">Facial Expressions Analysis</h3>
+                  <div className="text-sm">{renderMarkdown(analysis.facialExpressions)}</div>
+                </TabsContent>
+                <TabsContent value="posture">
+                  <h3 className="text-lg font-semibold mb-2">Posture Analysis</h3>
+                  <div className="text-sm">{renderMarkdown(analysis.posture)}</div>
+                </TabsContent>
+                <TabsContent value="interactionDynamics">
+                  <h3 className="text-lg font-semibold mb-2">Interaction Dynamics Analysis</h3>
+                  <div className="text-sm">{renderMarkdown(analysis.interactionDynamics)}</div>
+                </TabsContent>
+                <TabsContent value="tips">
+                  <h3 className="text-lg font-semibold mb-2">Tips</h3>
+                  <div className="text-sm">{renderMarkdown(analysis.tips)}</div>
+                </TabsContent>
+              </Tabs>
             ) : (
-              'Analyser la vidéo'
+              <p className="text-sm text-muted-foreground">Upload a video and start analysis to see results here.</p>
             )}
-          </Button>
-        </form>
-      </CardContent>
-      {analysis && (
-        <CardFooter>
-          <div className="mt-4">
-            <h3 className="text-lg font-semibold mb-2">Résultat de l'analyse :</h3>
-            <p className="text-sm text-muted-foreground">{analysis}</p>
-          </div>
-        </CardFooter>
-      )}
-    </Card>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   )
 }
