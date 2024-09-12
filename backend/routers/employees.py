@@ -1,4 +1,3 @@
-
 import base64
 import traceback
 from fastapi import APIRouter, Depends, HTTPException, Security
@@ -7,17 +6,12 @@ from pydantic import BaseModel, EmailStr
 from typing import List, Optional
 from authentificationAPI import Role, get_current_user_token, last_connection_employees, insertDataLogin, verify_token
 from pymongo import MongoClient
-from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from io import BytesIO
-from fastapi.responses import StreamingResponse
 import os
 from authentificationAPI import create_access_token
 import random
 import string
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
-from fastapi.security import OAuth2PasswordBearer
 import secrets
 
 router = APIRouter()
@@ -41,6 +35,17 @@ database = client[os.getenv("MONGO_INITDB_DATABASE", "soul-connection")]
 # Modèles Pydantic
 class api_Employee(BaseModel):
     id: int
+    email: str
+    name: str
+    surname: str
+    birth_date: str
+    gender: str
+    work: str
+    customers_ids: List[int]
+    last_connection: Optional[str] = None
+    image: Optional[str] = None
+
+class create_employee(BaseModel):
     email: str
     name: str
     surname: str
@@ -236,7 +241,7 @@ def get_employee_stats(employee_id: int, token: str = Security(get_current_user_
 
 
 @router.post("/", response_model=api_Employee, tags=["employees"])
-async def create_employee(employee: api_Employee, token: str = Security(get_current_user_token)):
+async def create_employee(employee: create_employee, token: str = Security(get_current_user_token)):
     """
     Create a new employee.
 
@@ -247,12 +252,20 @@ async def create_employee(employee: api_Employee, token: str = Security(get_curr
     try:
         if token.role != Role.Manager.value:
             raise HTTPException(status_code=403, detail="Authorization denied")
-        employee.id = len(list(database.employees.find())) + 1
+
         collection = database.employees
-        id = collection.find_one({"id": employee.id})
-        if id is not None:
+        employee_dict = employee.dict()
+        employee_dict["id"] = len(list(collection.find())) + 1
+
+        existing_employee = collection.find_one({"id": employee_dict["id"]})
+        if existing_employee is not None:
             raise HTTPException(status_code=400, detail="Employee with this id already exists")
-        return employee, {"message": "Employee created successfully"}
+
+        result = collection.insert_one(employee_dict)
+        if result.inserted_id:
+            return api_Employee(**employee_dict)
+        else:
+            raise HTTPException(status_code=500, detail="Failed to create employee")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -282,7 +295,7 @@ async def update_employee(employee_id: int, employee: api_Employee, token: str =
 
 
 
-@router.delete("/{employee_id}", response_model=api_Employee, tags=["employees"])
+@router.delete("/{employee_id}", tags=["employees"])
 async def delete_employee(employee_id: int, token: str = Security(get_current_user_token)):
     """
     Delete an employee.

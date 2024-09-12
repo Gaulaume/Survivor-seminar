@@ -2,7 +2,7 @@
 
 import './globals.css';
 import { Toaster } from '@/components/ui/sonner';
-;
+import { UserProvider } from './UserContext';
 
 export default function RootLayout({
   children,
@@ -11,7 +11,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang='en'>
-      <body className='md:flex bg-background'>
+      <body className='bg-background'>
         {children}
         <Toaster />
       </body>

@@ -8,6 +8,7 @@ import clsx from 'clsx';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { useAuth } from '../actions';
+import { Input } from '@/components/ui/input';
 
 interface Tip {
   id: number;
@@ -59,52 +60,60 @@ export default function CoachingTips() {
 
   return (
     <div className='w-full mx-auto'>
-      <div className='flex flex-col items-start'>
-        <h2 className='text-2xl font-semibold mb-2'>Tips</h2>
-        <hr className='w-full border-t border-gray-300 mb-4' />
-        <input
+      <div className='mb-5'>
+        <h1 className='text-lg md:text-2xl font-bold mb-1'>
+          Tips for Coaches
+        </h1>
+        <p className='text-muted-foreground'>
+          View the events of the company
+        </p>
+        <Input
           type='text'
+          className='mt-4'
           placeholder='Search tips...'
-          className='border border-gray-300 px-4 py-2 rounded-md mb-4 focus:outline-none focus:ring-1 focus:ring-blue-500'
           onChange={handleSearchChange}
           value={searchQuery}
         />
       </div>
 
       {filteredTips?.length === 0 ? (
-        <div className='text-center w-full col-span-4'>
+        <div className='text-center col-span-4'>
           <p className='text-lg text-gray-500'>No tips found matching your search.</p>
         </div>
       ) : (
-        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'>
-          {filteredTips?.map((tip) => (
+        <div className='max-h-[500px] overflow-y-auto'>
+          {filteredTips?.map((tip, index) => (
             <Card
               key={tip.id}
               onClick={() => handleTipToggle(tip.id)}
+              className={clsx(
+                'cursor-pointer rounded-none',
+                index === 0 && 'rounded-t-md',
+                index === filteredTips.length - 1 && 'rounded-b-md'
+              )}
             >
-              <CardHeader>
+              <CardHeader
+                className='flex-row items-center justify-between font-medium p-4'
+              >
                 {tip.title}
+                <ChevronDownIcon
+                  className={clsx(
+                    'size-4 ml-2 transition-all duration-300',
+                    openTip === tip.id && 'transform rotate-180'
+                  )}
+                />
               </CardHeader>
-              <CardContent>
-                <Button
-                  onClick={() => handleTipToggle(tip.id)}
-                  variant='outline'
-                  className='w-full mb-2'
-                >
-                  {openTip === tip.id ? 'Close tip' : 'Open tip'}
-                  <ChevronDownIcon
-                    className={clsx(
-                      'w-4 h-4 ml-2',
-                      openTip === tip.id && 'transform rotate-180 transition-all duration-300'
-                    )}
-                  />
-                </Button>
-                {openTip === tip.id && (
-                  <p className='text-muted-foreground mt-2'>
-                    {tip.tip}
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: openTip === tip.id ? 'auto' : 0, opacity: openTip === tip.id ? 1 : 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <CardContent className='p-4 border-t w-full'>
+                  <p className='text-muted-foreground text-sm'>
+                  {tip.tip}
                   </p>
-                )}
-              </CardContent>
+                </CardContent>
+              </motion.div>
             </Card>
           ))}
         </div>
