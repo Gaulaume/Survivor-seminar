@@ -273,28 +273,32 @@ export default function VideoAnalysis() {
               ) : (
                 <></>
               )}
-              <div className='mt-4 flex flex-wrap gap-2'>
-                <Button variant='default' onClick={() => {
-                  if (analysis) {
-                    const blob = new Blob([JSON.stringify(analysis, null, 2)], { type: 'application/json' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'analysis_results.json';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                  }
-                }}>
-                  Download Results File
-                  <DocumentArrowDownIcon className='size-4 ml-2'/>
-                </Button>
-                <Button variant='destructive' onClick={() => setAnalysis(null)}>
-                  Clear Results
-                  <TrashIcon className='size-4 ml-2'/>
-                </Button>
-              </div>
+              {analysis ? (
+                <div className='mt-4 flex flex-wrap gap-2'>
+                  <Button variant='default' onClick={() => {
+                    if (analysis) {
+                      const blob = new Blob([JSON.stringify(analysis, null, 2)], { type: 'application/json' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = 'analysis_results.json';
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                    }
+                  }}>
+                    Download Results File
+                    <DocumentArrowDownIcon className='size-4 ml-2'/>
+                  </Button>
+                  <Button variant='destructive' onClick={() => setAnalysis(null)}>
+                    Clear Results
+                    <TrashIcon className='size-4 ml-2'/>
+                  </Button>
+                </div>
+              ) : (
+                <></>
+              )}
             </div>
           </CardContent>
         </Card>
