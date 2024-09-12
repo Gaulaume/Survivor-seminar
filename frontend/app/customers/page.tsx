@@ -188,7 +188,7 @@ export default function CustomerProfile() {
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
-                <div className='max-h-[600px] overflow-y-auto px-2 space-y-3'>
+                <div className='max-h-[480px] overflow-y-auto px-2 space-y-3'>
                     <FormField
                       control={form.control}
                       name='name'

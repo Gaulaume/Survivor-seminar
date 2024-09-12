@@ -288,7 +288,7 @@ const TableModal = ({
         </DialogDescription>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-3 mt-3'>
-            <div className='max-h-[600px] overflow-y-auto px-2 space-y-3'>
+            <div className='max-h-[480px] overflow-y-auto px-2 space-y-3'>
               <FormField
                 control={form.control}
                 name='name'
