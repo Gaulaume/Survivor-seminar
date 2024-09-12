@@ -108,10 +108,72 @@ const getCustomerClothes = async (token: string, id: number): Promise<Clothe[] |
   }
 }
 
+const createCustomer = async (token: string, customer: Partial<Customer>): Promise<Customer | null> => {
+  const config = {
+    url: 'http://localhost:8000/api/customers',
+    method: 'post',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    data: customer,
+  };
+
+  try {
+    const response = await axios(config);
+    return response.data;
+  } catch (error) {
+    console.error('createCustomer', error);
+    return null;
+  }
+};
+
+const updateCustomer = async (token: string, id: number, customer: Partial<Customer>): Promise<Customer | null> => {
+  const config = {
+    url: `http://localhost:8000/api/customers/${id}`,
+    method: 'put',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    data: customer,
+  };
+
+  try {
+    const response = await axios(config);
+    return response.data;
+  } catch (error) {
+    console.error('updateCustomer', error);
+    return null;
+  }
+};
+
+const deleteCustomer = async (token: string, id: number): Promise<boolean> => {
+  const config = {
+    url: `http://localhost:8000/api/customers/${id}`,
+    method: 'delete',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  };
+
+  try {
+    await axios(config);
+    return true;
+  } catch (error) {
+    console.error('deleteCustomer', error);
+    return false;
+  }
+};
+
 export {
   getCustomers,
   getCustomer,
   getCustomerImage,
   getCustomerPayments,
   getCustomerClothes,
+  createCustomer,
+  updateCustomer,
+  deleteCustomer,
 };

@@ -7,7 +7,6 @@ import os
 import requests
 from fastapi.responses import JSONResponse
 import datetime
-import traceback
 
 router = APIRouter()
 
@@ -35,5 +34,4 @@ async def analyze_video(file: UploadFile = File(...), token: str = Security(get_
 
     except Exception as e:
         print(e)
-        print(traceback.format_exc())
         return JSONResponse(content={"error": str(e)}, status_code=500)

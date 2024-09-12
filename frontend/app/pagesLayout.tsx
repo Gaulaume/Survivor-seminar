@@ -99,6 +99,7 @@ const SiderBarContent = [
   {
     title: 'Video Analysis',
     icon: SparklesIcon,
+    displayIcon: true,
     href: '/video',
     disabled: false,
     role: 1
@@ -231,7 +232,7 @@ const Header = () => {
         </SheetContent>
       </Sheet>
       <div className='flex flex-row justify-between w-full h-full items-center'>
-        <div className='flex items-center gap-2 w-40'>
+        <div className='flex items-center gap-2 w-44'>
           <HeartIcon className='size-5 md:hidden' />
           <span className='text-lg font-bold'>
             Soul Connection
@@ -248,7 +249,10 @@ const Header = () => {
                   actualPath === item.href ? 'text-primary' : 'text-foreground hover:text-accent-foreground'
                 )}
               >
-                {item.title}
+                <span className='flex items-center'>
+                  {item.title}
+                  {item.displayIcon && <item.icon className='size-4 ml-1' />}
+                </span>
                 {actualPath === item.href && (
                   <div
                     className='absolute rounded-t-md bottom-0 left-0 w-full h-1 bg-primary transition-transform duration-300 ease-in-out transform'

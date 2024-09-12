@@ -1,17 +1,19 @@
 'use client'
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
 import { useAuth } from '../actions';
-import { ArrowPathIcon, RocketLaunchIcon } from '@heroicons/react/20/solid';
+import { ArrowPathIcon, DocumentArrowUpIcon, RocketLaunchIcon, TrashIcon } from '@heroicons/react/20/solid';
 import { BorderBeam } from '@/components/ui/borderbeam';
+import { Cover } from '@/components/ui/cover';
+import { useDropzone } from 'react-dropzone';
+import clsx from 'clsx';
+import { FlipWords } from '@/components/ui/flip-words';
 
 interface AnalysisResult {
   facialExpressions: string;
@@ -60,8 +62,6 @@ export default function VideoAnalysis() {
         body: formData
       });
 
-      console.log('caaaaaaaaa ', response);
-
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Network response was not ok: ${errorText}`);
@@ -86,6 +86,14 @@ export default function VideoAnalysis() {
     }
   };
 
+  const handleRemoveVideo = () => {
+    setVideoSrc(null);
+    setAnalysis(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const renderMarkdown = (content: string) => {
     return (
       <ReactMarkdown
@@ -106,58 +114,121 @@ export default function VideoAnalysis() {
     )
   };
 
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setVideoSrc(url);
+      setAnalysis(null);
+      if (fileInputRef.current) {
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        fileInputRef.current.files = dataTransfer.files;
+      }
+    }
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: { 'video/*': [] } });
+
+  const words = [
+    'skills',
+    'talent',
+    'performance',
+    'engagement',
+    'productivity',
+    'motivation',
+    'creativity',
+    'innovation',
+    'collaboration',
+    'communication'
+  ];
+
   return (
     <div className='w-full mx-auto'>
-      <div className='mb-5'>
-        <h1 className='text-lg md:text-2xl font-bold mb-1'>
-          Video Analysis
+      <div>
+        <h1 className='text-4xl md:text-4xl lg:text-5xl pb-6 font-semibold max-w-7xl mx-auto text-center relative z-20 bg-clip-text text-transparent bg-gradient-to-b from-black to-neutral-600'>
+          Analyze your video <Cover>to boost</Cover> <br /> your customers' skills using AI
         </h1>
-        <p className='text-muted-foreground'>
-          Upload a video to analyze the events of the company
-        </p>
       </div>
       <div className='grid grid-cols-1 lg:grid-cols-2 gap-4 overflow-hidden'>
         <Card>
           <CardHeader>
-            <CardTitle>Upload Video</CardTitle>
+            <CardTitle className=''>
+              Upload a video to analyze <FlipWords words={words} className='p-0' />
+            </CardTitle>
+            <CardDescription>
+              Drag and drop a video here, or click to select a file to analyze
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className='space-y-4'>
-              <div className='grid w-full max-w-sm items-center gap-1.5'>
-                <Label htmlFor='video'>Video</Label>
-                <Input
-                  id='video'
-                  type='file'
-                  accept='video/*'
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                />
-              </div>
-              {videoSrc && (
-                <video
-                  src={videoSrc}
-                  controls
-                  className='w-full rounded-lg shadow-lg'
+            <div className='space-y-4 w-full'>
+              <div {...getRootProps()} className='grid w-full h-[400px] items-center gap-1.5'>
+                <input {...getInputProps()} ref={fileInputRef} />
+                <div
+                  className={clsx(
+                    'border-2 border-dashed rounded-lg p-6 text-center cursor-pointer w-full h-[400px] flex flex-col items-center justify-center transition-all duration-300',
+                    isDragActive ? 'border-primary' : 'border-gray-300',
+                    isDragActive ? 'bg-primary/10' : ''
+                  )}
                 >
-                  Your browser does not support the video tag.
-                </video>
-              )}
-              <Button
-                onClick={handleAnalyze}
-                className='w-full md:w-56'
-                disabled={!videoSrc || isAnalyzing}
-              >
-                {isAnalyzing ? '' : 'Launch Analysis'}
-                {isAnalyzing ? <ArrowPathIcon className='h-4 w-4 animate-spin' /> : <RocketLaunchIcon className='h-4 w-4 ml-2' />}
-              </Button>
+                  {videoSrc ? (
+                    <video
+                      src={videoSrc}
+                      controls
+                      className='rounded-lg shadow-lg w-full h-full object-contain'
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                  ) : (
+                    <div
+                      className={clsx(
+                        'flex flex-col items-center justify-center font-medium transition-all duration-200',
+                        isDragActive ? 'text-primary' : 'text-muted-foreground',
+                        isDragActive ? 'rotate-3 scale-105' : ''
+                      )}
+                    >
+                      <DocumentArrowUpIcon
+                        className={clsx(
+                          'size-8',
+                        )}
+                      />
+                      <p>Drag and drop a video here, or click to select a file</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className='flex space-x-2'>
+                <Button
+                  onClick={handleAnalyze}
+                  className='w-full md:w-56'
+                  disabled={!videoSrc || isAnalyzing}
+                  shiny
+                >
+                  {isAnalyzing ? '' : 'Launch Analysis'}
+                  {isAnalyzing ? <ArrowPathIcon className='h-4 w-4 animate-spin' /> : <RocketLaunchIcon className='h-4 w-4 ml-2' />}
+                </Button>
+                <Button
+                  onClick={handleRemoveVideo}
+                  disabled={!videoSrc || isAnalyzing}
+                  variant='outline'
+                  className='w-full md:w-56'
+                >
+                  Remove Video
+                  <TrashIcon className='h-4 w-4 ml-2' />
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
         <Card className='relative'>
           <BorderBeam />
-          <BorderBeam />
           <CardHeader>
-            <CardTitle>Analysis Results</CardTitle>
+            <CardTitle>
+              Analysis Results
+            </CardTitle>
+            <CardDescription>
+              See the analysis results of your video
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {isAnalyzing ? (
@@ -190,9 +261,7 @@ export default function VideoAnalysis() {
                 </TabsContent>
               </Tabs>
             ) : (
-              <p className='text-sm text-muted-foreground'>
-                Upload a video and start analysis to see results here.
-              </p>
+              <></>
             )}
           </CardContent>
         </Card>
