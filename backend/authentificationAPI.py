@@ -111,10 +111,7 @@ def verify_token(token: str):
     if email is None:
         raise HTTPException(status_code=401, detail="Invalid token")
     expiration = token.exp
-    print("CHIENNNNN")
-    print(int(datetime.now().timestamp()))
-    print("KANGOUROUUUU")
-    print(expiration)
+
     if int(datetime.now().timestamp()) > expiration  :
         raise HTTPException( status_code=401, detail="Token has expired")
     return

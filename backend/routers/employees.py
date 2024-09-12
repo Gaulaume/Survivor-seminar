@@ -180,8 +180,7 @@ def get_employee_me(token: str = Security(get_current_user_token)):
     employee = collection.find_one({"email": token.email})
     if employee is None:
         raise HTTPException(status_code=404, detail="Employee not found")
-    print(traceback.format_exc())
-    employee["image"] = base64.b64encode(employee["image"]).decode('utf-8')
+    employee["image"] = "data:image/png;base64," + base64.b64encode(employee["image"]).decode('utf-8')
     return employee
 
 
