@@ -15,6 +15,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
+import { PlusIcon } from '@heroicons/react/20/solid';
 
 interface Event {
   id: number;
@@ -93,8 +94,9 @@ export default function EventPage() {
           <h1 className='text-lg md:text-2xl font-bold mb-1'>
             Events
           </h1>
-          <Button onClick={handleAddEvent} className="bg-blue-600 hover:bg-blue-700 text-white">
-            + Add Event
+          <Button onClick={handleAddEvent}>
+            Add Event
+            <PlusIcon className='w-4 h-4 ml-2' />
           </Button>
         </div>
         <p className='text-muted-foreground'>
@@ -102,16 +104,16 @@ export default function EventPage() {
         </p>
       </div>
       {/* Event Calendar */}
-      <div className="w-full mb-8">
+      <div className='w-full mb-8'>
         <FullCalendar
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
-          initialView="dayGridMonth"
+          initialView='dayGridMonth'
           headerToolbar={{
             left: 'title prev,next',
             center: '',
             right: 'today dayGridMonth,timeGridWeek,timeGridDay,listMonth'
           }}
-          height="auto"
+          height='auto'
           events={events?.map(event => ({
             id: event.id.toString(),
             title: event.name,
@@ -124,12 +126,12 @@ export default function EventPage() {
           dayMaxEvents={3}
           moreLinkContent={({num}) => `+${num} more`}
           eventContent={(eventInfo) => (
-            <div style={{cursor: 'pointer'}} className="text-xs p-1 truncate">
+            <div style={{cursor: 'pointer'}} className='text-xs p-1 truncate'>
               {eventInfo.event.title}
             </div>
           )}
-          dayCellClassNames="bg-white hover:bg-gray-100"
-          eventClassNames="cursor-pointer"
+          dayCellClassNames='bg-white hover:bg-gray-100'
+          eventClassNames='cursor-pointer'
         />
       </div>
 
@@ -148,7 +150,7 @@ export default function EventPage() {
             <TileLayer url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' />
             <AttributionControl
               position='bottomright'
-              prefix='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
+              prefix="&copy; <a href='https://www.openstreetmap.org/>OpenStreetMap</a>"
             />
 
             {lastSelectedEvent && lastSelectedEvent.location_x && lastSelectedEvent.location_y && (
