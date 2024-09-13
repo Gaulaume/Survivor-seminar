@@ -216,10 +216,10 @@ export default function WardrobePage() {
     <div className='flex flex-col space-y-4 h-full'>
       <div>
         <h1 className='text-lg md:text-2xl font-bold mb-1'>
-          Compatibility Checker
+          Wardrobe
         </h1>
         <p className='text-muted-foreground'>
-          Check the compatibility between two customers
+          Dress your customers with the latest fashion trends
         </p>
       </div>
       <Combobox value={selectedCustomer} setValue={setSelectedCustomer} customers={customers || []} setClothes={setClothes} />
